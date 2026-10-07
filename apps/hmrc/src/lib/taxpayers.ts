@@ -16,6 +16,15 @@ export const WFH_NEW_CODE = "1288L";
  * starting position. The real HMRC would look the person up.
  */
 export async function findOrCreateTaxpayer(subject: string, email?: string) {
+  // Several of a person's agents can arrive at once. Prisma's upsert isn't
+  // atomic, so the loser of the race reads the row the winner created.
+  return createTaxpayer(subject, email).catch(async (e) => {
+    if ((e as { code?: string }).code !== "P2002") throw e;
+    return prisma.taxpayer.findUniqueOrThrow({ where: { oneLoginSubject: subject } });
+  });
+}
+
+function createTaxpayer(subject: string, email?: string) {
   return prisma.taxpayer.upsert({
     where: { oneLoginSubject: subject },
     update: {},

@@ -4,7 +4,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-cert
 WORKDIR /repo
 COPY package.json package-lock.json ./
 COPY apps/delegate/package.json apps/delegate/
-RUN npm ci --workspace apps/delegate
+COPY packages/web-bot-auth/package.json packages/web-bot-auth/
+RUN npm ci --workspace apps/delegate --workspace packages/web-bot-auth
+COPY packages/web-bot-auth ./packages/web-bot-auth
 COPY styles ./styles
 COPY dev ./dev
 COPY apps/delegate ./apps/delegate
