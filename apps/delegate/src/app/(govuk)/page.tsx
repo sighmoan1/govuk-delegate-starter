@@ -72,9 +72,9 @@ export default async function Start({ searchParams }: { searchParams: Promise<{ 
           <li><a href={config.agentUrl}>Example AI</a>: run the task. It signs in to Delegate as itself and asks for permission to act for you with HMRC.</li>
           <li>GOV.UK Delegate: sign in, choose what to allow, press Allow. You are sent back to the agent.</li>
           <li>Example AI: it carries on by itself. Your tax code is read and the claim is made. Then it tries something you did not allow, and HMRC refuses.</li>
+          <li>Example AI › Flood test: 40 requests as an unregistered bot, 40 as the registered agent. <a href={`${config.hmrcUrl}/ops`}>HMRC’s operations view</a> shows who got through, and how fast.</li>
           <li><Link href="/account/delegates">Who can act for you</Link>: remove its access. The agent’s next attempt is refused.</li>
           <li>HMRC: sign in again. The claim is there, attributed to Example AI acting for you.</li>
-          <li>Example AI: flood HMRC as an unregistered bot and as the registered agent. <a href={`${config.hmrcUrl}/ops`}>HMRC’s operations view</a> shows who got through.</li>
         </ol>
         <a className="button" href={config.hmrcUrl} role="button" draggable="false">Start at HMRC</a>
         <p><Link href="/about">Why we are exploring this</Link> · <Link href="/activity">Declared agent activity</Link></p>

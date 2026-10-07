@@ -9,6 +9,8 @@ test("Sam signs in, sees her tax code, claims relief herself, and the claim is a
   await expect(page.getByRole("heading", { name: "Claim tax relief for working from home" })).toBeVisible();
   await page.getByRole("button", { name: "Start now" }).click();
   await expect(page).toHaveURL(/localhost:3301\/authorize/);
+  // A fresh person each run, so this test does not depend on what the demo test did to Sam.
+  await page.getByTestId("sub").fill(`urn:fdc:gov.uk:2022:e2e-${Date.now()}`);
   await page.getByRole("button", { name: /continue/i }).click();
 
   await expect(page.getByRole("heading", { name: "Your tax" })).toBeVisible();
@@ -31,7 +33,9 @@ test("operations view shows the lanes, their treatment and the middleware source
   await page.goto(`${HMRC}/ops`);
   await expect(page.getByRole("heading", { name: "Operations view" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "What HMRC added" })).toBeVisible();
-  await expect(page.locator("pre.source")).toContainText("export function requireDelegatedAuthority");
+  await expect(page.locator("pre.source--short")).toContainText("askDelegate");
+  await page.getByText(/Show the whole file/).click();
+  await expect(page.locator("details pre.source")).toContainText("export function requireDelegatedAuthority");
   await expect(page.locator("table.lane-key")).toContainText("Not identified");
 });
 

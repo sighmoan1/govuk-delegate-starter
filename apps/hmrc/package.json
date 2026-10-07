@@ -10,7 +10,7 @@
     "start": "next start -p 3302",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
-    "db:reset": "prisma migrate reset --force --skip-seed && npm run db:seed",
+    "db:reset": "tsx prisma/seed.ts",
     "typecheck": "tsc --noEmit"
   },
   "prisma": {

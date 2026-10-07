@@ -93,5 +93,28 @@ services:
       HMRC_SERVICE_KEY: dev-hmrc-service-key
       AGENT_URL: http://localhost:3303
 
+  agent:
+    build:
+      context: .
+      dockerfile: apps/agent/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+      delegate:
+        condition: service_started
+      hmrc:
+        condition: service_started
+    ports:
+      - "3303:3303"
+    environment:
+      DATABASE_URL: postgresql://delegate:delegate@db:5432/agent
+      APP_URL: http://localhost:3303
+      DELEGATE_URL: http://localhost:3300
+      DELEGATE_INTERNAL_URL: http://delegate:3300
+      AGENT_CLIENT_ID: demo-personal-agent
+      AGENT_CLIENT_SECRET: dev-demo-agent-secret
+      HMRC_URL: http://localhost:3302
+      HMRC_INTERNAL_URL: http://hmrc:3302
+
 volumes:
   dbdata:

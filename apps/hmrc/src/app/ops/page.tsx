@@ -19,12 +19,12 @@ function LaneTable({ rows, caption }: { rows: Awaited<ReturnType<typeof opsSumma
       <table className="lanes">
         <caption className="visually-hidden">{caption}</caption>
         <thead>
-          <tr><th scope="col">Lane</th><th scope="col">Requests</th><th scope="col">Allowed</th><th scope="col">Refused</th><th scope="col">Throttled</th><th scope="col">Challenged</th><th scope="col">Median time</th></tr>
+          <tr><th scope="col">Lane</th><th scope="col">Requests</th><th scope="col">Allowed</th><th scope="col">Refused</th><th scope="col">Throttled</th><th scope="col">Challenged</th><th scope="col">Median time to answer</th></tr>
         </thead>
         <tbody>
           {rows.map((r) => (
             <tr key={r.lane}>
-              <th scope="row">{LANE_LABEL[r.lane]}</th><td>{r.requests}</td><td>{r.allowed}</td><td>{r.refused}</td><td>{r.throttled}</td><td>{r.challenged}</td><td>{r.requests ? `${r.medianMs} ms` : "—"}</td>
+              <th scope="row">{LANE_LABEL[r.lane]}</th><td>{r.requests}</td><td>{r.allowed}</td><td>{r.refused}</td><td>{r.throttled}</td><td>{r.challenged}</td><td>{r.requests > r.throttled ? `${r.medianMs} ms` : "—"}</td>
             </tr>
           ))}
         </tbody>
@@ -57,11 +57,23 @@ export default async function Ops({ searchParams }: { searchParams: Promise<{ li
       <h2>How each lane is treated</h2>
       <div className="table-container">
         <table className="lane-key">
-          <thead><tr><th scope="col">Lane</th><th scope="col">Who</th><th scope="col">Structured API</th><th scope="col">Limit</th><th scope="col">Extra delay</th><th scope="col">Challenge page</th><th scope="col">Audit trail</th></tr></thead>
+          <thead><tr><th scope="col">Lane</th><th scope="col">Who</th><th scope="col">What they get</th></tr></thead>
           <tbody>
-            <tr><td>Signed-in person</td><td>Valid One Login session with this service</td><td>Yes</td><td>{LANE_LIMITS.AUTHENTICATED_HUMAN}/min</td><td>None</td><td>Never</td><td>Who</td></tr>
-            <tr><td>Authorised agent</td><td>Registered agent, and the person gave it this permission (checked with Delegate every time)</td><td>Yes, with machine-readable refusals</td><td>{LANE_LIMITS.AUTHORISED_AGENT}/min</td><td>None</td><td>Never</td><td>Who, for whom, under which authority</td></tr>
-            <tr><td>Not identified</td><td>Everyone else: not signed in, no agent credential, or a credential Delegate does not recognise</td><td>No: plain text pointing to Delegate</td><td>{LANE_LIMITS.UNTRUSTED}/min</td><td>{UNTRUSTED_DELAY_MS / 1000} s</td><td>After the limit</td><td>Only that it happened</td></tr>
+            <tr>
+              <th scope="row">Signed-in person</th>
+              <td>A valid GOV.UK One Login session with this service.</td>
+              <td>The service as normal. Limit {LANE_LIMITS.AUTHENTICATED_HUMAN} a minute. No delay, no challenge.</td>
+            </tr>
+            <tr>
+              <th scope="row">Authorised agent</th>
+              <td>A registered agent acting for a person who gave it this permission. Checked with GOV.UK Delegate on every request.</td>
+              <td>A structured API with machine-readable refusals. Limit {LANE_LIMITS.AUTHORISED_AGENT} a minute. No delay, no challenge. A full audit trail: which agent, for whom, under which permission.</td>
+            </tr>
+            <tr>
+              <th scope="row">Not identified</th>
+              <td>Everyone else: not signed in, no agent credential, or a credential Delegate does not recognise.</td>
+              <td>No data and no structured errors: a plain-text refusal pointing to GOV.UK Delegate. Limit {LANE_LIMITS.UNTRUSTED} a minute, a {UNTRUSTED_DELAY_MS / 1000} second delay, and a challenge page on the website.</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -81,9 +93,16 @@ export default async function Ops({ searchParams }: { searchParams: Promise<{ li
       <h2>What HMRC added</h2>
       <p>
         Registration with GOV.UK Delegate, once: a name, the five actions this service offers, and a key. Then this file. Every API route is
-        wrapped in it. The one network call is <code>askDelegate</code>. The sign-in, the pages and the business logic did not change.
+        wrapped in it. The sign-in, the pages and the business logic did not change. The heart of it is one call:
       </p>
-      <pre className="source"><code>{source}</code></pre>
+      <pre className="source source--short"><code>{`const check = await askDelegate({ agent_token, principal_id, capability });
+if (!check.authorised) refuse(check.reason);     // PERMISSION_MISSING, AUTHORISATION_REVOKED, …
+const taxpayer = await findOrCreateTaxpayer(check.subject);   // same One Login subject
+run the business handler, recording the agent as acting for the taxpayer`}</code></pre>
+      <details>
+        <summary>Show the whole file ({source.split("\n").length} lines)</summary>
+        <pre className="source"><code>{source}</code></pre>
+      </details>
 
       <h2>Recent requests</h2>
       <div className="table-container">

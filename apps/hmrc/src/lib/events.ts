@@ -42,7 +42,7 @@ function laneRows(events: { lane: Lane; outcome: Outcome; latencyMs: number }[])
   return LANES.map((lane) => {
     const rows = events.filter((e) => e.lane === lane);
     const n = (o: Outcome) => rows.filter((e) => e.outcome === o).length;
-    return { lane, requests: rows.length, allowed: n("ALLOWED"), refused: n("REFUSED"), throttled: n("THROTTLED"), challenged: n("CHALLENGED"), medianMs: median(rows.map((e) => e.latencyMs)) };
+    return { lane, requests: rows.length, allowed: n("ALLOWED"), refused: n("REFUSED"), throttled: n("THROTTLED"), challenged: n("CHALLENGED"), medianMs: median(rows.filter((e) => e.outcome !== "THROTTLED").map((e) => e.latencyMs)) };
   });
 }
 

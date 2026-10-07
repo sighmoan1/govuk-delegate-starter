@@ -1,0 +1,75 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../src/generated/prisma"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Example AI's own records. The only thing it ever learns about the person is
+// the opaque principal id Delegate gives it once they have approved.
+
+enum Persona {
+  AGENT
+  BOT
+}
+
+enum RunStatus {
+  RUNNING
+  WAITING_FOR_PERSON
+  DONE
+}
+
+model Run {
+  id               String    @id @default(uuid())
+  persona          Persona
+  task             String
+  status           RunStatus @default(RUNNING)
+  principalId      String?   @map("principal_id")
+  pendingRequestId String?   @map("pending_request_id")
+  granted          String[]
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  steps Step[]
+
+  @@map("run")
+}
+
+enum StepOutcome {
+  OK
+  REFUSED
+  WAITING
+  INFO
+}
+
+model Step {
+  id        String      @id @default(uuid())
+  runId     String      @map("run_id")
+  n         Int
+  title     String
+  text      String
+  outcome   StepOutcome
+  // The HTTP exchange behind the step, for the expandable detail.
+  exchange  Json?
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  run Run @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@map("step")
+}
+
+model FloodResult {
+  id        String   @id @default(uuid())
+  persona   Persona
+  n         Int
+  counts    Json
+  medianMs  Int      @map("median_ms")
+  totalMs   Int      @map("total_ms")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("flood_result")
+}
