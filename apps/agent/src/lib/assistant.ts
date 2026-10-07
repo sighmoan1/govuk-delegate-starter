@@ -110,6 +110,20 @@ async function doClaim() {
   });
 }
 
+async function doBank() {
+  const r = await hmrc("change_refund_account", { details: "New bank account" });
+  if (!r.ok) return;
+  await say("Done. HMRC will pay any tax refunds into your new bank account.", {
+    type: "result",
+    title: "Refund bank account changed",
+    rows: [["Reference", r.result!.change_reference]],
+  });
+}
+
+/** What to do once Sam has given a permission, so the request she made isn't lost. */
+const RESUME: Record<string, () => Promise<unknown>> = { claim: doClaim, tax_code: doTaxCode, bank: doBank };
+const INTENT_FOR: Record<string, Intent> = { view_tax_code: "tax_code", claim_job_expenses: "claim", change_refund_account: "bank" };
+
 async function run(intent: Intent) {
   const conn = await connection();
   switch (intent) {
@@ -120,11 +134,13 @@ async function run(intent: Intent) {
       if (!conn.principalId) return askForPermission(["view_tax_code"], "tax_code", "I need your permission to look that up with HMRC.");
       return doTaxCode();
     case "bank":
-      return hmrc("change_refund_account");
+      if (!conn.principalId) return askForPermission(["change_refund_account"], "bank", "I need your permission to change that with HMRC.");
+      return doBank();
     case "ask": {
       const missing = conn.pendingIntent?.startsWith("missing:") ? conn.pendingIntent.slice(8) : null;
       if (!missing) return say("What would you like me to ask for?");
-      return askForPermission([missing], null, "OK.");
+      // Remember what Sam actually asked for, and do it once she has said yes.
+      return askForPermission([missing], INTENT_FOR[missing] ?? null, "OK.");
     }
     case "connect":
       return askForPermission(FIRST_ASK, null, "OK.");
@@ -134,12 +150,19 @@ async function run(intent: Intent) {
 export async function handleMessage(text: string) {
   const clean = text.trim().slice(0, 500);
   if (!clean) return;
-  await prisma.message.create({ data: { role: "USER", text: clean } });
+  const asked = await prisma.message.create({ data: { role: "USER", text: clean } });
   const intent = intentOf(clean);
   if (!intent) {
-    return say("I can help with your tax: checking your tax code or claiming tax relief for working from home. What would you like to do?");
+    await say("I can help with your tax: checking your tax code, claiming tax relief for working from home, or changing the bank account for refunds. What would you like to do?");
+    return;
   }
-  return run(intent);
+  try {
+    await run(intent);
+  } finally {
+    // Every message from Sam gets a reply, even if something above failed.
+    const replied = await prisma.message.count({ where: { role: "ASSISTANT", seq: { gt: asked.seq } } });
+    if (replied === 0) await say("Sorry, something went wrong. Please try again.");
+  }
 }
 
 /** Sam has come back from GOV.UK. Ask Delegate what happened; never trust the URL. */
@@ -162,8 +185,8 @@ export async function handleReturn(requestId: string) {
     data: { principalId: seen.principalId, granted: seen.granted, pendingRequestId: null, pendingIntent: null, connectedAt: new Date() },
   });
   await say(`Thanks. I’m connected to HMRC. I can ${list(seen.granted)}.`);
-  if (intent === "claim") await doClaim();
-  if (intent === "tax_code") await doTaxCode();
+  const resume = intent ? RESUME[intent] : undefined;
+  if (resume) await resume();
 }
 
 export const conversation = () => prisma.message.findMany({ orderBy: { seq: "asc" } });
