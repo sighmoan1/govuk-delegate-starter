@@ -65,6 +65,7 @@ enum Reason {
   CAPACITY_EXCEEDED
   STEP_UP_REQUIRED
   DELEGATION_DEPTH_EXCEEDED
+  ASSURANCE_TOO_LOW
 }
 
 // How sure Delegate is about who the agent is. It never changes capacity.
@@ -175,6 +176,11 @@ model AuthorisationRequest {
   respondedAt     DateTime?     @map("responded_at")
   authorisationId String?       @unique @map("authorisation_id")
   returnUrl       String?       @map("return_url")
+  // Device-code style: an agent at a service shows the person this code, and
+  // the person approves on GOV.UK in their own browser.
+  userCode        String?       @unique @map("user_code")
+  initiatedByServiceId String?  @map("initiated_by_service_id")
+  requestedAssurance Assurance? @map("requested_assurance")
 
   principal     Principal? @relation(fields: [principalId], references: [id])
   delegate      Delegate   @relation(fields: [delegateId], references: [id])

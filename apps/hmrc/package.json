@@ -22,7 +22,8 @@
     "next": "^15.5.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "zod": "^4.0.0"
+    "zod": "^4.0.0",
+    "@prototype/web-bot-auth": "*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

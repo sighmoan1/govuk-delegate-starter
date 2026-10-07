@@ -37,11 +37,16 @@ export default async function RequestPage({
   const requested = req.permissions.map((p) => p.capability);
   const all = await prisma.capability.findMany({ where: { serviceId: req.serviceId }, orderBy: { sortOrder: "asc" } });
   const notRequested = all.filter((c) => !requested.some((r) => r.id === c.id));
-  const hasError = Boolean(error);
+  const hasError = Boolean(error) && error !== "AGENT_CANNOT_APPROVE";
 
   return (
     <div className="two-thirds">
-      {hasError && (
+      {error === "AGENT_CANNOT_APPROVE" ? (
+        <div className="error-summary" role="alert" aria-labelledby="err-h">
+          <h2 id="err-h">The person needs to do this themselves</h2>
+          <p>This browser is being driven by an AI assistant. Only the person can give permission. Ask them to open GOV.UK in their own browser and enter the code.</p>
+        </div>
+      ) : hasError && (
         <div className="error-summary" role="alert" aria-labelledby="err-h">
           <h2 id="err-h">There is a problem</h2>
           <ul><li><a href="#c-0">Choose at least one thing the delegate can do, or reject the request</a></li></ul>

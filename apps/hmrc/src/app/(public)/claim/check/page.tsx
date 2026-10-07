@@ -1,15 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { requireSignedIn } from "@/lib/guard";
+import { requireViewer } from "@/lib/guard";
 import { TAX_YEAR, WFH_NEW_CODE, WFH_RELIEF } from "@/lib/taxpayers";
-import { submitClaim } from "../actions";
 
 export const metadata: Metadata = { title: "Check your answers" };
 
 export default async function Check({ searchParams }: { searchParams: Promise<{ required?: string }> }) {
   const { required } = await searchParams;
-  const taxpayer = await requireSignedIn("/claim/check", "claim_job_expenses");
+  const { taxpayer } = await requireViewer("/claim/check", "claim_job_expenses");
   if (required !== "yes") redirect("/claim?error=required");
   return (
     <div className="two-thirds">
@@ -22,7 +21,7 @@ export default async function Check({ searchParams }: { searchParams: Promise<{ 
         <div><dt>Relief</dt><dd>{WFH_RELIEF}</dd><dd /></div>
         <div><dt>Your tax code will change</dt><dd>{taxpayer.taxCode} to {WFH_NEW_CODE}</dd><dd /></div>
       </dl>
-      <form action={submitClaim}>
+      <form action="/claim/submit" method="post">
         <button className="button" type="submit">Submit claim</button>
       </form>
     </div>

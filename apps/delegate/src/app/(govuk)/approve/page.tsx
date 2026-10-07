@@ -25,6 +25,12 @@ export default async function Approve({ searchParams }: { searchParams: Promise<
     );
   }
 
+  // A code for an agent asking to act for this person: show the consent screen.
+  const agentRequest = code ? await prisma.authorisationRequest.findUnique({ where: { userCode: code.toUpperCase().trim() } }) : null;
+  if (agentRequest && agentRequest.status === "PENDING" && (!agentRequest.principalId || agentRequest.principalId === principal.id)) {
+    redirect(`/consent/${agentRequest.id}`);
+  }
+
   const stepUp = code
     ? await prisma.stepUp.findUnique({ where: { userCode: code.toUpperCase().trim() }, include: { mandate: { include: { delegate: true, service: true } } } })
     : null;

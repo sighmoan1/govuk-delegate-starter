@@ -5,6 +5,7 @@ const SIMULATOR = process.env.SIMULATOR_INTERNAL_URL ?? "http://localhost:3399";
 /** @type {import('next').NextConfig} */
 export default {
   poweredByHeader: false,
+  transpilePackages: ["@prototype/web-bot-auth"],
   async rewrites() {
     return { fallback: [{ source: "/:path*", destination: `${SIMULATOR}/:path*` }] };
   },

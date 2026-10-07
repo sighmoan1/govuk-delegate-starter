@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { config } from "@/lib/config";
 import { currentTaxpayer } from "@/lib/session";
+import { currentAgentSession } from "@/lib/agent-session";
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const taxpayer = await currentTaxpayer();
+  const agent = await currentAgentSession();
   return (
     <>
       <header className="service-header hmrc-header">

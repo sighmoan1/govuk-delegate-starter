@@ -14,6 +14,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         {/* eslint-disable-next-line @next/next/no-css-tags */}
         <link rel="stylesheet" href="/design.css" />
+        {/* For AI agents acting for someone: how to do it properly. */}
+        <link rel="agent-access" href="/.well-known/agent-access.json" type="application/json" />
       </head>
       <body>
         <a className="skip-link" href="#main-content">Skip to main content</a>

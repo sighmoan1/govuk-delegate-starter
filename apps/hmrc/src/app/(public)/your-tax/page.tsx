@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { config } from "@/lib/config";
-import { requireSignedIn } from "@/lib/guard";
+import { requireViewer } from "@/lib/guard";
 import { claimsFor } from "@/lib/taxpayers";
 import { withPrincipalCapacity } from "@/lib/capacity";
 import { fmt } from "@/lib/format";
@@ -10,7 +10,8 @@ export const metadata: Metadata = { title: "Your tax" };
 
 export default async function YourTax({ searchParams }: { searchParams: Promise<{ claimed?: string; refused?: string }> }) {
   const { claimed, refused } = await searchParams;
-  const taxpayer = await requireSignedIn("/your-tax", "view_tax_code");
+  const viewer = await requireViewer("/your-tax", "view_tax_code");
+  const { taxpayer } = viewer;
   // Looking up the tax code counts against the person, however it's done.
   const view = await withPrincipalCapacity(taxpayer, "view_tax_code", {}, async () => null);
   const claims = await claimsFor(taxpayer.id);
@@ -27,7 +28,7 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
       {refused && (
         <div className="error-summary" role="alert">
           <h2>Your claim was not sent</h2>
-          <p>{refused === "DUPLICATE_SUBMISSION" ? "This claim has already been made." : refused === "NEW_EVIDENCE_REQUIRED" ? "You’ve already claimed for this tax year. You can only claim again with new evidence." : "You have too many open claims and changes. Wait for one to be decided."}</p>
+          <p>{refused === "DUPLICATE_SUBMISSION" ? "This claim has already been made." : refused === "NEW_EVIDENCE_REQUIRED" ? "You’ve already claimed for this tax year. You can only claim again with new evidence." : refused === "PERMISSION_MISSING" ? "You haven’t been given permission to do that." : refused === "CAPACITY_EXCEEDED" ? "You have too many open claims and changes. Wait for one to be decided." : "This couldn’t be done."}</p>
         </div>
       )}
       <span className="caption">{taxpayer.name}</span>

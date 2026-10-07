@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { config } from "@/lib/config";
 import { approveRequest, rejectRequest, loadRequest, returnTo, DomainError } from "@/lib/requests";
 import { principalFromRequest } from "@/lib/session";
+import { verifyAgentSignature } from "@/lib/agent-identity";
 
 // The person's decision on the consent screen. A plain form POST answered with a
 // 303, so the browser really leaves GOV.UK for the agent's registered return URL,
@@ -17,6 +18,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
   const principal = await principalFromRequest(req);
   if (!principal) return go(`/auth/login?returnTo=${encodeURIComponent(`/consent/${id}`)}`);
+
+  // Only the person can give permission. A browser that signs its requests as
+  // an AI agent is the agent, even if it holds the person's session.
+  const signed = await verifyAgentSignature(req);
+  if (signed.verified) return go(`/consent/${id}?error=AGENT_CANNOT_APPROVE`);
 
   const form = await req.formData();
   const decision = String(form.get("decision"));

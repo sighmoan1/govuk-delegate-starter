@@ -1,0 +1,3 @@
+-- AlterEnum
+ALTER TYPE "Reason" ADD VALUE 'ASSURANCE_TOO_LOW';
+

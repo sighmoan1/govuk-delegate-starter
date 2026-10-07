@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { demoEmail, readFlow } from "@/lib/flow";
+import { AgentNotice } from "../agent-notice";
 import { submitEmail } from "../actions";
 
 export const metadata: Metadata = { title: "Enter your email address" };
@@ -11,6 +12,7 @@ export default async function SignIn({ searchParams }: { searchParams: Promise<{
   const { error, value } = await searchParams;
   return (
     <div className="ol-narrow">
+      <AgentNotice path="/sign-in" />
       {error && (
         <div className="ol-error-summary" role="alert" aria-labelledby="err-h">
           <h2 id="err-h">There is a problem</h2>

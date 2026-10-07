@@ -50,3 +50,7 @@
 .internal-header { background: #e4e1dc; border-bottom: 2px solid var(--ink); }
 .internal-header__inner { display: flex; flex-wrap: wrap; gap: .25rem 1.5rem; justify-content: space-between; align-items: baseline; padding: .75rem 0; }
 .ops-toolbar { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; align-items: baseline; margin: -1rem 0 1.5rem; font-size: 1rem; color: var(--muted); }
+.code-panel { display: inline-block; margin: 0 0 1rem; padding: .5rem 1rem; background: var(--white); border: 2px solid var(--ink); font-size: 1.25rem; overflow-wrap: anywhere; }
+.code-panel--big { font-size: 2.25rem; letter-spacing: .12em; font-weight: 700; }
+.acting-banner { margin: 0 0 1.5rem; padding: .75rem 1rem; background: var(--soft-aqua); border-left: 6px solid var(--teal); font-size: 1rem; }
+.acting-banner a { margin-left: .5rem; }

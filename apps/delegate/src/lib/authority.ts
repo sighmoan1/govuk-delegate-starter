@@ -143,6 +143,12 @@ export async function checkAuthority(input: CheckInput, now = new Date()): Promi
     return { authorised: false, reason: "PERMISSION_MISSING", ...base };
   }
 
+  // ── Sensitive actions need an agent whose identity is verified or registered.
+  // Assurance decides WHAT an agent may do; it never adds capacity.
+  if (capability.riskLevel === "HIGH" && delegation.assurance === "DECLARED") {
+    return { authorised: false, reason: "ASSURANCE_TOO_LOW", ...base };
+  }
+
   // ── Consequential actions need the person's fresh approval, whoever asks.
   let stepUpId: string | null = null;
   if (capability.requiresStepUp) {

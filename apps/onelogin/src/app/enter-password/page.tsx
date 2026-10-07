@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { readFlow } from "@/lib/flow";
+import { AgentNotice } from "../agent-notice";
 import { submitPassword } from "../actions";
 
 export const metadata: Metadata = { title: "Enter your password" };
@@ -12,6 +13,7 @@ export default async function EnterPassword({ searchParams }: { searchParams: Pr
   const { error } = await searchParams;
   return (
     <div className="ol-narrow">
+      <AgentNotice path="/enter-password" />
       <Link className="ol-back" href="/sign-in">Back</Link>
       {error && (
         <div className="ol-error-summary" role="alert" aria-labelledby="err-h">

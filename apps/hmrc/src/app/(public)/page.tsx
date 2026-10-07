@@ -25,8 +25,12 @@ export default async function Start({ searchParams }: { searchParams: Promise<{ 
       <h2>Before you start</h2>
       <p>You’ll need to sign in with GOV.UK One Login.</p>
 
-      <h2>If someone else deals with your tax</h2>
-      <p>An accountant, a family member or an app can act for you if you give them permission through your GOV.UK account. They use their own sign-in, not yours.</p>
+      <h2>Using an assistant or AI agent?</h2>
+      <p>
+        An assistant, an app, an accountant or a family member can act for you if you give them permission through GOV.UK. They use their own
+        identity, never your sign-in, and you can see and remove their access at any time.
+      </p>
+      <p><a href="/act-for-someone">Let an assistant act for you properly</a></p>
     </div>
   );
 }

@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { requireSignedIn } from "@/lib/guard";
+import { requireViewer } from "@/lib/guard";
 import { TAX_YEAR, WFH_RELIEF } from "@/lib/taxpayers";
 
 export const metadata: Metadata = { title: "Claim tax relief for working from home" };
 
 export default async function ClaimForm({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
-  await requireSignedIn("/claim", "claim_job_expenses");
+  await requireViewer("/claim", "claim_job_expenses");
   return (
     <div className="two-thirds">
       <Link className="back-link" href="/your-tax">Back</Link>
