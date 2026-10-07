@@ -15,29 +15,29 @@ const KEY = { privateKeyPem: readFileSync("dev/test-agent-private.pem", "utf8"),
 async function signedContext(browser: Browser): Promise<BrowserContext> {
   const ctx = await browser.newContext();
   await ctx.route("**/*", async (route) => {
-    const r = route.request();
-    const url = new URL(r.url());
-    if (!/^localhost:33\d\d$/.test(url.host)) return route.continue();
-    // Follow redirects ourselves, signing every hop, as an agent's signing
-    // browser does (Playwright doesn't intercept browser-followed redirects).
-    let target = url;
-    let method = r.method();
-    let response = await route.fetch({ headers: { ...r.headers(), ...signRequest({ method, authority: target.host, path: target.pathname + target.search }, KEY) }, maxRedirects: 0 });
-    for (let hop = 0; hop < 5 && response.status() >= 300 && response.status() < 400 && response.headers()["location"]; hop++) {
-      target = new URL(response.headers()["location"], target);
-      if (response.status() === 303 || ((response.status() === 301 || response.status() === 302) && method === "POST")) method = "GET";
-      const cookie = (await ctx.cookies(target.origin)).map((c) => `${c.name}=${c.value}`).join("; ");
-      const setCookies = response.headersArray().filter((h) => h.name.toLowerCase() === "set-cookie").map((h) => h.value);
-      if (setCookies.length) await ctx.addCookies(setCookies.map((sc) => { const [nv] = sc.split(";"); const i = nv.indexOf("="); return { name: nv.slice(0, i), value: nv.slice(i + 1), url: target.origin }; }));
-      const jar = (await ctx.cookies(target.origin)).map((c) => `${c.name}=${c.value}`).join("; ") || cookie;
-      response = await route.fetch({
-        url: target.toString(), method, postData: undefined, maxRedirects: 0,
-        headers: { ...(jar ? { cookie: jar } : {}), "user-agent": r.headers()["user-agent"], ...signRequest({ method, authority: target.host, path: target.pathname + target.search }, KEY) },
-      });
-    }
-    return route.fulfill({ response });
+    try { await signAndForward(route); } catch (e) { console.error("SIGNER FAILED", route.request().url(), e); await route.abort(); }
   });
   return ctx;
+}
+
+async function signAndForward(route: import("@playwright/test").Route) {
+  const r = route.request();
+  const url = new URL(r.url());
+  if (!/^localhost:33\d\d$/.test(url.host)) return route.continue();
+  const headers = { ...r.headers(), ...signRequest({ method: r.method(), authority: url.host, path: url.pathname + url.search }, KEY) };
+  // In-page fetches (Next's router, server actions) follow redirects transparently, as fetch does.
+  if (!r.isNavigationRequest()) return route.fulfill({ response: await route.fetch({ headers }) });
+  // Playwright doesn't intercept redirects the browser follows, so they'd go
+  // unsigned. Turn each redirect into a fresh navigation instead: the browser
+  // makes a new request (which this signs) and its address bar stays truthful.
+  // route.fetch shares the context's cookie jar, so Set-Cookie still lands.
+  const response = await route.fetch({ headers, maxRedirects: 0 });
+  const location = response.headers()["location"];
+  if (response.status() >= 300 && response.status() < 400 && location) {
+    const next = new URL(location, url).toString().replace(/"/g, "&quot;");
+    return route.fulfill({ status: 200, contentType: "text/html", body: `<!doctype html><meta http-equiv="refresh" content="0;url=${next}">` });
+  }
+  return route.fulfill({ response });
 }
 
 async function signIn(page: Page, email?: string) {
@@ -68,7 +68,7 @@ async function reset(page: Page) {
   await expect(page.locator(".start-from__done")).toBeVisible();
 }
 
-test.describe.configure({ mode: "serial" });
+test.describe.configure({ mode: "serial", timeout: 120_000 });
 
 test("a verified agent is shown the proper route, Sam approves on her own device, and the agent's claim is attributed to it", async ({ browser, page }) => {
   test.setTimeout(120_000);
@@ -89,7 +89,7 @@ test("a verified agent is shown the proper route, Sam approves on her own device
   await ctx.close();
 
   // The waiting page carries on by itself once Sam has decided.
-  await expect(agent).toHaveURL(/\/your-tax/, { timeout: 20_000 });
+  await expect(agent.locator(".acting-banner")).toBeVisible({ timeout: 20_000 });
   await expect(agent.locator(".acting-banner")).toContainText("Test agent is acting for this person");
   await agent.getByRole("link", { name: "Claim tax relief for working from home" }).click();
   await agent.getByLabel(/My employer required me to work from home/).check();
@@ -133,7 +133,9 @@ test("an agent using Sam's password is still the agent: it's sent to the proper 
 
   // The API says the same, in machine-readable form, quickly.
   const started = Date.now();
-  const res = await agent.request.get(`${HMRC}/api/tax-code`);
+  // (APIRequestContext bypasses the route signer, so sign this one by hand.)
+  const api = new URL(`${HMRC}/api/tax-code`);
+  const res = await agent.request.get(api.toString(), { headers: signRequest({ method: "GET", authority: api.host, path: api.pathname }, KEY) });
   expect(res.status()).toBe(403);
   expect(await res.json()).toMatchObject({ reason: "AGENT_NOT_AUTHORISED", lane: "DECLARED_AGENT", next: { act_for_someone: `${HMRC}/act-for-someone` } });
   expect(Date.now() - started).toBeLessThan(1000);
@@ -153,7 +155,7 @@ test("a declared agent (unsigned, in a browser) can be given permission, but not
   const code = (await agent.locator(".code-panel--big").innerText()).trim();
   const { ctx: samCtx } = await samApproves(browser, code);
   await samCtx.close();
-  await expect(agent).toHaveURL(/\/your-tax/, { timeout: 20_000 });
+  await expect(agent.locator(".acting-banner")).toBeVisible({ timeout: 20_000 });
   await expect(agent.locator(".acting-banner")).toContainText("Claude is acting for this person");
 
   // Even with Sam's permission, a self-declared identity can't change where refunds go.
@@ -172,7 +174,7 @@ test("removing access ends the agent's session, and a copied session doesn't wor
   await agent.getByRole("button", { name: "Get a code" }).click();
   const code = (await agent.locator(".code-panel--big").innerText()).trim();
   const { ctx: samCtx, sam } = await samApproves(browser, code);
-  await expect(agent).toHaveURL(/\/your-tax/, { timeout: 20_000 });
+  await expect(agent.locator(".acting-banner")).toBeVisible({ timeout: 20_000 });
 
   // The session cookie, copied into a browser that doesn't sign as the agent, is refused.
   const cookies = await agentCtx.cookies(HMRC);

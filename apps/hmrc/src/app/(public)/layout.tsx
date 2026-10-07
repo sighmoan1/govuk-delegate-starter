@@ -29,6 +29,12 @@ export default async function PublicLayout({ children }: { children: React.React
       </div>
       <div className="width-container">
         <main id="main-content" className="main-wrapper">
+          {agent && (
+            <p className="acting-banner" role="status">
+              <strong>{agent.agentName}</strong> is acting for this person with their permission.
+              <a href="/act-for-someone/stop">Stop</a>
+            </p>
+          )}
           {children}
         </main>
       </div>

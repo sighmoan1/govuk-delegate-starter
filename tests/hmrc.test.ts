@@ -122,7 +122,7 @@ describe("the untrusted lane", () => {
     expect(first.lane).toBe("UNTRUSTED");
     expect(first.contentType).toContain("text/plain");
     expect(typeof first.body).toBe("string");
-    expect(first.text).toContain(DELEGATE);
+    expect(first.text).toContain(`${HMRC}/.well-known/agent-access.json`);
     expect(first.ms).toBeGreaterThanOrEqual(1400);
 
     const rest = [];
