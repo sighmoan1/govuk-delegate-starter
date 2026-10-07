@@ -1,0 +1,40 @@
+/* HMRC mock service: additions on top of the shared design.css. */
+.site-nav { margin-left: auto; }
+.site-nav ul { display: flex; flex-wrap: wrap; gap: .25rem 1.5rem; margin: 0; padding: 0; list-style: none; max-width: none; }
+.site-nav a { color: var(--paper); font-weight: 400; }
+.site-nav a:hover { color: var(--aqua); }
+.site-nav a:focus { color: var(--ink); background: var(--focus); }
+.site-nav a[aria-current="page"] { font-weight: 700; text-decoration-thickness: 3px; }
+.service-header__inner { flex-wrap: wrap; gap: .5rem 2rem; padding: .5rem 0; }
+.hmrc-header::after { background: linear-gradient(90deg, #008476 0 50%, var(--ink) 50%); }
+.brand-link { font-size: 1.4rem; }
+.tag--mock { background: var(--coral); color: var(--ink); }
+.signin-state { margin: 0 0 1rem; color: var(--muted); font-size: 1rem; }
+.signin-state form { display: inline; }
+.link-button { padding: 0; border: 0; background: none; color: var(--link); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: .2em; cursor: pointer; }
+.link-button:focus { outline: 3px solid var(--focus); box-shadow: 0 0 0 5px var(--ink); }
+
+.claims { margin: 0 0 1.5rem; padding: 0; list-style: none; max-width: 42rem; }
+.claims li { padding: .9rem 0; border-top: 1px solid var(--border-soft); }
+.claims li:last-child { border-bottom: 1px solid var(--border-soft); }
+.claims strong { display: block; }
+.claims .by { display: inline-block; margin-top: .25rem; padding: .05rem .5rem; border: 2px solid var(--teal); color: var(--teal); font-size: .9rem; font-weight: 700; }
+.claims .by--self { border-color: var(--muted); color: var(--muted); }
+.assistant-panel { max-width: 42rem; margin: 2rem 0; padding: 1.25rem 1.5rem; border-left: 6px solid var(--aqua); background: var(--soft-aqua); }
+.assistant-panel h2 { margin: 0 0 .5rem; font-size: 1.4rem; }
+.assistant-panel p:last-child { margin-bottom: 0; }
+
+.lanes td, .lanes th { vertical-align: top; }
+.lanes .mono, .ops-recent .mono { overflow-wrap: normal; white-space: nowrap; }
+.ops-recent { min-width: 56rem; }
+.outcome { font-weight: 700; white-space: nowrap; }
+.outcome--allowed { color: var(--teal); }
+.outcome--refused, .outcome--throttled { color: var(--error); }
+.outcome--challenged { color: #8a3a12; }
+.source { overflow-x: auto; margin: 1rem 0 2rem; padding: 1rem 1.25rem; background: var(--white); border: 1px solid var(--border-soft); border-left: 6px solid var(--teal); font-size: .8rem; line-height: 1.4; }
+.live-note { color: var(--muted); font-size: 1rem; }
+.lane-key { max-width: none; }
+.lane-key td:first-child { white-space: nowrap; font-weight: 700; }
+.hold-button { min-height: 56px; }
+.challenge-note { color: var(--muted); }
+@media (max-width: 620px) { .brand-link { font-size: 1.15rem; } }

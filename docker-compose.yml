@@ -68,5 +68,30 @@ services:
       HMRC_URL: http://localhost:3302
       AGENT_URL: http://localhost:3303
 
+  hmrc:
+    build:
+      context: .
+      dockerfile: apps/hmrc/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+      delegate:
+        condition: service_started
+    ports:
+      - "3302:3302"
+    environment:
+      DATABASE_URL: postgresql://delegate:delegate@db:5432/hmrc
+      APP_URL: http://localhost:3302
+      OIDC_ISSUER: http://localhost:3301
+      OIDC_INTERNAL_URL: http://simulator:3000
+      OIDC_CLIENT_ID: delegate-dev-client
+      OIDC_PRIVATE_KEY_FILE: ../../dev/oidc-client-private.pem
+      SESSION_SECRET: dev-only-hmrc-session-secret-change-me-0123456789
+      DELEGATE_URL: http://localhost:3300
+      DELEGATE_INTERNAL_URL: http://delegate:3300
+      DELEGATE_SERVICE_SLUG: hmrc-personal-tax
+      HMRC_SERVICE_KEY: dev-hmrc-service-key
+      AGENT_URL: http://localhost:3303
+
 volumes:
   dbdata:

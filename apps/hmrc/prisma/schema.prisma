@@ -1,0 +1,80 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../src/generated/prisma"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// HMRC's own records. Nothing here is shared with Delegate: the One Login
+// subject is the only key the two systems have in common.
+
+model Taxpayer {
+  id               String   @id @default(uuid())
+  oneLoginSubject  String   @unique @map("one_login_subject")
+  name             String
+  taxCode          String   @map("tax_code")
+  employer         String
+  taxYear          String   @map("tax_year")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  claims Claim[]
+
+  @@map("taxpayer")
+}
+
+enum SubmittedBy {
+  SELF
+  AGENT
+}
+
+model Claim {
+  id          String      @id @default(uuid())
+  taxpayerId  String      @map("taxpayer_id")
+  reference   String      @unique
+  kind        String // job_expenses | employment_update | refund_account | address
+  summary     String
+  newTaxCode  String?     @map("new_tax_code")
+  submittedBy SubmittedBy @map("submitted_by")
+  agentName   String?     @map("agent_name")
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  taxpayer Taxpayer @relation(fields: [taxpayerId], references: [id])
+
+  @@map("claim")
+}
+
+enum Lane {
+  AUTHENTICATED_HUMAN
+  AUTHORISED_AGENT
+  UNTRUSTED
+}
+
+enum Outcome {
+  ALLOWED
+  REFUSED
+  THROTTLED
+  CHALLENGED
+}
+
+// HMRC's own request log: every request to the service, whichever lane.
+model ServiceEvent {
+  id          String   @id @default(uuid())
+  timestamp   DateTime @default(now())
+  lane        Lane
+  outcome     Outcome
+  reason      String?
+  capability  String?
+  path        String
+  agentName   String?  @map("agent_name")
+  agentId     String?  @map("agent_id")
+  subject     String?
+  latencyMs   Int      @map("latency_ms")
+  delegateCheckId String? @map("delegate_check_id")
+
+  @@index([timestamp])
+  @@map("service_event")
+}
