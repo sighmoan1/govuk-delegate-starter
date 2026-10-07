@@ -120,3 +120,26 @@ For this prototype:
 The model is never trusted to enforce authority. It can try any tool, and HMRC refuses anything Delegate does not cover. On return from consent, the agent checks the outcome with Delegate and does not trust the callback URL.
 
 Approving a new request replaces the active relationship for that person, agent and service. When an agent asks for an extra permission, it therefore asks for what it already holds plus the new one.
+
+## Decision 12 — Four separate systems; the incentive contrast at the centre
+
+**Decision:** run the prototype as four services that talk only over HTTP. This supersedes the single-app structure in Decision 11; its other points (HMRC as the use case, Delegate met in context and managed in account settings) stand.
+
+| System | Port | Database |
+|---|---|---|
+| GOV.UK One Login simulator (official image) | 3301 | — |
+| GOV.UK Delegate | 3300 | `delegate` |
+| Mock HMRC: Claim tax relief for working from home | 3302 | `hmrc` |
+| Example AI (agent) | 3303 | `agent` |
+
+Why: in one app the boundaries were invisible, so the claim "a service needs to add very little" could not be seen. Now HMRC's whole integration is one file (`apps/hmrc/src/lib/delegated-authority.ts`) and one registration, and its operations page shows that file.
+
+**The check API is the one call a service makes.** `POST /api/authorisations/check` with the service's own key, the agent's token, the principal id and the capability. Delegate verifies the agent itself, so services never handle agent credentials beyond passing them on. Delegate logs every check. It returns the person's One Login subject only when the answer is yes.
+
+**The join key is the One Login subject.** HMRC knows its customer by the subject it saw at sign-in, and Delegate returns the same subject. Real One Login issues pairwise subjects per relying party (or sector), so production would need Delegate and the service in a shared sector, or a mapping held by Delegate. Not built.
+
+**The simulator supports one client**, so Delegate and HMRC share its client id and key here. In production they would be separate relying parties.
+
+**Three lanes at the service.** These are a signed-in person, an authorised agent and not identified. The friction on the last lane is a stand-in, labelled as such: 5 requests a minute, a 1.5 second delay, plain-text refusals that point to Delegate, and a checkbox challenge page on the website. It demonstrates the incentive. It is not abuse infrastructure, and "not identified" is not treated as malicious.
+
+**The agent is a scripted task runner, not a chat.** The LLM had become the focus. The demo is about delegation and the service's response, and a step log with the HTTP behind each step shows that more honestly.

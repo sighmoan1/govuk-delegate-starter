@@ -39,3 +39,5 @@
 .challenge-note { color: var(--muted); }
 @media (max-width: 620px) { .brand-link { font-size: 1.15rem; } }
 .source--short { font-size: .9rem; }
+.lanes { min-width: 40rem; }
+.lanes th, .lanes td { white-space: nowrap; overflow-wrap: normal; }

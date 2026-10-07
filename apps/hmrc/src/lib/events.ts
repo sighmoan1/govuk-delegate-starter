@@ -60,6 +60,6 @@ export async function opsSummary(now = new Date()) {
       people: new Set(rows.map((r) => r.subject).filter(Boolean)).size,
       refusalRate: rows.filter((r) => r.outcome === "REFUSED").length / rows.length,
     })),
-    recent: day.slice(0, 60),
+    recent: day.slice(0, 25),
   };
 }
