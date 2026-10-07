@@ -1,7 +1,7 @@
 # GOV.UK Delegate prototype: four services, so the boundaries are real.
 #   docker compose up --build            everything
 #   docker compose up -d db simulator    just the dependencies, for `npm run dev`
-# Ports: Delegate 3300 · One Login simulator 3301 · HMRC 3302 · Example AI 3303 · About 3304 · Postgres 5433
+# Ports: Delegate 3300 · One Login 3301 (simulator behind it on 3399) · HMRC 3302 · Example AI 3303 · About 3304 · Postgres 5433
 services:
   db:
     image: postgres:16-alpine
@@ -20,15 +20,16 @@ services:
       timeout: 3s
       retries: 20
 
-  # The official GOV.UK One Login simulator. Interactive mode shows its own
-  # sign-in form, so the app performs a real authorisation-code redirect.
+  # The official GOV.UK One Login simulator does the OIDC work. People never see
+  # it: the onelogin app on :3301 shows the sign-in screens and proxies every
+  # other path (discovery, keys, token, userinfo) to it. Exposed on 3399 for dev.
   simulator:
     image: ghcr.io/govuk-one-login/simulator:latest
     ports:
-      - "3301:3000"
+      - "3399:3000"
     environment:
       SIMULATOR_URL: http://localhost:3301
-      INTERACTIVE_MODE: "true"
+      INTERACTIVE_MODE: "false"
       CLIENT_ID: delegate-dev-client
       # Public half of the simulator's documented default test key pair.
       # The matching private key lives in dev/oidc-client-private.pem.
@@ -40,6 +41,21 @@ services:
       POST_LOGOUT_REDIRECT_URLS: http://localhost:3300/
       IDENTITY_VERIFICATION_SUPPORTED: "false"
       CLAIMS: ""
+
+  onelogin:
+    build:
+      context: .
+      dockerfile: apps/onelogin/Dockerfile
+      args:
+        SIMULATOR_INTERNAL_URL: http://simulator:3000
+    depends_on:
+      - simulator
+    ports:
+      - "3301:3301"
+    environment:
+      SIMULATOR_INTERNAL_URL: http://simulator:3000
+      ABOUT_URL: http://localhost:3304
+      DEMO_EMAIL: sam.taylor@example.com
 
   delegate:
     build:

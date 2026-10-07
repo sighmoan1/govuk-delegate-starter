@@ -74,6 +74,7 @@ x-service-key: <HMRC's own key>
       <div className="two-thirds">
         <h2>What this prototype simplifies</h2>
         <ul>
+          <li><strong>A stand-in for One Login.</strong> The sign-in screens are a lookalike. Behind them, the official GOV.UK One Login simulator does the real OpenID Connect work: codes, signed tokens, keys and userinfo. Any password is accepted.</li>
           <li><strong>One sign-in client.</strong> The One Login simulator supports one client, so GOV.UK Delegate and HMRC share it. In production they would be separate.</li>
           <li><strong>The same person ID in both places.</strong> Real One Login gives each service a different identifier for the same person. Production would need GOV.UK Delegate and services to share one, or Delegate to hold a mapping.</li>
           <li><strong>Friction stand-ins.</strong> The rate limit, delay and checkbox challenge only show the incentive. A real service would choose its own proportionate controls.</li>

@@ -20,7 +20,7 @@ export async function findOrCreateTaxpayer(subject: string, email?: string) {
     update: {},
     create: {
       oneLoginSubject: subject,
-      name: email === "test@example.com" || !email ? "Sam Taylor" : email,
+      name: !email || email === "sam.taylor@example.com" || email === "test@example.com" ? "Sam Taylor" : email,
       taxCode: "1257L",
       employer: "Northwind Analytics Ltd",
       taxYear: TAX_YEAR,

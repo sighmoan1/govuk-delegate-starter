@@ -1,10 +1,18 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 // GOV.UK Delegate on its own: consent through the real One Login simulator,
 // then the account page and the internal operations view.
 const DELEGATE = process.env.DELEGATE_URL ?? "http://localhost:3300";
 const CLIENT_ID = process.env.DEMO_AGENT_CLIENT_ID ?? "demo-personal-agent";
 const CLIENT_SECRET = process.env.DEMO_AGENT_CLIENT_SECRET ?? "dev-demo-agent-secret";
+
+async function signInIfAsked(page: Page, email?: string) {
+  if (!/localhost:3301/.test(page.url())) return;
+  if (email) await page.getByLabel("Email address").fill(email);
+  await page.getByRole("button", { name: "Continue" }).click(); // email
+  await expect(page.getByRole("heading", { name: "Enter your password" })).toBeVisible();
+  await page.getByRole("button", { name: "Continue" }).click(); // password
+}
 
 async function createRequest() {
   const tok = await (await fetch(`${DELEGATE}/api/agent/token`, {
@@ -24,8 +32,8 @@ test("consent: sign in with One Login, narrow the request, allow; then remove ac
   const req = await createRequest();
 
   await page.goto(req.consent_url);
-  await expect(page).toHaveURL(/localhost:3301\/authorize/);
-  await page.getByRole("button", { name: /continue/i }).click();
+  await expect(page).toHaveURL(/localhost:3301\/sign-in/);
+  await signInIfAsked(page);
 
   await expect(page.getByRole("heading", { level: 1, name: "Example AI wants to act for you" })).toBeVisible();
   await page.getByLabel(/Update your employment details/).uncheck();
@@ -44,7 +52,7 @@ test("consent: sign in with One Login, narrow the request, allow; then remove ac
 
 test("Delegate has no front page of its own: the root goes to the account", async ({ page }) => {
   await page.goto(`${DELEGATE}/`);
-  await expect(page).toHaveURL(/localhost:3301\/authorize|\/account\/delegates/);
+  await expect(page).toHaveURL(/localhost:3301\/sign-in|\/account\/delegates/);
 });
 
 test("internal operations view lists agent checks", async ({ page }) => {
@@ -63,7 +71,8 @@ test("reflow at 320px: no horizontal page scroll", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 });
   const req = await createRequest();
   await page.goto(req.consent_url);
-  await page.getByRole("button", { name: /continue/i }).click();
+  await signInIfAsked(page);
+  await expect(page.getByRole("heading", { level: 1, name: "Example AI wants to act for you" })).toBeVisible();
   for (const url of [req.consent_url, `${DELEGATE}/account/delegates`, `${DELEGATE}/ops`]) {
     await page.goto(url);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

@@ -10,8 +10,8 @@ export default function Demo() {
       <h1>Run the demo</h1>
       <p className="lead">About three minutes. You are Sam throughout. Open each link in the same tab and follow the step.</p>
       <p className="tip">
-        Whenever you are asked to sign in, you’ll see the GOV.UK One Login simulator: a form full of test details. Leave it as it is and press
-        <strong> Continue</strong>. That signs you in as Sam.
+        Whenever you are asked to sign in with GOV.UK One Login, Sam’s email address and a password are already filled in. Press
+        <strong> Continue</strong> twice. Any other email address signs you in as a different person.
       </p>
 
       <ol className="steps">

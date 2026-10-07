@@ -6,8 +6,12 @@ const HMRC = process.env.HMRC_URL ?? "http://localhost:3302";
 const AGENT = process.env.AGENT_URL ?? "http://localhost:3303";
 const ABOUT = process.env.ABOUT_URL ?? "http://localhost:3304";
 
-async function signInIfAsked(page: Page) {
-  if (/localhost:3301/.test(page.url())) await page.getByRole("button", { name: /continue/i }).click();
+async function signInIfAsked(page: Page, email?: string) {
+  if (!/localhost:3301/.test(page.url())) return;
+  if (email) await page.getByLabel("Email address").fill(email);
+  await page.getByRole("button", { name: "Continue" }).click(); // email
+  await expect(page.getByRole("heading", { name: "Enter your password" })).toBeVisible();
+  await page.getByRole("button", { name: "Continue" }).click(); // password
 }
 
 test("the seven steps on the about site's demo page", async ({ page }) => {

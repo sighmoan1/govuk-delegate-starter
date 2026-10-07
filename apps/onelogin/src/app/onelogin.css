@@ -1,0 +1,46 @@
+/* GOV.UK One Login look: plain GOV.UK Frontend conventions, written out by hand. */
+:root { --ink: #0b0c0c; --muted: #505a5f; --link: #1d70b8; --focus: #ffdd00; --error: #d4351c; --green: #00703c; --border: #b1b4b6; }
+* { box-sizing: border-box; }
+html { min-width: 280px; background: #f3f2f1; }
+body { margin: 0; background: #fff; color: var(--ink); font-family: Arial, Helvetica, sans-serif; font-size: 1.1875rem; line-height: 1.32; }
+a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: .15em; }
+a:hover { color: #003078; text-decoration-thickness: 3px; }
+a:focus, button:focus, input:focus { outline: 3px solid transparent; }
+a:focus { color: var(--ink); background: var(--focus); box-shadow: 0 -2px var(--focus), 0 4px var(--ink); text-decoration: none; }
+.skip-link { position: absolute; left: -9999px; padding: 10px 15px; background: var(--focus); color: var(--ink); }
+.skip-link:focus { left: 0; top: 0; }
+.visually-hidden { position: absolute !important; width: 1px !important; height: 1px !important; overflow: hidden !important; clip-path: inset(50%) !important; white-space: nowrap !important; }
+.ol-container { width: min(100% - 30px, 960px); margin-inline: auto; }
+.ol-header { background: var(--ink); border-bottom: 10px solid var(--link); }
+.ol-header__inner { display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: baseline; padding: 12px 0 10px; }
+.ol-logo { color: #fff; font-weight: 700; font-size: 1.875rem; letter-spacing: -.01em; }
+.ol-service { color: #fff; font-weight: 700; font-size: 1.125rem; }
+.ol-phase { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 1rem; }
+.ol-tag { display: inline-block; margin-right: 10px; padding: 2px 8px 1px; background: var(--link); color: #fff; font-size: 1rem; font-weight: 700; letter-spacing: 0; }
+.ol-main { padding: 40px 0 60px; }
+.ol-narrow { max-width: 640px; }
+h1 { margin: 0 0 30px; font-size: 2.25rem; line-height: 1.11; font-weight: 700; }
+h2 { font-size: 1.5rem; }
+p { margin: 0 0 20px; }
+.ol-hint { color: var(--muted); }
+.ol-back { display: inline-block; margin-bottom: 30px; font-size: 1rem; color: var(--ink); }
+.ol-back::before { content: "‹ "; }
+.ol-form-group { margin-bottom: 30px; }
+.ol-form-group--error { padding-left: 15px; border-left: 5px solid var(--error); }
+.ol-label { display: block; margin-bottom: 5px; font-weight: 700; }
+.ol-error-message { margin-bottom: 15px; color: var(--error); font-weight: 700; }
+.ol-input { width: 100%; max-width: 30em; height: 2.5rem; padding: 5px; border: 2px solid var(--ink); border-radius: 0; font: inherit; }
+.ol-input:focus { outline: 3px solid var(--focus); outline-offset: 0; box-shadow: inset 0 0 0 2px; }
+.ol-form-group--error .ol-input { border-color: var(--error); }
+.ol-button { display: inline-block; margin: 0 0 30px; padding: 8px 10px 7px; border: 2px solid transparent; border-radius: 0; background: var(--green); box-shadow: 0 2px 0 #002d18; color: #fff; font: inherit; line-height: 1.19; cursor: pointer; }
+.ol-button:hover { background: #005a30; }
+.ol-button:focus { border-color: var(--focus); outline: 3px solid transparent; box-shadow: inset 0 0 0 1px var(--focus); background: var(--focus); color: var(--ink); }
+.ol-error-summary { margin-bottom: 30px; padding: 15px; border: 5px solid var(--error); }
+.ol-error-summary h2 { margin: 0 0 15px; }
+.ol-error-summary ul { margin: 0; padding: 0; list-style: none; }
+.ol-error-summary a { color: var(--error); font-weight: 700; }
+.ol-footer { padding: 25px 0; border-top: 1px solid var(--border); background: #f3f2f1; font-size: 1rem; }
+.ol-footer ul { display: flex; flex-wrap: wrap; gap: 5px 20px; margin: 0; padding: 0; list-style: none; }
+.ol-footer span { color: var(--ink); text-decoration: underline; }
+.ol-footer a { color: var(--ink); }
+@media (max-width: 640px) { h1 { font-size: 1.6rem; } body { font-size: 1.0625rem; } }

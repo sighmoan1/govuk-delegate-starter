@@ -155,3 +155,11 @@ Consequences:
 - HMRC's operations page and Delegate's are plain internal dashboards.
 - Example AI is a consumer assistant: a conversation and a "Connected services" page. The flood and unregistered-bot runs move to the about site's console. The console asks Example AI, through a small internal endpoint, to send its burst as itself.
 - Seeded data uses realistic names (Sam Taylor, Northwind Analytics Ltd). "Synthetic" is stated on the about site.
+
+## Decision 14 — One Login sign-in screens in front of the official simulator
+
+**Decision:** people see a GOV.UK One Login-style sign-in, "Enter your email address" then "Enter your password", served by `apps/onelogin` on :3301. The official simulator runs behind it (internal, :3399) in non-interactive mode and still does all the OpenID Connect work. When someone signs in, the sign-in app sets the simulator's response for that email through its config API, then lets the simulator complete the authorisation-code redirect. Discovery, keys, token and userinfo are proxied unchanged, and the issuer is still the simulator's.
+
+Why: the simulator's interactive form, which shows subject IDs, identity JSON and a "Continue" button, is a developer tool, and it dominated the journey.
+
+Consequences: any password works. `sam.taylor@example.com` (pre-filled) is the seeded person, and any other email is a stable, different person. Sign-ins are serialised through the simulator's single response configuration, which is fine for a one-person demo. The simulator's `/config` is not exposed publicly.

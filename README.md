@@ -18,7 +18,7 @@ The four systems in the scenario are mock-ups of real services. They carry no ex
 
 | System | Port | What it does | What it had to add |
 |---|---|---|---|
-| GOV.UK One Login (official simulator) | 3301 | Signs people in, for Delegate and for HMRC | Nothing |
+| GOV.UK One Login (`apps/onelogin` in front of the official simulator) | 3301 | Signs people in, for Delegate and for HMRC: "Enter your email address", "Enter your password". The official simulator (internal, :3399) does the OIDC work | Nothing |
 | **GOV.UK Delegate** (`apps/delegate`) | 3300 | Part of the GOV.UK account: consent screen, "Who can act for you", agent and service registry, one check API. Internal view at `/ops` | New |
 | **HMRC: Claim tax relief for your job expenses** (`apps/hmrc`) | 3302 | A One Login relying party with a human journey and an API for agents. Three lanes: signed-in person, authorised agent, not identified. Internal view at `/ops` | Registered once; one middleware, `src/lib/delegated-authority.ts` |
 | **Example AI** (`apps/agent`) | 3303 | A consumer AI assistant: a conversation with Sam and a "Connected services" page. Scripted, no LLM | Registered once; asks for permission; sends its own token |
@@ -52,6 +52,7 @@ npm run test:e2e    # Playwright: the demo script across all five apps, each sys
 
 ## Notes
 
+- **Sign-in.** The One Login screens are a lookalike; any password works, and `sam.taylor@example.com` (pre-filled) is the seeded person. Any other email is a different person. Behind the screens, the official simulator issues the codes, signed tokens and userinfo.
 - **The simulator supports one client.** Delegate and HMRC share its client id and test key. In production they would be separate relying parties.
 - **Pairwise subjects.** Real One Login gives each relying party its own subject for the same person. Here both see the same one; production would need a shared sector or a mapping held by Delegate (Decision 12).
 - **The friction is a stand-in:** an in-memory limiter, a 1.5 second delay, plain-text refusals and a checkbox challenge page. It shows the incentive, not real abuse controls.

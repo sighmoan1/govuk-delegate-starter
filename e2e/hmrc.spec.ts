@@ -8,10 +8,12 @@ test("a person signs in, claims relief herself, and the claim is attributed to h
   await page.goto(`${HMRC}/`);
   await expect(page.getByRole("heading", { name: "Claim tax relief for your job expenses" })).toBeVisible();
   await page.getByRole("button", { name: "Start now" }).click();
-  await expect(page).toHaveURL(/localhost:3301\/authorize/);
+  await expect(page).toHaveURL(/localhost:3301\/sign-in/);
   // A fresh person each run, so this test does not depend on what the demo test did to Sam.
-  await page.getByTestId("sub").fill(`urn:fdc:gov.uk:2022:e2e-${Date.now()}`);
-  await page.getByRole("button", { name: /continue/i }).click();
+  await page.getByLabel("Email address").fill(`e2e-${Date.now()}@example.com`);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Enter your password" })).toBeVisible();
+  await page.getByRole("button", { name: "Continue" }).click();
 
   await expect(page.getByRole("heading", { name: "Your tax" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
@@ -49,7 +51,7 @@ test("anonymous hammering of a signed-in page meets the challenge page; a person
   await page.getByLabel("I am a person using this service for myself").check();
   await page.getByRole("button", { name: "Continue" }).click();
   // Passed the challenge: now just asked to sign in, like anyone else.
-  await expect(page).toHaveURL(/localhost:3301\/authorize/);
+  await expect(page).toHaveURL(/localhost:3301\/sign-in/);
 });
 
 test("reflow at 320px on HMRC pages", async ({ page }) => {
