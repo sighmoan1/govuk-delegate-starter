@@ -111,6 +111,16 @@ export async function approveRequest(id: string, principalId: string, capability
         permissions: { create: chosen.map((c) => ({ capabilityId: c.id })) },
       },
     });
+    // The agent the person approved is the root of the delegation chain.
+    await tx.delegation.create({
+      data: {
+        mandateId: auth.id,
+        delegateId: req.delegateId,
+        depth: 0,
+        capabilities: chosen.map((c) => c.code),
+        assurance: req.delegate.identityType === "WEB_BOT_AUTH" ? "VERIFIED" : req.delegate.identityType === "DECLARED" ? "DECLARED" : "REGISTERED",
+      },
+    });
     await tx.authorisationRequest.update({
       where: { id },
       data: { status: "APPROVED", principalId, respondedAt: now, authorisationId: auth.id },

@@ -18,6 +18,9 @@ export type SeedResult = { principalId: string; granted: string[] };
 
 export async function seedDemo(prisma: PrismaClient, opts: SeedOptions = {}): Promise<SeedResult> {
   // Idempotent: re-running restores the clean demo starting state.
+  await prisma.capacityUse.deleteMany();
+  await prisma.stepUp.deleteMany();
+  await prisma.delegation.deleteMany();
   await prisma.activityEvent.deleteMany();
   await prisma.authorisationRequest.deleteMany();
   await prisma.authorisation.deleteMany();
@@ -137,6 +140,9 @@ export async function seedDemo(prisma: PrismaClient, opts: SeedOptions = {}): Pr
         validUntil: new Date(now + 30 * DAY),
         permissions: { create: granted.map((c) => ({ capabilityId: caps[c] })) },
       },
+    });
+    await prisma.delegation.create({
+      data: { mandateId: auth.id, delegateId: delegate.id, depth: 0, capabilities: granted, assurance: "REGISTERED" },
     });
     await prisma.authorisationRequest.create({
       data: {

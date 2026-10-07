@@ -62,6 +62,33 @@ enum Reason {
   NO_AUTHORISATION
   RATE_LIMITED
   HUMAN_SESSION
+  CAPACITY_EXCEEDED
+  STEP_UP_REQUIRED
+  DELEGATION_DEPTH_EXCEEDED
+}
+
+// How sure Delegate is about who the agent is. It never changes capacity.
+enum Assurance {
+  VERIFIED    // Web Bot Auth signature from a trusted key directory
+  REGISTERED  // client credentials issued by Delegate
+  DECLARED    // self-asserted by an agent in someone's browser
+}
+
+enum IdentityType {
+  CLIENT_CREDENTIALS
+  WEB_BOT_AUTH
+  DECLARED
+}
+
+enum DelegationStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum StepUpStatus {
+  PENDING
+  APPROVED
+  USED
 }
 
 model Principal {
@@ -85,12 +112,16 @@ model Delegate {
   clientId         String         @unique @map("client_id")
   clientSecretHash String         @map("client_secret_hash")
   status           DelegateStatus @default(ACTIVE)
+  identityType     IdentityType   @default(CLIENT_CREDENTIALS) @map("identity_type")
+  // For agents identified by Web Bot Auth, e.g. "https://chatgpt.com".
+  webBotAuthAgent  String?        @unique @map("web_bot_auth_agent")
   // Registered return URLs, as for an OAuth client.
   redirectUris     String[]       @map("redirect_uris")
   createdAt        DateTime       @default(now()) @map("created_at")
 
   requests       AuthorisationRequest[]
   authorisations Authorisation[]
+  delegations    Delegation[]
   events         ActivityEvent[]
 
   @@map("delegate")
@@ -103,6 +134,9 @@ model Service {
   name       String
   slug       String @unique
   apiKeyHash String @map("api_key_hash")
+  // Capacity: agent actions per hour per person, shared by every agent and
+  // mandate acting for that person with this service.
+  principalActionsPerHour Int @default(300) @map("principal_actions_per_hour")
 
   capabilities   Capability[]
   requests       AuthorisationRequest[]
@@ -172,12 +206,16 @@ model Authorisation {
   validUntil DateTime            @map("valid_until")
   createdAt  DateTime            @default(now()) @map("created_at")
   revokedAt  DateTime?           @map("revoked_at")
+  // How far agents may pass this authority on to sub-agents.
+  maxDepth   Int                 @default(2) @map("max_depth")
 
   principal   Principal @relation(fields: [principalId], references: [id])
   delegate    Delegate  @relation(fields: [delegateId], references: [id])
   service     Service   @relation(fields: [serviceId], references: [id])
   permissions AuthorisationPermission[]
   request     AuthorisationRequest?
+  delegations Delegation[]
+  stepUps     StepUp[]
   events      ActivityEvent[]
 
   @@index([principalId, delegateId, serviceId])
@@ -209,6 +247,14 @@ model ActivityEvent {
   decision        Decision
   reason          Reason
   requestId       String    @map("request_id")
+  // The chain: root principal → mandate (authorisationId) → delegation.
+  delegationId       String?  @map("delegation_id")
+  parentDelegationId String?  @map("parent_delegation_id")
+  depth              Int?
+  assurance          Assurance?
+  // Capacity against the principal at the time of the check.
+  capacityUsed       Int?     @map("capacity_used")
+  capacityLimit      Int?     @map("capacity_limit")
 
   principal     Principal?     @relation(fields: [principalId], references: [id])
   delegate      Delegate?      @relation(fields: [delegateId], references: [id])
@@ -217,4 +263,60 @@ model ActivityEvent {
 
   @@index([timestamp])
   @@map("activity_event")
+}
+
+// A place in the chain of authority. The agent the person approved is the
+// root (depth 0); agents may pass a subset of their authority to sub-agents.
+// Every delegation inherits the mandate, and so the root principal.
+model Delegation {
+  id                 String           @id @default(uuid())
+  mandateId          String           @map("mandate_id")
+  delegateId         String           @map("delegate_id")
+  parentDelegationId String?          @map("parent_delegation_id")
+  depth              Int
+  label              String?          // e.g. "worker 17", for a sub-agent instance
+  capabilities       String[]
+  assurance          Assurance
+  status             DelegationStatus @default(ACTIVE)
+  createdAt          DateTime         @default(now()) @map("created_at")
+
+  mandate  Authorisation @relation(fields: [mandateId], references: [id], onDelete: Cascade)
+  delegate Delegate      @relation(fields: [delegateId], references: [id])
+  parent   Delegation?   @relation("DelegationTree", fields: [parentDelegationId], references: [id])
+  children Delegation[]  @relation("DelegationTree")
+
+  @@index([mandateId])
+  @@map("delegation")
+}
+
+// One unit of capacity used against a person with a service, whichever agent,
+// mandate or delegation used it.
+model CapacityUse {
+  id           String   @id @default(uuid())
+  principalId  String   @map("principal_id")
+  serviceId    String   @map("service_id")
+  mandateId    String   @map("mandate_id")
+  delegationId String   @map("delegation_id")
+  capability   String
+  at           DateTime @default(now())
+
+  @@index([principalId, serviceId, at])
+  @@map("capacity_use")
+}
+
+// A fresh approval by the person for one consequential action.
+model StepUp {
+  id         String       @id @default(uuid())
+  mandateId  String       @map("mandate_id")
+  capability String
+  userCode   String       @unique @map("user_code")
+  status     StepUpStatus @default(PENDING)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  approvedAt DateTime?    @map("approved_at")
+  usedAt     DateTime?    @map("used_at")
+
+  mandate Authorisation @relation(fields: [mandateId], references: [id], onDelete: Cascade)
+
+  @@index([mandateId, capability, status])
+  @@map("step_up")
 }

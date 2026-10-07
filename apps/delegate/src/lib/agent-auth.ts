@@ -54,3 +54,33 @@ export async function delegateFromRequest(req: Request) {
   const delegate = await prisma.delegate.findUnique({ where: { id: claims.delegateId } });
   return delegate && delegate.status === "ACTIVE" ? delegate : null;
 }
+
+/**
+ * A sub-agent's credential: it names one delegation in the chain, so whoever
+ * holds it can only act within that delegation, for that mandate's person.
+ */
+export async function signDelegationToken(delegationId: string, ttlSeconds = 3600) {
+  return new SignJWT({ typ: "delegation" })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(delegationId)
+    .setIssuer(ISS)
+    .setAudience(AUD)
+    .setIssuedAt()
+    .setExpirationTime(`${ttlSeconds}s`)
+    .sign(config.agentTokenSecret);
+}
+
+/** Either kind of token an agent may present: its own (agent) or a delegation token (sub-agent). */
+export async function verifyPresenterToken(
+  token: string,
+): Promise<{ kind: "agent"; delegateId: string; clientId: string } | { kind: "delegation"; delegationId: string } | null> {
+  try {
+    const { payload } = await jwtVerify(token, config.agentTokenSecret, { issuer: ISS, audience: AUD });
+    if (!payload.sub) return null;
+    if (payload.typ === "delegate-agent") return { kind: "agent", delegateId: payload.sub, clientId: String(payload.cid ?? "") };
+    if (payload.typ === "delegation") return { kind: "delegation", delegationId: payload.sub };
+    return null;
+  } catch {
+    return null;
+  }
+}

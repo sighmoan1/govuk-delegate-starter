@@ -1,4 +1,4 @@
-import type { Decision, Lane, Reason } from "@/generated/prisma";
+import type { Assurance, Decision, Lane, Reason } from "@/generated/prisma";
 import { prisma } from "./db";
 
 /** Every check and every failed agent sign-in becomes one event. */
@@ -13,6 +13,12 @@ export async function recordActivity(e: {
   serviceId?: string | null;
   presentedClientId?: string | null;
   requestId?: string;
+  delegationId?: string | null;
+  parentDelegationId?: string | null;
+  depth?: number | null;
+  assurance?: Assurance | null;
+  capacityUsed?: number | null;
+  capacityLimit?: number | null;
 }) {
   return prisma.activityEvent.create({
     data: {
@@ -26,6 +32,12 @@ export async function recordActivity(e: {
       authorisationId: e.authorisationId ?? null,
       serviceId: e.serviceId ?? null,
       presentedClientId: e.presentedClientId ?? null,
+      delegationId: e.delegationId ?? null,
+      parentDelegationId: e.parentDelegationId ?? null,
+      depth: e.depth ?? null,
+      assurance: e.assurance ?? null,
+      capacityUsed: e.capacityUsed ?? null,
+      capacityLimit: e.capacityLimit ?? null,
     },
   });
 }
