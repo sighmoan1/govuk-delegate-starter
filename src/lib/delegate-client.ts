@@ -9,7 +9,7 @@ export type RelationshipCheck = {
 };
 
 /**
- * How a receiving service (the mock DWP) asks GOV.UK Delegate whether a
+ * How a receiving service (the mock HMRC service) asks GOV.UK Delegate whether a
  * relationship is live. A real HTTP call with the service's own API key —
  * the service does not read Delegate's tables.
  */
@@ -21,7 +21,7 @@ export async function checkRelationship(input: {
 }): Promise<RelationshipCheck> {
   const res = await fetch(`${config.delegateBaseUrl}/api/authorisations/check`, {
     method: "POST",
-    headers: { "content-type": "application/json", "x-service-key": config.dwpServiceKey },
+    headers: { "content-type": "application/json", "x-service-key": config.serviceKey },
     body: JSON.stringify(input),
     cache: "no-store",
   });

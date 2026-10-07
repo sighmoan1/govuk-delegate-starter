@@ -1,84 +1,83 @@
-import { test, expect, Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
-// The three-minute demo, driven through a real browser and the real One Login simulator.
+// The demo as a first-time visitor sees it: you are Sam, the agent acts by itself.
+// Run with the app in AGENT_MODE=scripted for deterministic agent replies.
 
-const agentButton = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
+test("Sam asks the agent → consents on GOV.UK → agent acts → refused → Sam removes access → refused → HMRC view", async ({ page }) => {
+  const guide = page.getByRole("complementary", { name: "Demo guide" });
+  const chat = page.getByRole("list", { name: "Conversation" });
 
-test("agent request → One Login approval → ALLOW / DENY → revoke → DENY → activity", async ({ page }) => {
-  // 1. The agent asks for authority (it signs in as itself, server-side).
-  await page.goto("/agent");
-  await page.getByRole("button", { name: "Request authority" }).click();
-  await expect(page.getByText("Waiting for the person")).toBeVisible();
-  const approvalHref = await page.getByRole("link", { name: /Open the approval page as the principal/ }).getAttribute("href");
-  expect(approvalHref).toMatch(/^\/requests\/[0-9a-f-]{36}$/);
+  // 1. In the agent's app, Sam asks for help.
+  await page.goto("/example-ai");
+  await expect(guide).toContainText("step 1 of 6");
+  await page.getByRole("button", { name: "Can you claim my working-from-home tax relief?" }).click();
+  await expect(page.getByRole("heading", { name: "Permission needed from GOV.UK" })).toBeVisible();
+  await expect(guide).toContainText("step 2 of 6");
 
-  // 2. The principal follows the link and is sent to the One Login simulator.
-  await page.goto(approvalHref!);
+  // 2. GOV.UK: a plain-English interstitial, then the real One Login simulator.
+  await page.getByRole("link", { name: "Give permission on GOV.UK" }).click();
+  await expect(page.getByRole("heading", { name: "Sign in with GOV.UK One Login" })).toBeVisible();
+  await page.getByRole("button", { name: "Continue to sign in" }).click();
   await expect(page).toHaveURL(/localhost:3301\/authorize/);
   await page.getByRole("button", { name: /continue/i }).click();
 
-  // 3. Back in Delegate, signed in. Choose permissions, narrow them, check, authorise.
-  await expect(page.getByRole("heading", { level: 1, name: "Demo Personal Agent wants to act for you" })).toBeVisible();
-  await expect(page.getByText("Signed in as")).toBeVisible();
-  await page.getByLabel(/Report a change/).uncheck();
+  // 3. The consent screen: Sam narrows what the agent asked for, then allows.
+  await expect(page.getByRole("heading", { level: 1, name: "Example AI assistant wants to act for you" })).toBeVisible();
+  await page.getByLabel(/Update your employment details/).uncheck();
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByRole("heading", { name: "Check the authority you are giving" })).toBeVisible();
-  await expect(page.getByText("Not allowed to")).toBeVisible();
-  await page.getByRole("button", { name: "Authorise agent" }).click();
-  await expect(page.getByRole("heading", { name: "Agent authorised" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Check what you are allowing" })).toBeVisible();
+  await page.getByRole("button", { name: "Allow" }).click();
 
-  // 4. The agent acts. Mock DWP asks Delegate each time. Each check waits for THAT action's result.
-  await page.goto("/agent");
-  const result = page.locator("section.result-panel");
-  await agentButton(page, "Check claim status").click();
-  await expect(result).toContainText("Check claim status · HTTP 200");
-  await expect(result.getByRole("heading", { name: "Authorised — trusted lane" })).toBeVisible();
-  await agentButton(page, "Submit evidence").click();
-  await expect(result).toContainText("Submit evidence · HTTP 200");
-  await agentButton(page, "Report change").click(); // narrowed out by the principal
-  await expect(result).toContainText("Report change · HTTP 403");
-  await expect(result.getByRole("heading", { name: "Denied" })).toBeVisible();
-  await expect(result).toContainText("PERMISSION_MISSING");
-  await agentButton(page, "Change payment details").click(); // never requested
-  await expect(result).toContainText("Change payment details · HTTP 403");
-  await expect(result).toContainText("PERMISSION_MISSING");
+  // 4. Straight back to the agent, which carries on without being asked again.
+  await expect(page).toHaveURL(/\/example-ai/);
+  await expect(chat).toContainText("You gave Example AI assistant permission on GOV.UK");
+  await expect(chat).toContainText("1288L");
+  await expect(guide).toContainText("step 3 of 6");
 
-  // 5. The principal revokes. Server-side, not just UI.
-  await page.goto("/delegates");
-  await expect(page.getByRole("heading", { name: "Your delegates" })).toBeVisible();
-  await page.getByRole("link", { name: /Revoke access/ }).click();
-  await expect(page.getByRole("heading", { name: /Remove Demo Personal Agent’s authority\?/ })).toBeVisible();
-  await page.getByRole("button", { name: "Revoke access" }).click();
+  // 5. Something Sam never allowed: HMRC refuses.
+  await page.getByRole("button", { name: "Also change my refund bank account to my new bank" }).click();
+  await expect(chat).toContainText("haven’t given me permission to change the bank account for refunds");
+  await expect(guide).toContainText("step 4 of 6");
+
+  // 6. Sam removes access in their GOV.UK account.
+  await page.getByRole("link", { name: "Manage who can act for you on GOV.UK" }).click();
+  await expect(page.getByRole("heading", { name: "Who can act for you" })).toBeVisible();
+  await page.getByRole("link", { name: /Remove access/ }).click();
+  await expect(page.getByRole("heading", { name: /Remove Example AI assistant’s access\?/ })).toBeVisible();
+  await page.getByRole("button", { name: "Remove access" }).click();
   await expect(page.getByRole("heading", { name: "Access removed" })).toBeVisible();
+  await expect(guide).toContainText("step 5 of 6");
 
-  // 6. The same previously-allowed action is now denied.
-  await page.goto("/agent");
-  await agentButton(page, "Check claim status").click();
-  await expect(page.locator("section.result-panel")).toContainText("Check claim status · HTTP 403");
-  await expect(page.locator("section.result-panel")).toContainText("AUTHORISATION_REVOKED");
+  // 7. The same agent is refused now, server-side.
+  await guide.getByRole("link", { name: "Back to the assistant" }).click();
+  await page.getByRole("button", { name: "What’s my tax code now?" }).click();
+  await expect(chat).toContainText("you’ve removed my access");
+  await expect(guide).toContainText("step 6 of 6");
 
-  // 7. Unidentified traffic is treated as untrusted.
-  await page.getByRole("button", { name: "Check claim status without identifying" }).click();
-  await expect(page.locator("section.result-panel")).toContainText("lane UNTRUSTED");
-
-  // 8. Everything is in the activity view.
-  await page.goto("/activity");
-  await expect(page.getByRole("heading", { name: "Agent activity" })).toBeVisible();
-  const rows = page.locator("table.activity-table tbody tr");
-  await expect(rows.filter({ hasText: "AUTHORISATION_REVOKED" }).first()).toBeVisible();
-  await expect(rows.filter({ hasText: "VALID_AUTHORISATION" }).first()).toBeVisible();
-  await expect(rows.filter({ hasText: "PERMISSION_MISSING" }).first()).toBeVisible();
-  await expect(rows.filter({ hasText: "Not identified" }).first()).toBeVisible();
+  // 8. HMRC's service team sees every attempt from this session.
+  await guide.getByRole("link", { name: "HMRC team view" }).click();
+  const session = page.locator("#session table");
+  for (const reason of ["VALID_AUTHORISATION", "PERMISSION_MISSING", "AUTHORISATION_REVOKED"]) {
+    await expect(session.getByText(reason).first()).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Send an unidentified request" }).click();
+  await expect(page.getByRole("status")).toContainText("HTTP 401");
+  await expect(session.getByText("Not identified").first()).toBeVisible();
 });
 
-test("about page explains the proposition", async ({ page }) => {
+test("the agent page never shows Sam's GOV.UK session", async ({ page }) => {
+  await page.goto("/example-ai");
+  await expect(page.getByText("Signed in to GOV.UK as")).toHaveCount(0);
+});
+
+test("about page explains the proposition and the platform model", async ({ page }) => {
   await page.goto("/about");
   await expect(page.getByText("make legitimate automation easier than illegitimate automation", { exact: false })).toBeVisible();
-  await expect(page.getByText("does not detect whether text was generated by AI")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "A platform, like One Login" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Accessibility and inclusion" })).toBeVisible();
 });
 
-test("keyboard: skip link is first focusable and focus is visible", async ({ page }) => {
+test("keyboard: skip link is first focusable", async ({ page }) => {
   await page.goto("/");
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
@@ -86,7 +85,7 @@ test("keyboard: skip link is first focusable and focus is visible", async ({ pag
 
 test("reflow at 320px: no horizontal page scroll on key pages", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 });
-  for (const path of ["/", "/about", "/agent", "/activity"]) {
+  for (const path of ["/", "/about", "/example-ai", "/operator/activity", "/consent-signin"]) {
     await page.goto(path);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, `${path} overflows horizontally`).toBeLessThanOrEqual(0);

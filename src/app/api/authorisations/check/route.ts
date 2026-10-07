@@ -8,7 +8,7 @@ import { readJson } from "@/lib/http";
 // Authenticated with the SERVICE's key — neither a principal's nor a delegate's.
 export async function POST(req: Request) {
   const key = req.headers.get("x-service-key") ?? "";
-  if (!safeEqual(key, config.dwpServiceKey)) {
+  if (!safeEqual(key, config.serviceKey)) {
     return NextResponse.json({ error: "INVALID_SERVICE_AUTHENTICATION" }, { status: 401 });
   }
   const b = await readJson(req);

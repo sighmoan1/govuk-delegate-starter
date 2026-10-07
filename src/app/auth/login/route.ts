@@ -6,8 +6,8 @@ import { authorizeUrl, OIDC_COOKIE } from "@/lib/oidc";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const returnTo = url.searchParams.get("returnTo") ?? "/delegates";
-  const safe = returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/delegates";
+  const returnTo = url.searchParams.get("returnTo") ?? "/account/delegates";
+  const safe = returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/account/delegates";
   const state = randomUUID();
   const nonce = randomUUID();
   const cookie = await new SignJWT({ state, nonce, returnTo: safe })

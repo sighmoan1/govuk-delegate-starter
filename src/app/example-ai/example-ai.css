@@ -1,0 +1,55 @@
+/* Example AI: a third-party look, kept accessible (contrast, focus, reflow). */
+.xai { --xai-ink: #1d2433; --xai-accent: #4b3fb5; --xai-soft: #eeecfb; --xai-line: #d6d3ea; min-height: 100vh; background: #fbfbfe; color: var(--xai-ink); font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+.xai-container { width: min(100% - 2rem, 760px); margin-inline: auto; }
+.xai-header { background: var(--xai-ink); color: #fff; }
+.xai-header__inner { display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: center; justify-content: space-between; min-height: 60px; }
+.xai-brand { color: #fff; font-size: 1.35rem; font-weight: 700; text-decoration: none; }
+.xai-brand span { font-weight: 400; color: #c9c4f5; }
+.xai-brand:visited, .xai-brand:hover { color: #fff; }
+.xai-brand:focus { color: var(--ink); background: var(--focus); }
+.xai-mode { font-size: .875rem; color: #c9c4f5; }
+.xai-main { padding: 1.5rem 0 2rem; overflow-wrap: anywhere; }
+.xai-footer { padding: 1rem 0 2rem; color: #4a5068; font-size: .875rem; }
+.xai-footer a { font-weight: 400; }
+.xai h1 { max-width: none; font-size: 1.75rem; margin-bottom: .5rem; }
+.xai .xai-intro { color: #4a5068; margin-bottom: 1.25rem; }
+
+.chat { list-style: none; margin: 0 0 1.5rem; padding: 0; display: flex; flex-direction: column; gap: .75rem; max-width: none; }
+.chat > li { max-width: 85%; }
+.msg { padding: .75rem 1rem; border-radius: 12px; line-height: 1.45; white-space: pre-wrap; }
+.msg--user { align-self: flex-end; background: var(--xai-accent); color: #fff; border-bottom-right-radius: 4px; }
+.chat > li.from-user { align-self: flex-end; }
+.msg--agent { background: #fff; border: 1px solid var(--xai-line); border-bottom-left-radius: 4px; }
+.msg-who { display: block; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #4a5068; margin-bottom: .2rem; }
+.msg--user .msg-who { color: #e3e0ff; }
+.msg--notice { background: transparent; border: 1px dashed var(--xai-line); color: #4a5068; font-size: .95rem; }
+.chat > li.wide { max-width: 100%; }
+
+.consent-card { padding: 1rem 1.25rem; border-left: 6px solid var(--teal); background: var(--white); border-radius: 0 8px 8px 0; box-shadow: 0 1px 0 var(--xai-line); }
+.consent-card h2 { margin: 0 0 .35rem; font-size: 1.15rem; }
+.consent-card ul { margin: 0 0 .9rem; padding-left: 1.25rem; }
+.consent-card .button { margin: 0; }
+.consent-card .small { color: #4a5068; margin: .6rem 0 0; }
+
+.tool-step { margin: 0; font-size: .9rem; }
+.tool-step summary { font-weight: 600; color: var(--xai-ink); text-decoration: none; }
+.tool-step pre { overflow-x: auto; margin: .5rem 0 0; padding: .6rem .8rem; background: #fff; border: 1px solid var(--xai-line); font-size: .8rem; white-space: pre; }
+.step-tag { display: inline-block; margin-left: .35rem; padding: 0 .45rem; border: 2px solid currentColor; font-size: .8rem; font-weight: 700; }
+.step-tag--allow { color: var(--teal); }
+.step-tag--deny { color: var(--error); }
+
+.suggestions { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1rem; padding: 0; list-style: none; max-width: none; }
+.suggestions button { min-height: 44px; padding: .45rem .9rem; border: 2px solid var(--xai-accent); border-radius: 999px; background: #fff; color: var(--xai-accent); font: inherit; font-size: .95rem; cursor: pointer; }
+.suggestions button:hover { background: var(--xai-soft); }
+.composer { display: flex; flex-wrap: wrap; gap: .5rem; align-items: stretch; }
+.composer label { flex-basis: 100%; font-weight: 700; }
+.composer input { flex: 1 1 14rem; min-height: 48px; padding: .5rem .75rem; border: 2px solid var(--xai-ink); border-radius: 8px; font: inherit; }
+.xai-button { min-height: 48px; padding: .5rem 1.25rem; border: 2px solid var(--xai-accent); border-radius: 8px; background: var(--xai-accent); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.xai-button[aria-disabled="true"] { opacity: .7; cursor: progress; }
+.xai-button--quiet { background: #fff; color: var(--xai-accent); }
+.xai-tools { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; align-items: center; margin-top: 1.25rem; font-size: .95rem; }
+.xai-tools form { margin: 0; }
+.xai .link-button { color: var(--link); }
+.xai button:focus, .xai input:focus, .xai a:focus, .xai summary:focus { outline: 3px solid var(--focus); outline-offset: 0; box-shadow: 0 0 0 5px var(--ink); }
+.xai-busy { margin: .5rem 0 0; color: #4a5068; }
+@media (max-width: 620px) { .chat > li { max-width: 100%; } }

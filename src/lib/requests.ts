@@ -14,7 +14,12 @@ export async function createRequest(input: {
   service: string;
   capabilities: string[];
   principalHint?: string;
+  returnUrl?: string;
 }) {
+  const delegate = await prisma.delegate.findUniqueOrThrow({ where: { id: input.delegateId } });
+  if (input.returnUrl && !isRegisteredReturnUrl(input.returnUrl, delegate.redirectUris)) {
+    throw new DomainError("UNREGISTERED_RETURN_URL", "return_url is not registered for this delegate");
+  }
   const service = await prisma.service.findUnique({ where: { slug: input.service }, include: { capabilities: true } });
   if (!service) throw new DomainError("UNKNOWN_SERVICE", "Unknown service");
   const wanted = [...new Set(input.capabilities)];
@@ -27,6 +32,7 @@ export async function createRequest(input: {
       delegateId: input.delegateId,
       serviceId: service.id,
       principalHint: input.principalHint?.slice(0, 200) || null,
+      returnUrl: input.returnUrl ?? null,
       expiresAt: new Date(Date.now() + REQUEST_DAYS * DAY),
       permissions: { create: caps.map((c) => ({ capabilityId: c.id })) },
     },
@@ -34,10 +40,30 @@ export async function createRequest(input: {
   });
 }
 
+/** Same origin and path as a registered URI; the query string is the agent's own business. */
+export function isRegisteredReturnUrl(candidate: string, registered: string[]): boolean {
+  let u: URL;
+  try { u = new URL(candidate); } catch { return false; }
+  if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+  return registered.some((r) => {
+    try { const x = new URL(r); return x.origin === u.origin && x.pathname === u.pathname; } catch { return false; }
+  });
+}
+
+/** Where to send the person after they decide, carrying the outcome back to the agent. */
+export function returnTo(req: { id: string; returnUrl: string | null }, status: "approved" | "rejected"): string | null {
+  if (!req.returnUrl) return null;
+  const u = new URL(req.returnUrl);
+  u.searchParams.set("request_id", req.id);
+  u.searchParams.set("status", status);
+  return u.toString();
+}
+
 export const requestInclude = {
   delegate: true,
   service: true,
   permissions: { include: { capability: true }, orderBy: { capability: { sortOrder: "asc" as const } } },
+  authorisation: { include: { permissions: { include: { capability: true } } } },
 };
 
 export async function loadRequest(id: string) {
@@ -127,6 +153,12 @@ export function requestJson(r: NonNullable<Awaited<ReturnType<typeof loadRequest
     expires_at: r.expiresAt,
     responded_at: r.respondedAt,
     // Only revealed to the requesting delegate once the principal has approved.
-    ...(r.status === "APPROVED" ? { principal_id: r.principalId, authorisation_id: r.authorisationId } : {}),
+    ...(r.status === "APPROVED"
+      ? {
+          principal_id: r.principalId,
+          authorisation_id: r.authorisationId,
+          granted_capabilities: r.authorisation?.permissions.map((p) => p.capability.code) ?? [],
+        }
+      : {}),
   };
 }

@@ -8,11 +8,11 @@ export const CLIENT_ID = process.env.DEMO_AGENT_CLIENT_ID ?? "demo-personal-agen
 export const CLIENT_SECRET = process.env.DEMO_AGENT_CLIENT_SECRET ?? "dev-demo-agent-secret";
 
 export const ENDPOINT = {
-  check_claim_status: ["GET", "/api/dwp/claim/status"],
-  submit_evidence: ["POST", "/api/dwp/claim/evidence"],
-  report_change: ["POST", "/api/dwp/claim/change"],
-  change_payment_details: ["POST", "/api/dwp/claim/payment-details"],
-  withdraw_claim: ["POST", "/api/dwp/claim/withdraw"],
+  view_tax_code: ["GET", "/api/hmrc/tax-code"],
+  claim_job_expenses: ["POST", "/api/hmrc/job-expenses"],
+  update_employment: ["POST", "/api/hmrc/employment"],
+  change_refund_account: ["POST", "/api/hmrc/refund-account"],
+  change_address: ["POST", "/api/hmrc/address"],
 } as const;
 export type Cap = keyof typeof ENDPOINT;
 
@@ -43,14 +43,14 @@ export async function authorise(principalId: string, requested: Cap[], approve: 
   const res = await fetch(`${BASE}/api/authorisation-requests`, {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
-    body: JSON.stringify({ service: "dwp-benefits", capabilities: requested }),
+    body: JSON.stringify({ service: "hmrc-personal-tax", capabilities: requested }),
   });
   const req = await res.json();
   const auth = await approveRequest(req.id, principalId, approve);
   return { requestId: req.id as string, authorisationId: auth.id };
 }
 
-export async function callDwp(
+export async function callService(
   cap: Cap,
   o: { token?: string | null; principalId?: string; ip?: string } = {},
 ) {

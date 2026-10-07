@@ -2,17 +2,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const links = [
-  { href: "/delegates", label: "Delegate" },
-  { href: "/activity", label: "Activity" },
-  { href: "/about", label: "About this project" },
-  { href: "/agent", label: "Demo agent" },
-];
-
-export function Nav() {
+export function Nav({ links, label }: { links: { href: string; label: string }[]; label: string }) {
   const path = usePathname();
   return (
-    <nav className="site-nav" aria-label="Main">
+    <nav className="site-nav" aria-label={label}>
       <ul>
         {links.map((l) => (
           <li key={l.href}>

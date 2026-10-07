@@ -83,6 +83,8 @@ model Delegate {
   clientId         String         @unique @map("client_id")
   clientSecretHash String         @map("client_secret_hash")
   status           DelegateStatus @default(ACTIVE)
+  // Registered return URLs, as for an OAuth client.
+  redirectUris     String[]       @map("redirect_uris")
   createdAt        DateTime       @default(now()) @map("created_at")
 
   requests       AuthorisationRequest[]
@@ -133,6 +135,7 @@ model AuthorisationRequest {
   expiresAt       DateTime      @map("expires_at")
   respondedAt     DateTime?     @map("responded_at")
   authorisationId String?       @unique @map("authorisation_id")
+  returnUrl       String?       @map("return_url")
 
   principal     Principal? @relation(fields: [principalId], references: [id])
   delegate      Delegate   @relation(fields: [delegateId], references: [id])
@@ -209,4 +212,17 @@ model ActivityEvent {
 
   @@index([timestamp])
   @@map("activity_event")
+}
+
+// Agent-side storage: belongs to "Example AI", not to Delegate. It only ever
+// learns the principal's id from an approved authorisation request.
+model AgentConversation {
+  id               String   @id @default(uuid())
+  messages         Json     @default("[]")
+  principalId      String?  @map("principal_id")
+  pendingRequestId String?  @map("pending_request_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("agent_conversation")
 }

@@ -51,3 +51,19 @@
 .activity-table .mono, .activity-table th, .lane-table th { overflow-wrap: normal; word-break: normal; }
 .activity-table .mono { white-space: nowrap; }
 .lane-table th, .activity-table th { white-space: nowrap; }
+
+/* Demo guide: the narrator strip above every surface. */
+.demo-guide { background: var(--focus); color: var(--ink); font-size: 1rem; }
+.demo-guide__inner { display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: baseline; padding: .6rem 0; }
+.demo-guide__label { font-weight: 700; white-space: nowrap; }
+.demo-guide__text { flex: 1 1 20rem; }
+.demo-guide__link { color: var(--ink); }
+.demo-guide__link:hover { color: var(--ink); text-decoration-thickness: 3px; }
+.demo-guide__link:focus { background: var(--white); }
+
+/* HMRC service team view: plain internal-tool chrome. */
+.operator-header { background: #e4e1dc; border-bottom: 2px solid var(--ink); }
+.operator-header__inner { display: flex; flex-wrap: wrap; gap: .25rem 1.5rem; align-items: baseline; justify-content: space-between; padding: .75rem 0; }
+.operator-brand { font-size: 1.1rem; }
+.session-table { margin-bottom: 1rem; }
+.consent-context { margin-bottom: 1rem; color: var(--muted); }

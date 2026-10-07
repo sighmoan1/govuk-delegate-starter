@@ -25,7 +25,7 @@ export async function GET(req: Request) {
       update: {},
       create: { oneLoginSubjectId: user.sub, displayName: user.email ?? "GOV.UK One Login user" },
     });
-    const res = back(String(payload.returnTo ?? "/delegates"));
+    const res = back(String(payload.returnTo ?? "/account/delegates"));
     res.cookies.set(SESSION_COOKIE, await signSession(principal.id), { httpOnly: true, sameSite: "lax", path: "/", maxAge: 7200 });
     res.cookies.delete(OIDC_COOKIE);
     return res;

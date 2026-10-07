@@ -19,8 +19,13 @@ export const config = {
   get agentTokenSecret() { return new TextEncoder().encode(need("AGENT_TOKEN_SECRET")); },
   get demoAgentClientId() { return need("DEMO_AGENT_CLIENT_ID", "demo-personal-agent"); },
   get demoAgentClientSecret() { return need("DEMO_AGENT_CLIENT_SECRET", "dev-demo-agent-secret"); },
-  get dwpServiceKey() { return need("DWP_SERVICE_KEY", "dev-dwp-service-key"); },
+  get serviceKey() { return need("SERVICE_KEY", "dev-hmrc-service-key"); },
   get delegateBaseUrl() { return need("DELEGATE_BASE_URL", this.appUrl); },
+  get anthropicApiKey() { return process.env.ANTHROPIC_API_KEY || ""; },
+  get anthropicModel() { return process.env.ANTHROPIC_MODEL || "claude-opus-5-5"; },
+  get agentMode(): "llm" | "scripted" {
+    return process.env.AGENT_MODE === "scripted" || !process.env.ANTHROPIC_API_KEY ? "scripted" : "llm";
+  },
 };
 
 /** Simulated per-minute limits for the trusted-lane demonstration. */
@@ -32,4 +37,4 @@ export const LANE_LIMITS = {
 
 export const AUTHORISATION_DAYS = 30;
 export const REQUEST_DAYS = 7;
-export const DWP_SLUG = "dwp-benefits";
+export const SERVICE_SLUG = "hmrc-personal-tax";
