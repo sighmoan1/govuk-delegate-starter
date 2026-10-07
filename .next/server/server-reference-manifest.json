@@ -1,0 +1,114 @@
+{
+  "node": {
+    "00e5b091e13f997f1c74554f87ef48e37d63f3d7e5": {
+      "workers": {
+        "app/example-ai/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fapple%2Fgovuk-delegate-starter%2Fsrc%2Fapp%2Fexample-ai%2Factions.ts%22%2C%5B%7B%22id%22%3A%2200e5b091e13f997f1c74554f87ef48e37d63f3d7e5%22%2C%22exportedName%22%3A%22newChat%22%2C%22filename%22%3A%22app%2Fexample-ai%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240586273f58d4bbaab9f5960ff9494a19cdfb4c9a2%22%2C%22exportedName%22%3A%22sendMessage%22%2C%22filename%22%3A%22app%2Fexample-ai%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/example-ai/page": "rsc"
+      },
+      "filename": "app/example-ai/actions.ts",
+      "exportedName": "newChat"
+    },
+    "40586273f58d4bbaab9f5960ff9494a19cdfb4c9a2": {
+      "workers": {
+        "app/example-ai/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fapple%2Fgovuk-delegate-starter%2Fsrc%2Fapp%2Fexample-ai%2Factions.ts%22%2C%5B%7B%22id%22%3A%2200e5b091e13f997f1c74554f87ef48e37d63f3d7e5%22%2C%22exportedName%22%3A%22newChat%22%2C%22filename%22%3A%22app%2Fexample-ai%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240586273f58d4bbaab9f5960ff9494a19cdfb4c9a2%22%2C%22exportedName%22%3A%22sendMessage%22%2C%22filename%22%3A%22app%2Fexample-ai%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/example-ai/page": "rsc"
+      },
+      "filename": "app/example-ai/actions.ts",
+      "exportedName": "sendMessage"
+    },
+    "000b5250d1f3f381fdf494f17198333618f2da158f": {
+      "workers": {
+        "app/operator/activity/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fapple%2Fgovuk-delegate-starter%2Fsrc%2Fapp%2Foperator%2Factivity%2Factions.ts%22%2C%5B%7B%22id%22%3A%22000b5250d1f3f381fdf494f17198333618f2da158f%22%2C%22exportedName%22%3A%22sendUnidentified%22%2C%22filename%22%3A%22app%2Foperator%2Factivity%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/operator/activity/page": "rsc"
+      },
+      "filename": "app/operator/activity/actions.ts",
+      "exportedName": "sendUnidentified"
+    },
+    "404104315be9e6d6af5b9a35c617ac6067385215a8": {
+      "workers": {
+        "app/(govuk)/consent/[id]/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fapple%2Fgovuk-delegate-starter%2Fsrc%2Fapp%2F(govuk)%2Factions.ts%22%2C%5B%7B%22id%22%3A%22404104315be9e6d6af5b9a35c617ac6067385215a8%22%2C%22exportedName%22%3A%22approveAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%2C%7B%22id%22%3A%22409d93d332e42b63af7fdf005293b6d1542561eb79%22%2C%22exportedName%22%3A%22rejectAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240ad52b9fba79ff1b807a740e300578f182be57397%22%2C%22exportedName%22%3A%22revokeAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": false
+        },
+        "app/(govuk)/consent/[id]/check/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fapple%2Fgovuk-delegate-starter%2Fsrc%2Fapp%2F(govuk)%2Factions.ts%22%2C%5B%7B%22id%22%3A%22404104315be9e6d6af5b9a35c617ac6067385215a8%22%2C%22exportedName%22%3A%22approveAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%2C%7B%22id%22%3A%22409d93d332e42b63af7fdf005293b6d1542561eb79%22%2C%22exportedName%22%3A%22rejectAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240ad52b9fba79ff1b807a740e300578f182be57397%22%2C%22exportedName%22%3A%22revokeAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": false
+        },
+        "app/(govuk)/account/delegates/[id]/remove/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fapple%2Fgovuk-delegate-starter%2Fsrc%2Fapp%2F(govuk)%2Factions.ts%22%2C%5B%7B%22id%22%3A%22404104315be9e6d6af5b9a35c617ac6067385215a8%22%2C%22exportedName%22%3A%22approveAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%2C%7B%22id%22%3A%22409d93d332e42b63af7fdf005293b6d1542561eb79%22%2C%22exportedName%22%3A%22rejectAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240ad52b9fba79ff1b807a740e300578f182be57397%22%2C%22exportedName%22%3A%22revokeAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/(govuk)/consent/[id]/page": "rsc",
+        "app/(govuk)/consent/[id]/check/page": "rsc",
+        "app/(govuk)/account/delegates/[id]/remove/page": "rsc"
+      },
+      "filename": "app/(govuk)/actions.ts",
+      "exportedName": "approveAction"
+    },
+    "409d93d332e42b63af7fdf005293b6d1542561eb79": {
+      "workers": {
+        "app/(govuk)/consent/[id]/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fapple%2Fgovuk-delegate-starter%2Fsrc%2Fapp%2F(govuk)%2Factions.ts%22%2C%5B%7B%22id%22%3A%22404104315be9e6d6af5b9a35c617ac6067385215a8%22%2C%22exportedName%22%3A%22approveAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%2C%7B%22id%22%3A%22409d93d332e42b63af7fdf005293b6d1542561eb79%22%2C%22exportedName%22%3A%22rejectAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240ad52b9fba79ff1b807a740e300578f182be57397%22%2C%22exportedName%22%3A%22revokeAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": false
+        },
+        "app/(govuk)/consent/[id]/check/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fapple%2Fgovuk-delegate-starter%2Fsrc%2Fapp%2F(govuk)%2Factions.ts%22%2C%5B%7B%22id%22%3A%22404104315be9e6d6af5b9a35c617ac6067385215a8%22%2C%22exportedName%22%3A%22approveAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%2C%7B%22id%22%3A%22409d93d332e42b63af7fdf005293b6d1542561eb79%22%2C%22exportedName%22%3A%22rejectAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240ad52b9fba79ff1b807a740e300578f182be57397%22%2C%22exportedName%22%3A%22revokeAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": false
+        },
+        "app/(govuk)/account/delegates/[id]/remove/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fapple%2Fgovuk-delegate-starter%2Fsrc%2Fapp%2F(govuk)%2Factions.ts%22%2C%5B%7B%22id%22%3A%22404104315be9e6d6af5b9a35c617ac6067385215a8%22%2C%22exportedName%22%3A%22approveAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%2C%7B%22id%22%3A%22409d93d332e42b63af7fdf005293b6d1542561eb79%22%2C%22exportedName%22%3A%22rejectAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240ad52b9fba79ff1b807a740e300578f182be57397%22%2C%22exportedName%22%3A%22revokeAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/(govuk)/consent/[id]/page": "rsc",
+        "app/(govuk)/consent/[id]/check/page": "rsc",
+        "app/(govuk)/account/delegates/[id]/remove/page": "rsc"
+      },
+      "filename": "app/(govuk)/actions.ts",
+      "exportedName": "rejectAction"
+    },
+    "40ad52b9fba79ff1b807a740e300578f182be57397": {
+      "workers": {
+        "app/(govuk)/consent/[id]/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fapple%2Fgovuk-delegate-starter%2Fsrc%2Fapp%2F(govuk)%2Factions.ts%22%2C%5B%7B%22id%22%3A%22404104315be9e6d6af5b9a35c617ac6067385215a8%22%2C%22exportedName%22%3A%22approveAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%2C%7B%22id%22%3A%22409d93d332e42b63af7fdf005293b6d1542561eb79%22%2C%22exportedName%22%3A%22rejectAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240ad52b9fba79ff1b807a740e300578f182be57397%22%2C%22exportedName%22%3A%22revokeAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": false
+        },
+        "app/(govuk)/consent/[id]/check/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fapple%2Fgovuk-delegate-starter%2Fsrc%2Fapp%2F(govuk)%2Factions.ts%22%2C%5B%7B%22id%22%3A%22404104315be9e6d6af5b9a35c617ac6067385215a8%22%2C%22exportedName%22%3A%22approveAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%2C%7B%22id%22%3A%22409d93d332e42b63af7fdf005293b6d1542561eb79%22%2C%22exportedName%22%3A%22rejectAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240ad52b9fba79ff1b807a740e300578f182be57397%22%2C%22exportedName%22%3A%22revokeAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": false
+        },
+        "app/(govuk)/account/delegates/[id]/remove/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fapple%2Fgovuk-delegate-starter%2Fsrc%2Fapp%2F(govuk)%2Factions.ts%22%2C%5B%7B%22id%22%3A%22404104315be9e6d6af5b9a35c617ac6067385215a8%22%2C%22exportedName%22%3A%22approveAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%2C%7B%22id%22%3A%22409d93d332e42b63af7fdf005293b6d1542561eb79%22%2C%22exportedName%22%3A%22rejectAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240ad52b9fba79ff1b807a740e300578f182be57397%22%2C%22exportedName%22%3A%22revokeAction%22%2C%22filename%22%3A%22app%2F(govuk)%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/(govuk)/consent/[id]/page": "rsc",
+        "app/(govuk)/consent/[id]/check/page": "rsc",
+        "app/(govuk)/account/delegates/[id]/remove/page": "rsc"
+      },
+      "filename": "app/(govuk)/actions.ts",
+      "exportedName": "revokeAction"
+    }
+  },
+  "edge": {},
+  "encryptionKey": "I9nHsSjaaF8/3O1v5tNwI5/IZe5oFvwO+D5JARbr09Q="
+}

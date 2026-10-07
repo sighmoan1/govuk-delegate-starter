@@ -1,9 +1,11 @@
 node_modules
-.next
 .env
 .env.local
-public/design.css
 test-results
 playwright-report
 *.tsbuildinfo
-next-env.d.ts
+apps/*/.next
+apps/*/.env
+apps/*/next-env.d.ts
+apps/*/public/design.css
+apps/*/src/generated

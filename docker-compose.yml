@@ -1,6 +1,7 @@
-# GOV.UK Delegate — local prototype stack.
-#   docker compose up --build      everything (app on http://localhost:3300)
-#   docker compose up -d db simulator   just the dependencies, for `npm run dev`
+# GOV.UK Delegate prototype: four services, so the boundaries are real.
+#   docker compose up --build            everything
+#   docker compose up -d db simulator    just the dependencies, for `npm run dev`
+# Ports: Delegate 3300 · One Login simulator 3301 · HMRC 3302 · Example AI 3303 · Postgres 5433
 services:
   db:
     image: postgres:16-alpine
@@ -12,6 +13,7 @@ services:
       - "5433:5432"
     volumes:
       - dbdata:/var/lib/postgresql/data
+      - ./dev/db-init.sql:/docker-entrypoint-initdb.d/10-databases.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U delegate"]
       interval: 3s
@@ -32,13 +34,17 @@ services:
       # The matching private key lives in dev/oidc-client-private.pem.
       PUBLIC_KEY: "-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmXXR3EsRvUMVhEJMtQ1wexJjfQ00Q0MQ7ARfShN53BnOQEPFnS/I8ntBddkKdE3q+vMTI72w6Fv3SsMM+ciR2LIHdEQfKgsLt6PGNcV1kG6GG/3nSW3psW8w65Q3fmy81P1748qezDrVfaGrF4PDXALzX1ph+nz8mpKmck6aY6LEUJ4B+TIfYzlKmmwFe3ri0spSW+J5wE9mmT3VkR2ySuHRYHQlxlF9dfX7ltOTsbgJFzN6TO01ZQDhY0iLwzdGwhSxO6R6N/ZINYHCKFPaQD+tdKsrw7QDIYnx0IiXFnkGnizl3UtqSmXAaceTvPM2Pz84x2JiwHrp2Sml6RYLCQIDAQAB-----END PUBLIC KEY-----"
       SCOPES: openid,email
-      REDIRECT_URLS: http://localhost:3300/auth/callback
+      # The simulator supports one client. Delegate and HMRC share it here; in
+      # production they would be separate relying parties of One Login.
+      REDIRECT_URLS: http://localhost:3300/auth/callback,http://localhost:3302/auth/callback
       POST_LOGOUT_REDIRECT_URLS: http://localhost:3300/
       IDENTITY_VERIFICATION_SUPPORTED: "false"
       CLAIMS: ""
 
-  app:
-    build: .
+  delegate:
+    build:
+      context: .
+      dockerfile: apps/delegate/Dockerfile
     depends_on:
       db:
         condition: service_healthy
@@ -53,6 +59,7 @@ services:
       OIDC_ISSUER: http://localhost:3301
       OIDC_INTERNAL_URL: http://simulator:3000
       OIDC_CLIENT_ID: delegate-dev-client
+      OIDC_PRIVATE_KEY_FILE: ../../dev/oidc-client-private.pem
       SESSION_SECRET: dev-only-session-secret-change-me-0123456789
       AGENT_TOKEN_SECRET: dev-only-agent-token-secret-change-me-0123456789
       DEMO_AGENT_CLIENT_ID: demo-personal-agent

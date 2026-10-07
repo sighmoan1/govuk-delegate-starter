@@ -1,0 +1,36 @@
+{
+  "name": "@prototype/delegate",
+  "version": "0.2.0",
+  "private": true,
+  "description": "GOV.UK Delegate (prototype): consent, relationship registry, check API, declared-agent activity.",
+  "scripts": {
+    "sync-css": "node scripts/sync-css.mjs",
+    "dev": "npm run sync-css && prisma generate && next dev -p 3300",
+    "build": "npm run sync-css && prisma generate && next build",
+    "start": "next start -p 3300",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma migrate reset --force --skip-seed && npm run db:seed",
+    "typecheck": "tsc --noEmit"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@prisma/client": "^6.0.0",
+    "jose": "^6.0.0",
+    "next": "^15.5.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "prisma": "^6.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

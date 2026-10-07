@@ -1,6 +1,8 @@
 node_modules
-.next
-.env
+**/node_modules
+**/.next
+**/.env
+**/src/generated
 .git
 test-results
 playwright-report
