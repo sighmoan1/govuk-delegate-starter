@@ -1,0 +1,9 @@
+{
+  "name": "@prototype/web-bot-auth",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Verify Web Bot Auth (RFC 9421 HTTP Message Signatures) from AI agents such as ChatGPT agent and Google-Agent.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": { "typecheck": "tsc --noEmit -p ." }
+}

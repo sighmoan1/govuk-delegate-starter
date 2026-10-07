@@ -1,0 +1,12 @@
+{
+  "keys": [
+    {
+      "crv": "Ed25519",
+      "x": "fB-O-UUlWlS7rYJ-xZpk9SJe8B8OejtzJZxXbDJfPKU",
+      "kty": "OKP",
+      "kid": "QRict4Unt9TWNLtA1JFhr_oMCdmSF9v_yo3Cca87SsI",
+      "use": "sig"
+    }
+  ],
+  "signature_agent": "https://test-agent.local"
+}

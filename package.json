@@ -4,7 +4,8 @@
   "private": true,
   "description": "Independent prototype: GOV.UK Delegate, a mock HMRC service and a demo agent, as separate services. Not an official GOV.UK service.",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
     "dev": "concurrently -n delegate,hmrc,agent -c blue,green,magenta \"npm:dev -w apps/delegate\" \"npm:dev -w apps/hmrc --if-present\" \"npm:dev -w apps/agent --if-present\"",
