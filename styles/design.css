@@ -1,0 +1,568 @@
+```
+@font-face {
+  font-family: "Lexend Deca";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/fonts/LexendDeca-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Lexend Deca";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/assets/fonts/LexendDeca-700.woff2") format("woff2");
+}
+
+:root {
+  --ink: #323131;
+  --paper: #f7f3f3;
+  --white: #fff;
+  --aqua: #7cc7d5;
+  --coral: #f58757;
+  --teal: #0f7d75;
+  --link: #325b92;
+  --focus: #e9ae21;
+  --muted: #5a5555;
+  --border: #bdaea4;
+  --border-soft: #d8cfc9;
+  --error: #b10e1e;
+  --soft-aqua: #e8f3f4;
+  --soft-coral: #fbeee8;
+  --soft-green: #e8f1ec;
+  --soft-pink: #f8ecef;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  min-width: 280px;
+  background: var(--ink);
+  color: var(--ink);
+  font-family: "Lexend Deca", Arial, Helvetica, sans-serif;
+  font-size: 100%;
+  line-height: 1.5;
+  text-size-adjust: 100%;
+}
+
+body { margin: 0; background: var(--paper); font-size: 1.1875rem; }
+a { color: var(--link); font-weight: 700; text-decoration-thickness: 1px; text-underline-offset: .2em; }
+a:hover { color: var(--teal); text-decoration-thickness: 2px; }
+/* Two-tone focus ring: the yellow alone is ~1.9:1 against the light
+   backgrounds (fails WCAG 1.4.11); the ink outer ring is what passes,
+   exactly as the GOV.UK skin pairs its yellow with a dark shadow. */
+a:focus, button:focus, input:focus, select:focus, textarea:focus, summary:focus {
+  outline: 3px solid var(--focus);
+  outline-offset: 0;
+  box-shadow: 0 0 0 5px var(--ink);
+}
+
+h1, h2, h3, p, ul, dl, table, details { margin-top: 0; }
+h1 {
+  max-width: 18ch;
+  margin-bottom: 1.5rem;
+  font-size: clamp(2.25rem, 7vw, 3rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -.02em;
+}
+h2 { margin: 3rem 0 1.4rem; font-size: 2rem; line-height: 1.15; }
+h3 { margin: 2rem 0 1rem; font-size: 1.5rem; line-height: 1.25; }
+p, ul { max-width: 66ch; margin-bottom: 1.25rem; }
+.lead { max-width: 40ch; margin-bottom: 2.5rem; font-size: 1.5rem; line-height: 1.35; }
+/* The start page's "Use this service to" list: body size, the teal dot
+   the site already uses for lists, one line per beat at the 640px
+   measure (design decision, 8 Sep 2026). .lead is a paragraph style and
+   must not be put on a list. */
+.service-list { max-width: 60ch; margin: -1.25rem 0 2.5rem; padding: 0; list-style: none; display: flex; flex-direction: column; gap: .6rem; }
+.service-list li { position: relative; padding-left: 1.75rem; }
+.service-list li::before { content: ""; position: absolute; left: .25rem; top: .55em; width: 10px; height: 10px; border-radius: 50%; background: var(--teal); }
+.small { font-size: 1rem; }
+/* GET /v1/guide (api-guide-page.mjs): the plain-English API guide, rendered
+   from docs/api-guide.md into the citizen shell. Reference prose keeps a
+   readable measure; tables and code blocks take the full wide container and
+   scroll sideways inside it rather than pushing the page body across. */
+.api-guide { overflow-wrap: anywhere; }
+.api-guide > * { max-width: 46rem; }
+.api-guide > .table-container, .api-guide > pre { max-width: none; }
+.api-guide code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .95em; word-break: break-word; }
+.api-guide pre { overflow-x: auto; margin: 1.5rem 0; padding: 1rem 1.25rem; background: var(--soft-aqua); border-left: 5px solid var(--aqua); }
+.api-guide pre code { font-size: .875rem; word-break: normal; }
+.api-guide-contents { margin: 0 0 2.5rem; padding: 1rem 1.25rem; background: var(--soft-aqua); border-left: 5px solid var(--aqua); }
+.api-guide-contents h2 { margin-top: 0; font-size: 1.125rem; }
+.api-guide-contents ul { margin-bottom: 0; }
+.api-guide table { min-width: 34rem; }
+
+.ai-exemplar code { overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .95em; }
+/* Highlight the paragraph marked with strong emphasis in the editorial copy. */
+.ai-exemplar p:has(> strong:only-child) {
+  margin-block: 2rem;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border-left: 6px solid var(--teal);
+  background: var(--soft-aqua);
+  font-size: 1.25rem;
+}
+.ai-exemplar-kicker { margin-bottom: .5rem; }
+.ai-exemplar-series { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.ai-exemplar-series ul { list-style: none; padding: 0; margin: 0; }
+.ai-exemplar-series li { margin: 0 0 .5rem; }
+.ai-exemplar-figure { margin: 2rem 0; }
+.ai-exemplar-figure img { display: block; width: 100%; height: auto; }
+.ai-exemplar-figure figcaption { max-width: 66ch; margin-top: .75rem; color: var(--muted); font-size: 1rem; }
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
+
+.width-container { width: min(100% - 3rem, 960px); margin-inline: auto; }
+.two-thirds { max-width: 640px; }
+.main-wrapper { min-height: 58vh; padding: 2.5rem 0 4rem; }
+
+.skip-link {
+  position: absolute;
+  z-index: 20;
+  top: -6rem;
+  left: 1rem;
+  padding: .65rem 1rem;
+  background: var(--focus);
+  color: var(--ink);
+}
+.skip-link:focus { top: 1rem; color: var(--ink); }
+
+.service-header { background: var(--ink); }
+.service-header::after {
+  display: block;
+  height: 5px;
+  background: linear-gradient(90deg, var(--aqua) 0 25%, var(--coral) 25% 50%, var(--ink) 50% 75%, var(--teal) 75%);
+  content: "";
+}
+.service-header__inner { display: flex; min-height: 70px; align-items: center; }
+.brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .875rem;
+  color: var(--paper);
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .01em;
+  text-decoration: none;
+}
+.brand-link:visited { color: var(--paper); }
+.brand-link:hover { color: var(--paper); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: .22em; }
+.brand-link:focus { color: var(--ink); background: var(--focus); }
+/* The brand mark: a wheelie bin drawn in CSS (design decision, 8 Sep 2026)
+   - lid and body are the pseudo-elements, the wheels two radial gradients,
+   everything in em so font-size is the size and currentColor the colour.
+   The result page uses its own evidence-backed vector illustrations. */
+.brand-mark {
+  position: relative;
+  flex: 0 0 auto;
+  width: 1em;
+  height: 1em;
+  font-size: 42px;
+  color: var(--aqua);
+  background:
+    radial-gradient(circle at 31% 90%, currentColor .075em, transparent .085em),
+    radial-gradient(circle at 69% 90%, currentColor .075em, transparent .085em);
+}
+.brand-mark::before, .brand-mark::after { content: ""; position: absolute; background: currentColor; }
+.brand-mark::before { top: .13em; left: .06em; width: .88em; height: .13em; border-radius: .03em; }
+.brand-mark::after { top: .30em; left: .15em; width: .70em; height: .52em; border-radius: .03em .03em .12em .12em; clip-path: polygon(0 0, 100% 0, 89% 100%, 11% 100%); }
+/* On the yellow focus background the aqua bin would be low-contrast: the
+   mark takes the ink the link text already takes. */
+.brand-link:focus .brand-mark { color: var(--ink); }
+.brand-name--govuk { display: none; }
+.brand-dot { color: var(--aqua); }
+
+.phase-banner {
+  display: flex;
+  gap: .75rem;
+  align-items: baseline;
+  padding: 1.25rem 0 .875rem;
+  border-bottom: 1px solid var(--border);
+}
+.tag { padding: .18rem .625rem; background: var(--ink); color: var(--paper); font-size: .875rem; letter-spacing: .02em; }
+.tag--ai-exemplar { background: #0b0c0c; color: #fff; letter-spacing: 0; }
+.appearance-switch { margin: 2rem 0 0; color: #aaa3a3; font-size: .875rem; }
+.appearance-switch a { color: #c9dfe3; font-weight: 400; }
+.appearance-switch a:hover { color: var(--white); }
+
+.back-link { display: inline-block; position: relative; margin-bottom: 1.25rem; padding-left: .8rem; font-size: 1rem; font-weight: 400; }
+.back-link::before { position: absolute; left: 0; content: "‹"; }
+
+.form-group { margin-bottom: 2rem; }
+.form-group--error { padding-left: 1rem; border-left: 5px solid var(--error); }
+fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+legend { width: 100%; margin: 0; padding: 0; }
+legend h1 { margin-bottom: 1.5rem; }
+.label { display: block; margin-bottom: .45rem; font-weight: 700; }
+.label--m { font-size: 1.5rem; line-height: 1.25; }
+.optional { color: var(--muted); font-size: 1.1875rem; font-weight: 400; }
+.hint { max-width: 52ch; margin-bottom: .8rem; color: var(--muted); }
+.input {
+  display: block;
+  width: 100%;
+  max-width: 30rem;
+  min-height: 48px;
+  padding: .55rem .7rem;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--white);
+  color: var(--ink);
+  font: inherit;
+}
+.input--postcode { max-width: 11rem; text-transform: uppercase; }
+.input--address { max-width: 27rem; }
+.input--error { border-color: var(--error); border-width: 3px; }
+textarea.input { max-width: 36rem; min-height: 9rem; resize: vertical; }
+
+.button {
+  display: inline-block;
+  min-height: 48px;
+  margin: 0 0 1.5rem;
+  padding: .72rem 1.5rem;
+  border: 0;
+  border-radius: 0;
+  border: 2px solid var(--teal);
+  background: var(--teal);
+  color: var(--white);
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.button:visited { color: var(--white); }
+.button:hover { border-color: var(--ink); background: var(--ink); color: var(--white); }
+.button:active { border-color: var(--ink); background: var(--ink); color: var(--white); }
+.button--secondary { border-color: var(--ink); background: transparent; color: var(--ink); }
+.button--secondary:visited { color: var(--ink); }
+.button--secondary:hover { background: var(--ink); color: var(--white); }
+.button-row { display: flex; flex-wrap: wrap; gap: .75rem; align-items: flex-start; }
+/* A submit that pending-submit.js has acknowledged: pressed, still focusable. */
+.button[aria-disabled="true"] { border-color: var(--ink); background: var(--ink); color: var(--white); cursor: progress; }
+.pending-status { max-width: 44ch; margin: -.5rem 0 1.5rem; color: var(--muted); }
+.pending-status:empty { margin: 0; }
+/* A field and its button on one line where there is room. */
+.input-row { display: flex; flex-wrap: wrap; gap: .75rem; align-items: stretch; margin-top: .25rem; }
+.input-row .input { flex: 1 1 14rem; max-width: 22.5rem; }
+.input-row .button { margin: 0; white-space: nowrap; }
+
+.choice-item { display: flex; position: relative; min-height: 48px; align-items: flex-start; margin-bottom: .875rem; }
+.choice-item input { flex: 0 0 auto; width: 28px; height: 28px; margin: .2rem 1rem 0 0; accent-color: var(--ink); }
+.choice-item label { display: block; padding-top: .12rem; cursor: pointer; }
+.choice-hint { display: block; max-width: 50ch; margin-top: .25rem; color: var(--muted); font-size: 1rem; font-weight: 400; }
+.error-message { margin-bottom: .75rem; color: var(--error); font-weight: 700; }
+.error-summary { margin-bottom: 2rem; padding: 1.25rem; border: 4px solid var(--error); background: var(--white); }
+.error-summary h2 { margin: 0 0 .75rem; font-size: 1.5rem; }
+.error-summary ul { margin-bottom: 0; padding-left: 1.25rem; }
+.error-summary a { color: var(--error); }
+
+details { margin: 1.75rem 0; }
+summary {
+  display: inline-block;
+  position: relative;
+  padding-left: 1.45rem;
+  color: var(--link);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: .2em;
+  cursor: pointer;
+}
+summary::-webkit-details-marker { display: none; }
+summary::marker { content: ""; }
+summary::before { position: absolute; top: .45em; left: .1rem; border: solid .4rem transparent; border-left-color: currentColor; content: ""; }
+details[open] > summary::before { transform: rotate(90deg); transform-origin: 25% 50%; }
+summary:hover { color: var(--teal); text-decoration-thickness: 2px; }
+.details-heading { display: inline; }
+.details-text { max-width: 44rem; margin-top: .75rem; padding-left: 1rem; border-left: 4px solid var(--border); }
+.councillor-escalation { margin: .5rem 0 0; }
+.councillor-escalation__body { max-width: 36rem; }
+.councillor-escalation__body p { margin-bottom: .5rem; }
+.councillor-escalation__body p:last-child { margin-bottom: 0; color: var(--muted); }
+
+.caption { display: block; margin-bottom: .5rem; color: var(--muted); font-size: 1.5rem; }
+.council-caption { display: block; margin-bottom: .75rem; color: var(--muted); font-size: 1rem; font-weight: 400; }
+.council-caption a { color: var(--muted); font-weight: 400; }
+.put-out { margin-top: -1rem; }
+.council-site-link { margin-bottom: 1.5rem; font-size: 1.125rem; }
+.inset-text.council-site-link--prominent { padding: 1.1rem 1.35rem; border-left-color: var(--teal); background: var(--soft-aqua); }
+.council-site-link--prominent h2 { margin-top: 0; margin-bottom: .5rem; font-size: 1.5rem; }
+.council-site-link--prominent .button { margin-bottom: .25rem; }
+.result-date { max-width: none; margin: 1.5rem 0 2.5rem; color: var(--teal); }
+.result-date span { display: block; color: var(--ink); }
+/* The full date under a Today / Tomorrow heading: lead size, pulled up
+   under the h1, leaving the put-out line its usual gap. */
+.result-when { margin: -1.5rem 0 2.25rem; font-size: 1.5rem; line-height: 1.35; }
+.bin-item {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+  padding: 1.25rem 0 1.1rem;
+}
+.bin-item + .bin-item { border-top: 1px solid var(--border-soft); }
+.bin-item strong, .bin-item span { display: block; }
+.bin-item strong { font-size: 1.5rem; line-height: 1.25; }
+.bin-item .bin-date { font-size: 1.1875rem; }
+.bin-item .small { color: var(--muted); }
+
+/* Evidence-backed collection drawings: every colour also has a visible name. */
+/* One row per service: the drawing (or drawing "or" drawing) beside the name
+   (design decision, 20 Sep 2026). The date list below repeats the same
+   drawings small; the words behind a choice live in Container details. */
+.collection-services { max-width: none; margin: 0; padding: 0; list-style: none; }
+.collection-services > li + li { border-top: 1px solid var(--border-soft); }
+.collection-service { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; align-items: center; min-width: 0; padding: 1rem 0 .9rem; }
+.collection-service-text { flex: 1 1 12rem; min-width: 0; }
+.collection-service h3 { margin: 0; font-size: 1.5rem; line-height: 1.25; }
+.collection-service p { max-width: none; margin: 0; color: var(--muted); }
+.collection-undated { margin: 1.75rem 0 0; font-size: 1.1875rem; color: var(--muted); }
+.container-choice, .container-set { display: inline-flex; align-items: center; }
+.container-choice { flex-wrap: wrap; gap: .75rem .9rem; }
+.container-set { gap: .2rem; }
+.container-or { font-weight: 700; }
+.container-illustration { display: block; flex: none; width: 56px; height: 60px; color: #202828; stroke: currentColor; stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+.container-illustration--small { width: 26px; height: 28px; stroke-width: 3.5; }
+.container-illustration--generic { opacity: .5; }
+.container-illustration--clear .container-body { fill: #e9f5f8; fill-opacity: .25; }
+.container-details { margin: 1.25rem 0 0; }
+.container-details a { overflow-wrap: anywhere; }
+.collection-table th, .collection-table td { padding-top: .6rem; padding-bottom: .6rem; border-bottom-color: var(--border-soft); vertical-align: middle; }
+.collection-table th { width: 1%; padding-right: 1.5rem; font-weight: 400; white-space: nowrap; }
+.collection-inline { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; max-width: none; margin: 0; padding: 0; list-style: none; font-size: 1rem; }
+.collection-inline li { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.collection-inline .container-choice { gap: .15rem .4rem; }
+.collection-inline .container-set { gap: .15rem; }
+.collection-inline .container-or { font-size: .875rem; font-weight: 400; color: var(--muted); }
+.reminder-print { margin: 1.25rem 0 0; }
+.council-group { margin-top: 4rem; padding-top: .5rem; border-top: 2px solid var(--ink); }
+.council-group > h2 { margin-top: 1.5rem; }
+/* Council landing page (docs/decisions/2026-09-20-council-page-template.md).
+   The lookup is that page's one tinted panel; on an unsupported council the
+   council's own site (.council-site-link--prominent) takes its place. */
+.lookup-card { max-width: 42rem; margin: 0 0 1.5rem; padding: 1.75rem 1.75rem 1.5rem 2rem; border-left: 6px solid var(--teal); background: var(--soft-aqua); }
+.lookup-card .form-group { margin-bottom: 1.25rem; }
+.lookup-card .button { margin: 0; }
+.lookup-card .pending-status { margin: .75rem 0 0; }
+.lookup-card .pending-status:empty { margin: 0; }
+.lookup-card p { max-width: none; margin: .9rem 0 0; }
+.after-list { max-width: 60ch; margin: 0 0 1rem; padding: 0; list-style: none; display: flex; flex-direction: column; gap: .45rem; }
+.after-list li { position: relative; padding-left: 1.75rem; }
+.after-list li::before { content: ""; position: absolute; left: .25rem; top: .55em; width: 10px; height: 10px; border-radius: 50%; background: var(--teal); }
+.summary-list--figures { margin: 0 0 1rem; }
+.summary-list--figures > div { grid-template-columns: minmax(10rem, 1fr) 1.2fr; }
+.summary-list--figures > div:first-child { border-top: 1px solid var(--border-soft); }
+.summary-list--figures dd { font-variant-numeric: tabular-nums; }
+.figure-note { display: block; color: var(--muted); font-size: 1rem; }
+.council-page-foot { margin-top: 3rem; color: var(--muted); }
+.bin-value-for-money--compact { margin: 2rem 0; padding: 0; border: 0; background: none; }
+.bin-value-for-money--compact .bin-value-for-money__score { margin-bottom: .35rem; }
+@media (max-width: 40rem) {
+  .collection-table th, .collection-table td { display: block; width: auto; }
+  .collection-table th { padding-bottom: 0; border-bottom: 0; font-weight: 700; white-space: normal; }
+  .collection-table td { padding-top: .25rem; }
+}
+@media (forced-colors: active) {
+  .container-illustration { color: CanvasText; }
+  .container-illustration path { fill: Canvas; fill-opacity: 1; }
+}
+@media print {
+  .collection-service { break-inside: avoid; }
+  .container-illustration { color: #000; }
+  .container-illustration path { fill: none; }
+}
+
+
+.inset-text { max-width: 42rem; margin: 2rem 0; padding: .3rem 0 .3rem 1.1rem; border-left: 6px solid var(--coral); }
+.summary-list { margin: 2rem 0; }
+.summary-list > div { display: grid; grid-template-columns: minmax(10rem, 1fr) 1fr auto; gap: 1rem; padding: .85rem 0; border-bottom: 1px solid var(--border-soft); }
+.summary-list dt { font-weight: 700; }
+.summary-list dd { margin: 0; }
+.summary-list--tally > div { grid-template-columns: 1fr auto; align-items: start; }
+.summary-list--tally dt { display: flex; gap: 1rem; align-items: flex-start; }
+.tally-mark { flex: 0 0 24px; margin-top: .2rem; }
+.tally-text { display: block; }
+.tally-row--missed dt { color: var(--muted); font-weight: 400; }
+.tally-row--missed dd, .tally-row--waiting dd { color: var(--muted); }
+.tally-row--active .tally-mark, .tally-row--active dd { color: var(--teal); }
+.tally-row--active dd { font-weight: 700; }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 1rem .75rem 1rem 0; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+thead th { border-bottom: 2px solid var(--ink); color: var(--ink); }
+.table-container { overflow-x: auto; }
+.traffic-chart { max-width: 100%; height: auto; }
+.route-totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .75rem; margin: 0 0 2rem; }
+.route-totals > div { padding: .9rem 1rem; border-left: 6px solid var(--aqua); background: var(--white); }
+.route-totals dt { font-weight: 700; }
+.route-totals dd { margin: .25rem 0 0; font-size: 1.5rem; font-weight: 700; }
+.maintainer-answer { max-width: 52rem; margin: 1rem 0 1rem; padding: 1.4rem 1.6rem; border-left: 8px solid var(--teal); background: var(--soft-aqua); }
+.maintainer-answer h2 { margin: 0 0 .5rem; font-size: clamp(1.75rem, 4vw, 2.4rem); }
+.maintainer-answer p { margin: 0; font-size: 1.125rem; }
+.maintainer-route-mix > div:last-child { border-left-color: var(--coral); }
+.maintainer-definitions { max-width: 52rem; margin: -1rem 0 2rem; }
+.maintainer-definitions dt { margin-top: .75rem; }
+.maintainer-definitions dd { margin: .2rem 0 .75rem; }
+.performance-answer { max-width: 56rem; margin: 1rem 0; padding: 1.4rem 1.6rem; border-left: 8px solid var(--teal); background: var(--soft-aqua); }
+.performance-answer h2 { margin: 0 0 .5rem; font-size: clamp(1.8rem, 4vw, 2.5rem); }
+.performance-answer p { margin: 0; font-size: 1.125rem; }
+.performance-controls { max-width: 56rem; margin: 1.25rem 0 1.75rem; padding: .25rem 1rem; border: 1px solid var(--line); background: var(--paper); }
+.performance-controls details { margin: .65rem 0; }
+.performance-key-numbers { margin-bottom: 1rem; }
+.performance-key-numbers > div:first-child { border-left-color: var(--teal); }
+.performance-definitions { max-width: 56rem; margin: -1rem 0 2rem; }
+.performance-definitions dt { margin-top: .75rem; }
+.performance-definitions dd { margin: .2rem 0 .75rem; }
+.performance-focus { margin: 1.5rem 0; padding: .25rem 1.25rem 1.25rem; border-left: 6px solid var(--aqua); background: var(--paper); }
+.performance-secondary { margin: 1.5rem 0; }
+.usage-totals dd .small { display: block; margin-top: .3rem; font-size: 1rem; font-weight: 600; }
+.sort-button { display: flex; gap: .35rem; align-items: baseline; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; font-weight: inherit; text-align: left; cursor: pointer; }
+.sort-button:hover { text-decoration: underline; text-decoration-thickness: .12em; text-underline-offset: .15em; }
+.sort-indicator { min-width: 1em; font-size: .75em; line-height: 1; text-decoration: none; }
+/* /performance carries more columns than the other operational pages: a
+   verdict code and a route mix do not survive being squeezed into a shared
+   100% width. These tables keep a readable minimum and scroll sideways in
+   their existing .table-container instead. */
+.width-container--wide { width: min(100% - 3rem, 1400px); }
+.perf-table { min-width: 62rem; }
+.perf-nowrap { white-space: nowrap; }
+.perf-mix { display: block; }
+.perf-code { word-break: break-word; }
+
+
+.reminder-card { max-width: 42rem; margin: 2.5rem 0 3rem; padding: 1.75rem 1.75rem 1.75rem 2rem; border-left: 6px solid var(--teal); background: var(--soft-aqua); }
+.reminder-card h2 { margin: 0 0 .75rem; font-size: 1.75rem; }
+.reminder-card .button-row { margin-bottom: .75rem; }
+.reminder-card .button { margin: 0; }
+.reminder-card .form-group { margin: 1.5rem 0 0; }
+.reminder-card .label--m { margin-bottom: .35rem; }
+.reminder-card .hint { margin-bottom: .6rem; font-size: 1rem; }
+.reminder-card .button--secondary { background: var(--white); }
+.reminder-card .button--secondary:hover { background: var(--ink); }
+.feedback-quick { max-width: 42rem; margin: 1.75rem 0 0; }
+.feedback-quick__form { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; }
+.feedback-quick h2 { margin: 0; font-size: 1.1875rem; line-height: 1.5; }
+.feedback-quick .button-row { gap: .75rem; }
+.feedback-quick .button { min-height: 44px; margin: 0; padding: .5rem 1.1rem; }
+.feedback-quick p { flex-basis: 100%; margin: 0; }
+.feedback-thanks { padding-top: .25rem; font-weight: 700; }
+/* The thanks after a JavaScript Yes: GOV.UK inset text in the page's
+   accent, sized to the question row it replaces so the page does not jump
+   (design decision, 8 Sep 2026). Styled only once filled: the region is
+   rendered empty with the page. */
+.feedback-quick [role="status"]:not(:empty) { display: inline-block; min-height: 7.53125rem; padding: .3rem .25rem .3rem 1rem; border-left: 5px solid var(--teal); }
+.feedback-quick [role="status"]:not(:empty) .small { color: var(--muted); }
+.feedback-quick [role="status"]:not(:empty) .small a { color: var(--muted); font-weight: 400; }
+.feedback-words { max-width: 28rem; white-space: pre-wrap; }
+.feedback-mark { display: grid; gap: .35rem; min-width: 11rem; }
+.feedback-mark .input, .feedback-mark .button { min-height: 40px; margin: 0; padding: .3rem .5rem; font-size: 1rem; }
+/* The thanks region takes focus after a JavaScript "Yes"; it needs the same
+   two-tone ring the controls get for keyboard users, or the move is invisible. */
+.feedback-quick [role="status"]:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; box-shadow: 0 0 0 7px var(--ink); }
+/* The page's aqua primary sits on an aqua-tinted panel here; deepen it so
+   the main action still separates. */
+.bin-value-for-money { max-width: 42rem; margin: 3rem 0 2rem; }
+.bin-value-for-money h2 { margin: 0 0 .75rem; font-size: 2rem; }
+/* Problems with a collection: the council's routes as a numbered ladder. */
+.complaint-steps, .guidance-links { margin: 0 0 1rem; padding: 0; list-style: none; }
+.complaint-steps { counter-reset: step; }
+.complaint-steps li, .guidance-links li { display: flex; gap: 1rem; align-items: center; padding: .85rem 0; border-top: 1px solid var(--border-soft); }
+.complaint-steps li { counter-increment: step; }
+.complaint-steps li::before { display: inline-grid; flex: 0 0 32px; width: 32px; height: 32px; place-items: center; border-radius: 50%; background: var(--ink); color: var(--paper); font-size: 1rem; font-weight: 700; line-height: 1; content: counter(step); }
+.complaint-step { display: flex; flex-direction: column; gap: .1rem; }
+.complaint-step .choice-hint { margin-top: 0; }
+.bin-value-for-money__score { display: flex; flex-wrap: wrap; gap: .35rem 1rem; align-items: baseline; margin-bottom: .75rem; }
+.bin-value-for-money__score strong { font-size: 1.75rem; }
+.bin-value-for-money__stars { color: var(--border); font-size: 1.35rem; letter-spacing: .08em; white-space: normal; overflow-wrap: anywhere; }
+.bin-value-for-money__stars span { color: var(--teal); }
+.bin-value-for-money__confidence { padding-left: 1rem; border-left: 4px solid var(--coral); }
+.source-note { margin-top: 1rem; color: var(--muted); }
+.confirmation-panel { margin-bottom: 2rem; padding: 2rem; background: var(--teal); color: var(--white); text-align: center; }
+.confirmation-panel h1 { max-width: none; margin-bottom: .75rem; }
+.confirmation-panel p { margin: 0 auto; }
+
+.service-footer { padding: 2rem 0 2.5rem; background: var(--ink); color: var(--paper); }
+.service-footer a { color: var(--aqua); }
+.service-footer a:hover { color: var(--white); }
+.service-footer .appearance-switch a { color: #c9dfe3; }
+.footer-links { display: flex; flex-wrap: wrap; gap: .5rem 2rem; padding: 0; list-style: none; }
+
+@media (max-width: 620px) {
+  .usage-totals { grid-template-columns: 1fr; }
+  body { font-size: 1.0625rem; }
+  .width-container { width: min(100% - 1.5rem, 860px); }
+  .service-header__inner { min-height: 62px; }
+  .brand-link { gap: .65rem; font-size: 1.35rem; }
+  .brand-mark { font-size: 34px; }
+  .phase-banner { flex-wrap: wrap; padding-top: 1rem; }
+  .phase-banner > .small:first-of-type { flex: 1 1 calc(100% - 5rem); }
+  .main-wrapper { padding: 2rem 0 3.5rem; }
+  h2 { font-size: 1.65rem; }
+  .lead, .label--m, .caption, .result-when { font-size: 1.25rem; }
+  .bin-item { gap: 1rem; padding: 1rem 0 .9rem; }
+  .bin-item strong { font-size: 1.25rem; }
+  .summary-list > div { display: block; }
+  .summary-list dd { margin-top: .2rem; }
+  .summary-list--tally dd { margin-left: calc(24px + 1rem); }
+  .summary-actions { margin-top: .5rem !important; }
+  .reminder-card { padding: 1.5rem 1.25rem 1.5rem 1.5rem; }
+  .lookup-card { padding: 1.5rem 1.25rem 1.35rem 1.5rem; }
+  .lookup-card .button { width: 100%; }
+  .button-row { display: block; }
+  .button-row .button { width: 100%; }
+  .button-row .button + .button { margin-top: .75rem; }
+  .feedback-quick .button-row { display: flex; }
+  .feedback-quick .button-row .button { width: auto; margin-top: 0; }
+  .input-row { display: block; }
+  .input-row .input { max-width: none; }
+  .input-row .button { width: 100%; margin-top: .75rem; }
+}
+
+@media print {
+  @page { margin: 1.5cm; }
+  .skip-link, .service-header, .phase-banner, .back-link, .service-footer, .print-instructions { display: none !important; }
+  html, body { background: #fff; color: #000; font-size: 11pt; }
+  .main-wrapper { padding: 0; }
+  .width-container, .two-thirds { width: 100%; max-width: none; }
+  a { color: #000; }
+  .bin-item, .reminder-card, .lookup-card, .bin-value-for-money { break-inside: avoid; background: #fff; color: #000; }
+  .tally-mark { display: none; }
+}
+
+
+/* Reflow remains readable with enlarged text, including the shared header. */
+.brand-link { max-width: 100%; min-width: 0; }
+.brand-name { min-width: 0; overflow-wrap: anywhere; }
+.phase-banner { flex-wrap: wrap; }
+.phase-banner > .small { min-width: 0; overflow-wrap: anywhere; }
+.result-date, .collection-service h3 { overflow-wrap: anywhere; }
+.collection-table td { overflow-wrap: anywhere; }
+.reminder-card h2 { overflow-wrap: anywhere; }
+.reminder-card .button { white-space: normal; overflow-wrap: anywhere; }
+
+/* Keep long council names and support links within the reading column when
+   text is enlarged. Normal word breaks still take precedence. */
+main, .service-footer { overflow-wrap: anywhere; }
+
+/* Council directory navigation also works in the retained appearances. */
+.coverage-jump-links { display:flex; flex-wrap:wrap; gap:.5rem 1rem; padding:0; list-style:none; }
+.coverage-letter { margin-top:1.5rem; }
+.coverage-row h4 { margin:0 0 .5rem; font-size:1.125rem; }
+.coverage-list { list-style:none; padding:0; }
+
+/* The line for AI agents above a postcode box: present, and out of a person's way. */
+.agent-pointer { max-width: none; margin: 0 0 1.25rem; color: var(--muted); font-size: .8125rem; line-height: 1.4; }
+.agent-pointer a { color: inherit; }
+```

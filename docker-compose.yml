@@ -1,0 +1,64 @@
+# GOV.UK Delegate — local prototype stack.
+#   docker compose up --build      everything (app on http://localhost:3300)
+#   docker compose up -d db simulator   just the dependencies, for `npm run dev`
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: delegate
+      POSTGRES_PASSWORD: delegate
+      POSTGRES_DB: delegate
+    ports:
+      - "5433:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U delegate"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # The official GOV.UK One Login simulator. Interactive mode shows its own
+  # sign-in form, so the app performs a real authorisation-code redirect.
+  simulator:
+    image: ghcr.io/govuk-one-login/simulator:latest
+    ports:
+      - "3301:3000"
+    environment:
+      SIMULATOR_URL: http://localhost:3301
+      INTERACTIVE_MODE: "true"
+      CLIENT_ID: delegate-dev-client
+      # Public half of the simulator's documented default test key pair.
+      # The matching private key lives in dev/oidc-client-private.pem.
+      PUBLIC_KEY: "-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmXXR3EsRvUMVhEJMtQ1wexJjfQ00Q0MQ7ARfShN53BnOQEPFnS/I8ntBddkKdE3q+vMTI72w6Fv3SsMM+ciR2LIHdEQfKgsLt6PGNcV1kG6GG/3nSW3psW8w65Q3fmy81P1748qezDrVfaGrF4PDXALzX1ph+nz8mpKmck6aY6LEUJ4B+TIfYzlKmmwFe3ri0spSW+J5wE9mmT3VkR2ySuHRYHQlxlF9dfX7ltOTsbgJFzN6TO01ZQDhY0iLwzdGwhSxO6R6N/ZINYHCKFPaQD+tdKsrw7QDIYnx0IiXFnkGnizl3UtqSmXAaceTvPM2Pz84x2JiwHrp2Sml6RYLCQIDAQAB-----END PUBLIC KEY-----"
+      SCOPES: openid,email
+      REDIRECT_URLS: http://localhost:3300/auth/callback
+      POST_LOGOUT_REDIRECT_URLS: http://localhost:3300/
+      IDENTITY_VERIFICATION_SUPPORTED: "false"
+      CLAIMS: ""
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+      simulator:
+        condition: service_started
+    ports:
+      - "3300:3300"
+    environment:
+      DATABASE_URL: postgresql://delegate:delegate@db:5432/delegate
+      APP_URL: http://localhost:3300
+      # Browser-facing issuer vs. the address the app container uses server-side.
+      OIDC_ISSUER: http://localhost:3301
+      OIDC_INTERNAL_URL: http://simulator:3000
+      OIDC_CLIENT_ID: delegate-dev-client
+      SESSION_SECRET: dev-only-session-secret-change-me-0123456789
+      AGENT_TOKEN_SECRET: dev-only-agent-token-secret-change-me-0123456789
+      DEMO_AGENT_CLIENT_ID: demo-personal-agent
+      DEMO_AGENT_CLIENT_SECRET: dev-demo-agent-secret
+      DWP_SERVICE_KEY: dev-dwp-service-key
+      DELEGATE_BASE_URL: http://localhost:3300
+
+volumes:
+  dbdata:
