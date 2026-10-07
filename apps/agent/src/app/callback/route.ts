@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import { config } from "@/lib/config";
-import { resumeRun } from "@/lib/runner";
+import { handleReturn } from "@/lib/assistant";
 
-// Where GOV.UK Delegate sends Sam back after deciding. The status in the URL
-// is not trusted: resumeRun asks Delegate what actually happened.
+// Where GOV.UK sends Sam back after deciding. The status in the URL is not
+// trusted: handleReturn asks GOV.UK Delegate what actually happened.
 export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const run = url.searchParams.get("run");
-  const requestId = url.searchParams.get("request_id");
-  if (run && requestId) await resumeRun(run, requestId);
-  return NextResponse.redirect(new URL("/#log", config.appUrl), 303);
+  const requestId = new URL(req.url).searchParams.get("request_id");
+  if (requestId) await handleReturn(requestId);
+  return NextResponse.redirect(new URL("/#latest", config.appUrl), 303);
 }

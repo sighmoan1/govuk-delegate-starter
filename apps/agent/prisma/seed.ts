@@ -1,11 +1,10 @@
 import { PrismaClient } from "../src/generated/prisma";
 
-// Example AI starts the demo knowing nobody: no runs, no flood results.
+// Example AI starts the demo knowing nothing: no conversation, not connected to HMRC.
 const prisma = new PrismaClient();
 async function main() {
-  await prisma.step.deleteMany();
-  await prisma.run.deleteMany();
-  await prisma.floodResult.deleteMany();
-  console.log("Cleared Example AI: no runs, no flood results.");
+  await prisma.message.deleteMany();
+  await prisma.connection.deleteMany();
+  console.log("Cleared Example AI: empty conversation, no connections.");
 }
 main().finally(() => prisma.$disconnect());

@@ -20,9 +20,9 @@ export async function findOrCreateTaxpayer(subject: string, email?: string) {
     update: {},
     create: {
       oneLoginSubject: subject,
-      name: email === "test@example.com" || !email ? "Sam Example (synthetic)" : email,
+      name: email === "test@example.com" || !email ? "Sam Taylor" : email,
       taxCode: "1257L",
-      employer: "Northwind Analytics Ltd (synthetic)",
+      employer: "Northwind Analytics Ltd",
       taxYear: TAX_YEAR,
     },
   });

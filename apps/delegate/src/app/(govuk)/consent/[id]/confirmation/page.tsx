@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Agent authorised" };
 export default async function Confirmation({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const principal = await currentPrincipal();
-  if (!principal) redirect("/consent-signin?returnTo=/account/delegates");
+  if (!principal) redirect("/auth/login?returnTo=/account/delegates");
   const req = await loadRequest(id);
   if (!req || req.principalId !== principal.id || req.status !== "APPROVED") notFound();
   return (
@@ -24,7 +24,7 @@ export default async function Confirmation({ params }: { params: Promise<{ id: s
         {" · "}
         <Link href="/account/delegates">Your delegates</Link>
         {" · "}
-        <Link href="/example-ai">Go to the Example AI assistant</Link>
+        <Link href="/example-ai">Go to the Example AI</Link>
       </p>
     </div>
   );

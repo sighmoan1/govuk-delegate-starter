@@ -42,12 +42,12 @@ describe("A — authorised action", () => {
     const { token } = await authorise(p.id, ["view_tax_code", "claim_job_expenses"]);
     const r = await call("view_tax_code", { token, principalId: p.id });
     expect(r.status).toBe(200);
-    expect(r.body).toMatchObject({ decision: "ALLOW", lane: "AUTHORISED_AGENT", acting_for: "Sam Example (synthetic)" });
+    expect(r.body).toMatchObject({ decision: "ALLOW", lane: "AUTHORISED_AGENT", acting_for: "Sam Taylor" });
     expect(r.body.result.tax_code).toBe("1257L");
     expect(r.lane).toBe("AUTHORISED_AGENT");
 
     const hmrc = (await hmrcEvents(since)).find((e) => e.delegateCheckId === r.body.delegate_check_id);
-    expect(hmrc).toMatchObject({ lane: "AUTHORISED_AGENT", outcome: "ALLOWED", capability: "view_tax_code", agentName: "Example AI assistant" });
+    expect(hmrc).toMatchObject({ lane: "AUTHORISED_AGENT", outcome: "ALLOWED", capability: "view_tax_code", agentName: "Example AI" });
     expect(await prisma.activityEvent.findUnique({ where: { id: r.body.delegate_check_id } })).toMatchObject({ decision: "ALLOW", principalId: p.id });
 
     const claim = await call("claim_job_expenses", { token, principalId: p.id });

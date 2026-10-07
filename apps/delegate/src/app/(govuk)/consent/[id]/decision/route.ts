@@ -16,7 +16,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "CROSS_ORIGIN" }, { status: 403 });
   }
   const principal = await principalFromRequest(req);
-  if (!principal) return go(`/consent-signin?returnTo=${encodeURIComponent(`/consent/${id}`)}`);
+  if (!principal) return go(`/auth/login?returnTo=${encodeURIComponent(`/consent/${id}`)}`);
 
   const form = await req.formData();
   const decision = String(form.get("decision"));

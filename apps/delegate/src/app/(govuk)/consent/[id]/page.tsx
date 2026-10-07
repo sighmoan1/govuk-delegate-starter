@@ -20,7 +20,7 @@ export default async function RequestPage({
   const { error } = sp;
   const kept = sp.c === undefined ? null : ([] as string[]).concat(sp.c);
   const principal = await currentPrincipal();
-  if (!principal) redirect(`/consent-signin?returnTo=${encodeURIComponent(`/consent/${id}`)}`);
+  if (!principal) redirect(`/auth/login?returnTo=${encodeURIComponent(`/consent/${id}`)}`);
   const req = await loadRequest(id);
   if (!req || (req.principalId && req.principalId !== principal.id)) notFound();
 

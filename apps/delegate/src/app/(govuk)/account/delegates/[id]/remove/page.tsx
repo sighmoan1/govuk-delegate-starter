@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Remove access" };
 export default async function Revoke({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const principal = await currentPrincipal();
-  if (!principal) redirect(`/consent-signin?returnTo=${encodeURIComponent(`/account/delegates/${id}/remove`)}`);
+  if (!principal) redirect(`/auth/login?returnTo=${encodeURIComponent(`/account/delegates/${id}/remove`)}`);
   const a = await prisma.authorisation.findUnique({ where: { id }, include: { delegate: true, service: true } });
   if (!a || a.principalId !== principal.id) notFound();
   if (a.status !== "ACTIVE") redirect(`/account/delegates/${id}`);

@@ -17,7 +17,7 @@ export default async function Check({
   const { id } = await params;
   const sp = await searchParams;
   const principal = await currentPrincipal();
-  if (!principal) redirect(`/consent-signin?returnTo=${encodeURIComponent(`/consent/${id}`)}`);
+  if (!principal) redirect(`/auth/login?returnTo=${encodeURIComponent(`/consent/${id}`)}`);
   const req = await loadRequest(id);
   if (!req || (req.principalId && req.principalId !== principal.id)) notFound();
   if (req.status !== "PENDING") redirect(`/consent/${id}`);

@@ -20,7 +20,7 @@ export const config = {
   get delegateInternalUrl() { return need("DELEGATE_INTERNAL_URL", this.delegateUrl); },
   get serviceSlug() { return need("DELEGATE_SERVICE_SLUG", "hmrc-personal-tax"); },
   get serviceKey() { return need("HMRC_SERVICE_KEY"); },
-  get agentUrl() { return need("AGENT_URL", "http://localhost:3303"); },
+  get aboutUrl() { return need("ABOUT_URL", "http://localhost:3304"); },
 };
 
 /** Simulated per-minute limits. The point is the difference, not the numbers. */

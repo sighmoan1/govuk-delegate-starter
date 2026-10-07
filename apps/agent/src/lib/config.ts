@@ -13,6 +13,6 @@ export const config = {
   get clientSecret() { return need("AGENT_CLIENT_SECRET"); },
   get hmrcUrl() { return need("HMRC_URL", "http://localhost:3302"); },
   get hmrcInternalUrl() { return need("HMRC_INTERNAL_URL", this.hmrcUrl); },
+  get aboutUrl() { return need("ABOUT_URL", "http://localhost:3304"); },
 };
 
-export const AGENT_NAME = "Example AI";

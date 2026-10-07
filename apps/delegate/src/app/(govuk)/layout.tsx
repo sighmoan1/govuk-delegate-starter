@@ -1,13 +1,6 @@
 import Link from "next/link";
 import { currentPrincipal } from "@/lib/session";
-import { Nav } from "../nav";
 import { config } from "@/lib/config";
-
-const LINKS = [
-  { href: "/account/delegates", label: "Who can act for you" },
-  { href: "/activity", label: "Activity" },
-  { href: "/about", label: "About this project" },
-];
 
 export default async function GovukLayout({ children }: { children: React.ReactNode }) {
   const principal = await currentPrincipal();
@@ -15,41 +8,34 @@ export default async function GovukLayout({ children }: { children: React.ReactN
     <>
       <header className="service-header">
         <div className="width-container service-header__inner">
-          <Link className="brand-link" href="/">
-            <span className="brand-name">GOV.UK Delegate<span className="brand-dot">.</span></span>
+          <Link className="brand-link" href="/account/delegates">
+            <span className="brand-name">GOV.UK</span>
           </Link>
-          <Nav links={LINKS} label="GOV.UK account" />
+          <span className="service-name">Your GOV.UK account</span>
+          {principal && (
+            <form action="/auth/logout" method="post" className="header-signout">
+              <button className="header-link" type="submit">Sign out</button>
+            </form>
+          )}
         </div>
       </header>
       <div className="width-container">
         <div className="phase-banner">
           <strong className="tag">Prototype</strong>
-          <span className="small">
-            An independent prototype using synthetic data. It is not an official GOV.UK service and is not connected to GOV.UK One Login or HMRC.
-          </span>
+          <span className="small">This is not a real service. <a href={config.aboutUrl}>About this prototype</a></span>
         </div>
       </div>
       <div className="width-container">
-        <main id="main-content" className="main-wrapper">
-          {principal && (
-            <div className="signin-state">
-              Signed in to GOV.UK as {principal.displayName}.{" "}
-              <form action="/auth/logout" method="post">
-                <button className="link-button" type="submit">Sign out</button>
-              </form>
-            </div>
-          )}
-          {children}
-        </main>
+        <main id="main-content" className="main-wrapper">{children}</main>
       </div>
       <footer className="service-footer">
         <div className="width-container">
           <ul className="footer-links">
-            <li><Link href="/about">About this project</Link></li>
-            <li><a href={config.hmrcUrl}>HMRC: Claim tax relief (demo service)</a></li>
-            <li><a href={config.agentUrl}>Example AI (demo agent)</a></li>
+            <li><a href={config.aboutUrl}>About this prototype</a></li>
+            <li><span>Accessibility statement</span></li>
+            <li><span>Cookies</span></li>
+            <li><span>Privacy</span></li>
           </ul>
-          <p className="small">Independent prototype. Synthetic data only. No production security, accreditation or official GOV.UK status is claimed.</p>
         </div>
       </footer>
     </>

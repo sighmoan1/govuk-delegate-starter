@@ -9,67 +9,34 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Example AI's own records. The only thing it ever learns about the person is
-// the opaque principal id Delegate gives it once they have approved.
+// Example AI's own records: Sam's conversation, and its connection to HMRC.
+// The only thing it ever learns about Sam from government is an opaque id.
 
-enum Persona {
-  AGENT
-  BOT
+enum Role {
+  USER
+  ASSISTANT
 }
 
-enum RunStatus {
-  RUNNING
-  WAITING_FOR_PERSON
-  DONE
-}
-
-model Run {
-  id               String    @id @default(uuid())
-  persona          Persona
-  task             String
-  status           RunStatus @default(RUNNING)
-  principalId      String?   @map("principal_id")
-  pendingRequestId String?   @map("pending_request_id")
-  granted          String[]
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
-
-  steps Step[]
-
-  @@map("run")
-}
-
-enum StepOutcome {
-  OK
-  REFUSED
-  WAITING
-  INFO
-}
-
-model Step {
-  id        String      @id @default(uuid())
-  runId     String      @map("run_id")
-  n         Int
-  title     String
-  text      String
-  outcome   StepOutcome
-  // The HTTP exchange behind the step, for the expandable detail.
-  exchange  Json?
-  createdAt DateTime    @default(now()) @map("created_at")
-
-  run Run @relation(fields: [runId], references: [id], onDelete: Cascade)
-
-  @@map("step")
-}
-
-model FloodResult {
+model Message {
   id        String   @id @default(uuid())
-  persona   Persona
-  n         Int
-  counts    Json
-  medianMs  Int      @map("median_ms")
-  totalMs   Int      @map("total_ms")
+  seq       Int      @default(autoincrement())
+  role      Role
+  text      String
+  // Optional card under the message, e.g. { type: "connect", url, requestId, capabilities }.
+  card      Json?
   createdAt DateTime @default(now()) @map("created_at")
 
-  @@map("flood_result")
+  @@map("message")
+}
+
+model Connection {
+  id               String   @id // "hmrc"
+  principalId      String?  @map("principal_id")
+  granted          String[]
+  pendingRequestId String?  @map("pending_request_id")
+  pendingIntent    String?  @map("pending_intent")
+  connectedAt      DateTime? @map("connected_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("connection")
 }

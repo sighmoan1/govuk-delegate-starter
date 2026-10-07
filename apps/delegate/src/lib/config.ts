@@ -17,10 +17,8 @@ export const config = {
   },
   get sessionSecret() { return new TextEncoder().encode(need("SESSION_SECRET")); },
   get agentTokenSecret() { return new TextEncoder().encode(need("AGENT_TOKEN_SECRET")); },
-  // The other systems in the demo, for links only. Delegate never calls them.
-  get hmrcUrl() { return need("HMRC_URL", "http://localhost:3302"); },
   get agentUrl() { return need("AGENT_URL", "http://localhost:3303"); },
-  get oneLoginSimulatorUrl() { return this.oidcIssuer; },
+  get aboutUrl() { return need("ABOUT_URL", "http://localhost:3304"); },
 };
 
 export const AUTHORISATION_DAYS = 30;

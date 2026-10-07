@@ -6,14 +6,22 @@
 
 The pattern copies HMRC's agent authorisation: an agent asks, the person approves, a relationship is recorded, the service checks it, the person can remove it. See `docs/` for the case, the original brief and the decisions. Decision 12 describes the current shape.
 
-## Four systems, four ports
+## Five apps
+
+The four systems in the scenario are mock-ups of real services. They carry no explanation of the demo, only a "Prototype · About this prototype" line. Everything explanatory lives on the about site.
+
+| App | Port | What it is |
+|---|---|---|
+| **About this prototype** (`apps/about`) | 3304 | The case, the four systems, the demo script, how it works (including HMRC's integration code), precedents, and a demo console for the flood test. **Start here.** |
+
+
 
 | System | Port | What it does | What it had to add |
 |---|---|---|---|
 | GOV.UK One Login (official simulator) | 3301 | Signs people in, for Delegate and for HMRC | Nothing |
-| **GOV.UK Delegate** (`apps/delegate`) | 3300 | Consent screen, "Who can act for you", agent and service registry, one check API, declared-agent activity | New |
-| **HMRC: Claim tax relief for working from home** (`apps/hmrc`) | 3302 | A One Login relying party with a human journey and an API for agents. Three lanes: signed-in person, authorised agent, not identified | Registered once; one middleware, `src/lib/delegated-authority.ts`, shown on its `/ops` page |
-| **Example AI** (`apps/agent`) | 3303 | A third-party agent: task runner with a step log, an unregistered-bot persona, a flood test | Registered once; asks for permission; sends its own token |
+| **GOV.UK Delegate** (`apps/delegate`) | 3300 | Part of the GOV.UK account: consent screen, "Who can act for you", agent and service registry, one check API. Internal view at `/ops` | New |
+| **HMRC: Claim tax relief for your job expenses** (`apps/hmrc`) | 3302 | A One Login relying party with a human journey and an API for agents. Three lanes: signed-in person, authorised agent, not identified. Internal view at `/ops` | Registered once; one middleware, `src/lib/delegated-authority.ts` |
+| **Example AI** (`apps/agent`) | 3303 | A consumer AI assistant: a conversation with Sam and a "Connected services" page. Scripted, no LLM | Registered once; asks for permission; sends its own token |
 
 Each service has its own database (one Postgres container, three databases) and they talk only over HTTP. The join key between HMRC and Delegate is the person's One Login subject.
 
@@ -23,21 +31,13 @@ Each service has its own database (one Postgres container, three databases) and 
 docker compose up --build
 ```
 
-Open http://localhost:3300 for the front door. Data is seeded on first start. To return to the clean demo state: `npm install && npm run db:reset`.
+Open **http://localhost:3304** and follow *Run the demo*. Data is seeded on first start. To return to the clean demo state: `npm install && npm run db:reset`.
 
-For development: `docker compose up -d db simulator`, copy each `apps/*/.env.example` to `.env`, then `npm install && npm run db:migrate --workspaces && npm run db:reset && npm run dev`.
+For development: `docker compose up -d db simulator`, copy each `apps/*/.env.example` to `.env` (the about app has no database), then `npm install && npm run db:migrate --workspaces && npm run db:reset && npm run dev`.
 
-## The demo (about three minutes; you are Sam throughout)
+## The demo
 
-1. **HMRC** (3302): Start now, sign in with the simulator (press Continue), see tax code 1257L. You could claim yourself. Instead: *Try Example AI*.
-2. **Example AI** (3303): Run task. It signs in to Delegate as itself and asks for permission. *Give permission on GOV.UK.*
-3. **Delegate** (3300): choose what to allow, then Allow. You are sent back to the agent.
-4. **Example AI** carries on: reads the tax code, claims the relief (new code 1288L). *Try something Sam didn't allow*: HMRC refuses, because Delegate says no.
-5. **Flood test** (3303/flood): 40 requests as an unregistered bot, 40 as Example AI. The bot gets 0 of 40, slow plain-text refusals and 429s; the agent gets 40 of 40. Watch **HMRC's operations view** (3302/ops?live=1).
-6. **Delegate › Who can act for you**: remove access. Back in Example AI, *Check Sam's tax code again*: refused.
-7. **HMRC › Your tax**: the claim is there, *Submitted by Example AI assistant on your behalf*.
-
-Also: **Example AI › Unregistered bot** runs the whole task with no identity and shows the challenge page. **Delegate › Activity** is the declared-agent view across services.
+The script is on the about site at http://localhost:3304/demo. In short, as Sam: check your tax at HMRC, ask Example AI to claim your working-from-home relief, approve it on GOV.UK, watch it claim and then be refused something you didn't allow, flood HMRC from the demo console, remove access, and see the claim attributed to the agent at HMRC.
 
 ## Tests
 
@@ -46,8 +46,8 @@ With the stack running:
 ```bash
 npm test            # Vitest over HTTP: scenarios A–F at Delegate's check API and again through HMRC;
                     # one event per attempt in both logs; untrusted-lane friction; lifecycle; return URLs
-npm run test:e2e    # Playwright: the seven steps across all four systems, each system alone,
-                    # the bot, skip link, 320px reflow. Resets demo data first.
+npm run test:e2e    # Playwright: the demo script across all five apps, each system alone, a check
+                    # that the services carry no demo copy, skip link, 320px reflow. Resets demo data first.
 ```
 
 ## Notes

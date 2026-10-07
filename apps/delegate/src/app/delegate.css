@@ -61,3 +61,13 @@
 
 .systems-table th[scope="row"] { white-space: normal; min-width: 11rem; }
 .systems-table td { font-size: 1.0625rem; }
+
+/* GOV.UK account chrome */
+.service-name { color: var(--paper); font-size: 1.125rem; font-weight: 700; padding-left: 1rem; border-left: 1px solid #6f6b6b; }
+.header-signout { margin-left: auto; }
+.header-link { padding: 0; border: 0; background: none; color: var(--paper); font: inherit; text-decoration: underline; cursor: pointer; }
+.header-link:focus { color: var(--ink); background: var(--focus); outline: 3px solid var(--focus); }
+.footer-links span { color: var(--paper); text-decoration: underline; }
+/* Internal tool chrome */
+.internal-header { background: #e4e1dc; border-bottom: 2px solid var(--ink); }
+.internal-header__inner { display: flex; flex-wrap: wrap; gap: .25rem 1.5rem; justify-content: space-between; align-items: baseline; padding: .75rem 0; }

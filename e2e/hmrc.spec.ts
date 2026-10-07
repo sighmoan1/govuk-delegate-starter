@@ -1,12 +1,12 @@
 import { test, expect } from "@playwright/test";
 
-// The HMRC mock service on its own: a person's journey through the real One
-// Login simulator, the operations view, and the challenge page.
+// The mock HMRC service on its own: a person's journey through the real One
+// Login simulator, the internal operations view, and the challenge page.
 const HMRC = process.env.HMRC_URL ?? "http://localhost:3302";
 
-test("Sam signs in, sees her tax code, claims relief herself, and the claim is attributed to her", async ({ page }) => {
+test("a person signs in, claims relief herself, and the claim is attributed to her", async ({ page }) => {
   await page.goto(`${HMRC}/`);
-  await expect(page.getByRole("heading", { name: "Claim tax relief for working from home" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Claim tax relief for your job expenses" })).toBeVisible();
   await page.getByRole("button", { name: "Start now" }).click();
   await expect(page).toHaveURL(/localhost:3301\/authorize/);
   // A fresh person each run, so this test does not depend on what the demo test did to Sam.
@@ -14,7 +14,7 @@ test("Sam signs in, sees her tax code, claims relief herself, and the claim is a
   await page.getByRole("button", { name: /continue/i }).click();
 
   await expect(page.getByRole("heading", { name: "Your tax" })).toBeVisible();
-  await expect(page.getByText("Signed in as Sam Example (synthetic)")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
   await expect(page.locator("dl.summary-list")).toContainText("1257L");
 
   await page.getByRole("link", { name: "Claim tax relief for working from home" }).click();
@@ -29,14 +29,11 @@ test("Sam signs in, sees her tax code, claims relief herself, and the claim is a
   await expect(page.locator("dl.summary-list")).toContainText("1288L");
 });
 
-test("operations view shows the lanes, their treatment and the middleware source", async ({ page }) => {
+test("operations view shows traffic by lane and the lane policy", async ({ page }) => {
   await page.goto(`${HMRC}/ops`);
-  await expect(page.getByRole("heading", { name: "Operations view" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "What HMRC added" })).toBeVisible();
-  await expect(page.locator("pre.source--short")).toContainText("askDelegate");
-  await page.getByText(/Show the whole file/).click();
-  await expect(page.locator("details pre.source")).toContainText("export function requireDelegatedAuthority");
+  await expect(page.getByRole("heading", { name: "Traffic by lane" })).toBeVisible();
   await expect(page.locator("table.lane-key")).toContainText("Not identified");
+  await expect(page.locator("table.lane-key")).toContainText("checked with GOV.UK Delegate per request");
 });
 
 test("anonymous hammering of a signed-in page meets the challenge page; a person can pass it", async ({ page }) => {

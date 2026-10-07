@@ -16,7 +16,7 @@ async function main() {
   await prisma.taxpayer.deleteMany();
 
   await prisma.taxpayer.create({
-    data: { oneLoginSubject: SUBJECT, name: "Sam Example (synthetic)", taxCode: "1257L", employer: "Northwind Analytics Ltd (synthetic)", taxYear: "2026 to 2027" },
+    data: { oneLoginSubject: SUBJECT, name: "Sam Taylor", taxCode: "1257L", employer: "Northwind Analytics Ltd", taxYear: "2026 to 2027" },
   });
 
   // A day of traffic so the operations view means something before the demo.
@@ -28,7 +28,7 @@ async function main() {
   });
   const human = (m: number, cap: string, path: string) => ev(m, { lane: "AUTHENTICATED_HUMAN", outcome: "ALLOWED", capability: cap, path, subject: SUBJECT, latencyMs: 40 + Math.round(Math.random() * 40) });
   const agent = (m: number, cap: string, path: string, ok = true, reason = "VALID_AUTHORISATION") =>
-    ev(m, { lane: "AUTHORISED_AGENT", outcome: ok ? "ALLOWED" : "REFUSED", reason, capability: cap, path, agentName: "Example AI assistant", subject: SUBJECT, latencyMs: 60 + Math.round(Math.random() * 60) });
+    ev(m, { lane: "AUTHORISED_AGENT", outcome: ok ? "ALLOWED" : "REFUSED", reason, capability: cap, path, agentName: "Example AI", subject: SUBJECT, latencyMs: 60 + Math.round(Math.random() * 60) });
   const anon = (m: number, outcome: "REFUSED" | "THROTTLED" | "CHALLENGED", path: string) =>
     ev(m, { lane: "UNTRUSTED", outcome, reason: outcome === "REFUSED" ? "NOT_IDENTIFIED" : undefined, capability: path.startsWith("/api/") ? "view_tax_code" : undefined, path, latencyMs: outcome === "REFUSED" ? 1500 + Math.round(Math.random() * 100) : 5 });
 

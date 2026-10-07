@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./delegate.css";
 
 export const metadata: Metadata = {
-  title: { default: "GOV.UK Delegate (prototype)", template: "%s – GOV.UK Delegate prototype" },
-  description: "Independent prototype exploring scoped, revocable delegation to AI agents. Not an official GOV.UK service.",
+  title: { default: "Your GOV.UK account", template: "%s – GOV.UK" },
+  description: "Manage who can act for you with government services.",
 };
 
 export const dynamic = "force-dynamic";

@@ -19,7 +19,7 @@ export default async function AuthorisationDetail({
   const { id } = await params;
   const { removed } = await searchParams;
   const principal = await currentPrincipal();
-  if (!principal) redirect(`/consent-signin?returnTo=${encodeURIComponent(`/account/delegates/${id}`)}`);
+  if (!principal) redirect(`/auth/login?returnTo=${encodeURIComponent(`/account/delegates/${id}`)}`);
   await expireDueAuthorisations();
   const a = await prisma.authorisation.findUnique({
     where: { id },

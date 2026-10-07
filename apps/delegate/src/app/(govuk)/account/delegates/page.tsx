@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Who can act for you" };
 
 export default async function Delegates({ searchParams }: { searchParams: Promise<{ rejected?: string }> }) {
   const principal = await currentPrincipal();
-  if (!principal) redirect("/consent-signin?returnTo=/account/delegates");
+  if (!principal) redirect("/auth/login?returnTo=/account/delegates");
   const { rejected } = await searchParams;
   await expireDueAuthorisations();
 

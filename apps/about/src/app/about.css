@@ -1,0 +1,36 @@
+/* About site: the shared design.css plus a little of its own. */
+.about-header::after { background: linear-gradient(90deg, var(--aqua) 0 25%, var(--coral) 25% 50%, var(--ink) 50% 75%, var(--teal) 75%); }
+.about-sub { font-weight: 400; color: var(--aqua); font-size: .7em; }
+.about-nav { border-bottom: 1px solid var(--border); }
+.about-nav ul { display: flex; flex-wrap: wrap; gap: 0 1.5rem; margin: 0; padding: .9rem 0; list-style: none; max-width: none; }
+.about-nav a { font-weight: 400; }
+.about-nav a[aria-current="page"] { font-weight: 700; text-decoration-thickness: 3px; }
+
+.claim { max-width: 44rem; margin: 0 0 2.5rem; padding: 1.25rem 1.5rem; border-left: 8px solid var(--teal); background: var(--soft-aqua); font-size: 1.35rem; line-height: 1.4; }
+.systems { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem; margin: 0 0 2rem; padding: 0; list-style: none; max-width: none; }
+.systems li { padding: 1.1rem 1.25rem; background: var(--white); border-top: 6px solid var(--aqua); }
+.systems li:nth-child(2) { border-top-color: var(--teal); }
+.systems li:nth-child(3) { border-top-color: var(--coral); }
+.systems li:nth-child(4) { border-top-color: var(--ink); }
+.systems h3 { margin: 0 0 .25rem; font-size: 1.25rem; }
+.systems .port { color: var(--muted); font-size: 1rem; }
+.systems p { margin: .5rem 0 0; font-size: 1.0625rem; }
+.systems .added { color: var(--muted); }
+
+.steps { max-width: 46rem; padding: 0; list-style: none; counter-reset: s; }
+.steps > li { position: relative; padding: 0 0 1.75rem 3.5rem; counter-increment: s; }
+.steps > li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 2.25rem; height: 2.25rem; border-radius: 50%; background: var(--ink); color: var(--paper); display: grid; place-items: center; font-weight: 700; }
+.steps h3 { margin: .2rem 0 .4rem; font-size: 1.3rem; }
+.steps p { margin-bottom: .5rem; }
+.where { display: inline-block; margin-bottom: .4rem; padding: .05rem .5rem; background: var(--white); border: 1px solid var(--border); font-size: .95rem; }
+.tip { color: var(--muted); font-size: 1rem; }
+.diagram { overflow-x: auto; margin: 1.5rem 0 2rem; padding: 1rem 1.25rem; background: var(--white); border: 1px solid var(--border-soft); font-size: .85rem; line-height: 1.35; }
+.source { overflow-x: auto; margin: 1rem 0 2rem; padding: 1rem 1.25rem; background: var(--white); border: 1px solid var(--border-soft); border-left: 6px solid var(--teal); font-size: .8rem; line-height: 1.4; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .9em; }
+.console-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.console-grid > div { padding: 1.25rem 1.5rem; background: var(--white); border-top: 6px solid var(--coral); }
+.console-grid > div:nth-child(2) { border-top-color: var(--teal); }
+.console-grid h2 { margin-top: 0; font-size: 1.5rem; }
+.console-grid .button { margin-bottom: 0; }
+.big { font-size: 2.2rem; font-weight: 700; line-height: 1.1; }
+.results td, .results th { vertical-align: top; }

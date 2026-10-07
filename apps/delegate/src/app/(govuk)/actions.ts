@@ -6,7 +6,7 @@ import { currentPrincipal } from "@/lib/session";
 
 async function requirePrincipal(back: string) {
   const p = await currentPrincipal();
-  if (!p) redirect(`/consent-signin?returnTo=${encodeURIComponent(back)}`);
+  if (!p) redirect(`/auth/login?returnTo=${encodeURIComponent(back)}`);
   return p;
 }
 

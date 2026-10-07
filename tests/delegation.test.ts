@@ -19,7 +19,7 @@ describe("A — authorised action", () => {
     const r = await check({ agent_token: token, principal_id: p.id });
     expect(r.status).toBe(200);
     expect(r.body).toMatchObject({ authorised: true, status: "ACTIVE", authorisation_id: authorisationId, principal_id: p.id, subject: p.oneLoginSubjectId });
-    expect(r.body.delegate.name).toBe("Example AI assistant");
+    expect(r.body.delegate.name).toBe("Example AI");
     expect(await eventById(r.body.check_id)).toMatchObject({ decision: "ALLOW", reason: "VALID_AUTHORISATION", lane: "AUTHORISED_AGENT", principalId: p.id, authorisationId, capability: "view_tax_code" });
   });
 });
@@ -218,7 +218,7 @@ describe("redirect hand-off (consent screen → agent)", () => {
     expect((await post({ origin: "https://evil.example" })).status).toBe(403);
     const anon = await post({ origin: DELEGATE });
     expect(anon.status).toBe(303);
-    expect(anon.headers.get("location")).toContain("/consent-signin");
+    expect(anon.headers.get("location")).toContain("/auth/login");
     expect((await loadRequest(created.id))!.status).toBe("PENDING");
   });
 });

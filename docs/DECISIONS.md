@@ -143,3 +143,15 @@ Why: in one app the boundaries were invisible, so the claim "a service needs to 
 **Three lanes at the service.** These are a signed-in person, an authorised agent and not identified. The friction on the last lane is a stand-in, labelled as such: 5 requests a minute, a 1.5 second delay, plain-text refusals that point to Delegate, and a checkbox challenge page on the website. It demonstrates the incentive. It is not abuse infrastructure, and "not identified" is not treated as malicious.
 
 **The agent is a scripted task runner, not a chat.** The LLM had become the focus. The demo is about delegation and the service's response, and a step log with the HTTP behind each step shows that more honestly.
+
+## Decision 13 — The services are mock-ups; the explanation lives on an about site
+
+**Decision:** the four systems look like the real things and say nothing about the demo. Each has only a "Prototype · About this prototype" line, as a real GOV.UK prototype would. A fifth app, the about site (:3304), holds the case, the systems, the demo script, how it works (including HMRC's integration code), the precedents and a demo console.
+
+Why: explanatory copy inside the journeys made them look like a demo of a demo, and hid what the services themselves would be like.
+
+Consequences:
+- GOV.UK Delegate has no front page. Its root goes to "Who can act for you" in the GOV.UK account, and consent goes straight to One Login sign-in.
+- HMRC's operations page and Delegate's are plain internal dashboards.
+- Example AI is a consumer assistant: a conversation and a "Connected services" page. The flood and unregistered-bot runs move to the about site's console. The console asks Example AI, through a small internal endpoint, to send its burst as itself.
+- Seeded data uses realistic names (Sam Taylor, Northwind Analytics Ltd). "Synthetic" is stated on the about site.

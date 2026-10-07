@@ -27,12 +27,12 @@ async function main() {
   await prisma.principal.deleteMany();
 
   const principal = await prisma.principal.create({
-    data: { oneLoginSubjectId: SUBJECT, displayName: "Sam Example (synthetic)" },
+    data: { oneLoginSubjectId: SUBJECT, displayName: "Sam Taylor" },
   });
 
   const delegate = await prisma.delegate.create({
     data: {
-      name: "Example AI assistant",
+      name: "Example AI",
       type: "SOFTWARE_AGENT",
       provider: "Example AI Ltd",
       clientId: process.env.DEMO_AGENT_CLIENT_ID ?? "demo-personal-agent",
@@ -44,7 +44,7 @@ async function main() {
   // HMRC registers once: a name, a slug and a key it will present to the check API.
   const service = await prisma.service.create({
     data: {
-      name: "HMRC Personal Tax (demo)",
+      name: "HMRC",
       slug: "hmrc-personal-tax",
       apiKeyHash: hash(process.env.HMRC_SERVICE_KEY ?? "dev-hmrc-service-key"),
     },
@@ -122,7 +122,7 @@ async function main() {
       ev(130, { lane: "UNTRUSTED", decision: "DENY", reason: "UNKNOWN_DELEGATE", capability: "view_tax_code", presentedClientId: "unregistered-helper-bot" }),
     ],
   });
-  console.log("Seeded: 1 principal, Example AI assistant, HMRC Personal Tax (demo), 5 capabilities, history events.");
+  console.log("Seeded: 1 principal, Example AI, HMRC, 5 capabilities, history events.");
 }
 
 main().finally(() => prisma.$disconnect());
