@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { currentPrincipal } from "@/lib/session";
 import { Nav } from "../nav";
+import { config } from "@/lib/config";
 
 const LINKS = [
   { href: "/account/delegates", label: "Who can act for you" },
+  { href: "/activity", label: "Activity" },
   { href: "/about", label: "About this project" },
 ];
 
@@ -44,8 +46,8 @@ export default async function GovukLayout({ children }: { children: React.ReactN
         <div className="width-container">
           <ul className="footer-links">
             <li><Link href="/about">About this project</Link></li>
-            <li><Link href="/example-ai">Example AI assistant (demo agent)</Link></li>
-            <li><Link href="/operator/activity">HMRC team view</Link></li>
+            <li><a href={config.hmrcUrl}>HMRC: Claim tax relief (demo service)</a></li>
+            <li><a href={config.agentUrl}>Example AI (demo agent)</a></li>
           </ul>
           <p className="small">Independent prototype. Synthetic data only. No production security, accreditation or official GOV.UK status is claimed.</p>
         </div>

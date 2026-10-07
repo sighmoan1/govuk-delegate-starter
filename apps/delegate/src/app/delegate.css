@@ -58,3 +58,6 @@
 .operator-brand { font-size: 1.1rem; }
 .session-table { margin-bottom: 1rem; }
 .consent-context { margin-bottom: 1rem; color: var(--muted); }
+
+.systems-table th[scope="row"] { white-space: normal; min-width: 11rem; }
+.systems-table td { font-size: 1.0625rem; }

@@ -13,28 +13,15 @@ export const config = {
   get oidcInternalUrl() { return need("OIDC_INTERNAL_URL", this.oidcIssuer); },
   get oidcClientId() { return need("OIDC_CLIENT_ID", "delegate-dev-client"); },
   get oidcPrivateKeyPem() {
-    return readFileSync(need("OIDC_PRIVATE_KEY_FILE", "dev/oidc-client-private.pem"), "utf8");
+    return readFileSync(need("OIDC_PRIVATE_KEY_FILE", "../../dev/oidc-client-private.pem"), "utf8");
   },
   get sessionSecret() { return new TextEncoder().encode(need("SESSION_SECRET")); },
   get agentTokenSecret() { return new TextEncoder().encode(need("AGENT_TOKEN_SECRET")); },
-  get demoAgentClientId() { return need("DEMO_AGENT_CLIENT_ID", "demo-personal-agent"); },
-  get demoAgentClientSecret() { return need("DEMO_AGENT_CLIENT_SECRET", "dev-demo-agent-secret"); },
-  get serviceKey() { return need("SERVICE_KEY", "dev-hmrc-service-key"); },
-  get delegateBaseUrl() { return need("DELEGATE_BASE_URL", this.appUrl); },
-  get anthropicApiKey() { return process.env.ANTHROPIC_API_KEY || ""; },
-  get anthropicModel() { return process.env.ANTHROPIC_MODEL || "claude-opus-5-5"; },
-  get agentMode(): "llm" | "scripted" {
-    return process.env.AGENT_MODE === "scripted" || !process.env.ANTHROPIC_API_KEY ? "scripted" : "llm";
-  },
+  // The other systems in the demo, for links only. Delegate never calls them.
+  get hmrcUrl() { return need("HMRC_URL", "http://localhost:3302"); },
+  get agentUrl() { return need("AGENT_URL", "http://localhost:3303"); },
+  get oneLoginSimulatorUrl() { return this.oidcIssuer; },
 };
-
-/** Simulated per-minute limits for the trusted-lane demonstration. */
-export const LANE_LIMITS = {
-  AUTHORISED_AGENT: 600,
-  AUTHENTICATED_HUMAN: 600,
-  UNTRUSTED: 5,
-} as const;
 
 export const AUTHORISATION_DAYS = 30;
 export const REQUEST_DAYS = 7;
-export const SERVICE_SLUG = "hmrc-personal-tax";

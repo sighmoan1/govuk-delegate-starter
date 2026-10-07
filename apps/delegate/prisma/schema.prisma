@@ -96,10 +96,13 @@ model Delegate {
   @@map("delegate")
 }
 
+// A government service registered with Delegate once. It authenticates to the
+// check API with its own key, so neither a person's nor an agent's credential.
 model Service {
-  id   String @id @default(uuid())
-  name String
-  slug String @unique
+  id         String @id @default(uuid())
+  name       String
+  slug       String @unique
+  apiKeyHash String @map("api_key_hash")
 
   capabilities   Capability[]
   requests       AuthorisationRequest[]
@@ -214,17 +217,4 @@ model ActivityEvent {
 
   @@index([timestamp])
   @@map("activity_event")
-}
-
-// Agent-side storage: belongs to "Example AI", not to Delegate. It only ever
-// learns the principal's id from an approved authorisation request.
-model AgentConversation {
-  id               String   @id @default(uuid())
-  messages         Json     @default("[]")
-  principalId      String?  @map("principal_id")
-  pendingRequestId String?  @map("pending_request_id")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
-
-  @@map("agent_conversation")
 }

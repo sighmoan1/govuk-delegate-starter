@@ -18,7 +18,6 @@ async function main() {
     return;
   }
   // Idempotent: re-running restores the clean demo starting state.
-  await prisma.agentConversation.deleteMany();
   await prisma.activityEvent.deleteMany();
   await prisma.authorisationRequest.deleteMany();
   await prisma.authorisation.deleteMany();
@@ -38,11 +37,18 @@ async function main() {
       provider: "Example AI Ltd",
       clientId: process.env.DEMO_AGENT_CLIENT_ID ?? "demo-personal-agent",
       clientSecretHash: hash(process.env.DEMO_AGENT_CLIENT_SECRET ?? "dev-demo-agent-secret"),
-      redirectUris: [`${process.env.APP_URL ?? "http://localhost:3300"}/example-ai/callback`],
+      redirectUris: [`${process.env.AGENT_URL ?? "http://localhost:3303"}/callback`],
     },
   });
 
-  const service = await prisma.service.create({ data: { name: "HMRC Personal Tax (demo)", slug: "hmrc-personal-tax" } });
+  // HMRC registers once: a name, a slug and a key it will present to the check API.
+  const service = await prisma.service.create({
+    data: {
+      name: "HMRC Personal Tax (demo)",
+      slug: "hmrc-personal-tax",
+      apiKeyHash: hash(process.env.HMRC_SERVICE_KEY ?? "dev-hmrc-service-key"),
+    },
+  });
   const defs = [
     ["view_tax_code", "View your tax code", "LOW", false],
     ["claim_job_expenses", "Claim tax relief for working from home", "MEDIUM", false],

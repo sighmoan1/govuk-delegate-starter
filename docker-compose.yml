@@ -64,12 +64,9 @@ services:
       AGENT_TOKEN_SECRET: dev-only-agent-token-secret-change-me-0123456789
       DEMO_AGENT_CLIENT_ID: demo-personal-agent
       DEMO_AGENT_CLIENT_SECRET: dev-demo-agent-secret
-      SERVICE_KEY: dev-hmrc-service-key
-      DELEGATE_BASE_URL: http://localhost:3300
-      # Optional: set in your shell or a .env file next to this compose file to run the live agent.
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5-5}
-      AGENT_MODE: ${AGENT_MODE:-}
+      HMRC_SERVICE_KEY: dev-hmrc-service-key
+      HMRC_URL: http://localhost:3302
+      AGENT_URL: http://localhost:3303
 
 volumes:
   dbdata:

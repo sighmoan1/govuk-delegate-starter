@@ -43,11 +43,19 @@ export default function About() {
       </ul>
       <p>The agent never uses the person’s own sign-in. It proves who it is separately, and the service checks both.</p>
 
+      <h2>What each system had to add</h2>
+      <dl className="summary-list">
+        <div><dt>GOV.UK One Login</dt><dd>Nothing. It signs the person in for Delegate and for HMRC exactly as it does today, and identifies the same person to both.</dd><dd /></div>
+        <div><dt>GOV.UK Delegate</dt><dd>The new service: a consent screen, a “who can act for you” page, a registry of agents and services, one check API, and a log of declared agent activity.</dd><dd /></div>
+        <div><dt>HMRC</dt><dd>Registered once (a name, the actions it offers, a key). Then one check in front of its API that asks Delegate before acting. Its sign-in and its pages did not change.</dd><dd /></div>
+        <div><dt>The agent</dt><dd>Registered once (a name, a provider, credentials, a return address). It asks for permission and sends its own token with each call.</dd><dd /></div>
+      </dl>
+
       <h2>Trusted lane</h2>
       <p>Authenticated people and authorised agents can use a trusted lane.</p>
       <p>That could mean better machine interfaces, clearer errors and appropriate throughput.</p>
       <p>Traffic whose identity or authority cannot be established can be subject to more checks and tighter limits.</p>
-      <p>In this prototype, <Link href="/operator/activity">HMRC’s service team view</Link> shows how each lane is treated, and lets you send an unidentified request to compare.</p>
+      <p>In this prototype, HMRC’s operations view shows how each lane is treated, and the agent’s flood test shows the difference under load.</p>
       <p>“Trusted” describes how well identity and authority have been established. It does not mean an actor is good, truthful or incapable of fraud. Authorised agents remain subject to service rules and monitoring.</p>
 
       <h2>Accessibility and inclusion</h2>
@@ -79,13 +87,7 @@ export default function About() {
       <p>The Office of the Public Guardian already uses One Login in its online LPA service and provides time-limited access codes that organisations can use to verify authority.</p>
 
       <h2>Try it</h2>
-      <ol className="step-list">
-        <li>Open the <Link href="/example-ai">Example AI assistant</Link> and ask it to claim your working-from-home tax relief.</li>
-        <li>It asks for permission. You sign in through the One Login simulator and choose what to allow.</li>
-        <li>Back in the assistant, it carries on by itself. HMRC checks Delegate before every action.</li>
-        <li>Ask for something you did not allow, then remove its access in your GOV.UK account and try again.</li>
-        <li>See every attempt in <Link href="/operator/activity">HMRC’s service team view</Link>.</li>
-      </ol>
+      <p>The <Link href="/">front page</Link> walks through the demo in seven steps.</p>
     </div>
   );
 }

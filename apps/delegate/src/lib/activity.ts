@@ -1,8 +1,8 @@
 import type { Decision, Lane, Reason } from "@/generated/prisma";
 import { prisma } from "./db";
 
+/** Every check and every failed agent sign-in becomes one event. */
 export async function recordActivity(e: {
-  requestId: string;
   lane: Lane;
   decision: Decision;
   reason: Reason;
@@ -12,10 +12,11 @@ export async function recordActivity(e: {
   authorisationId?: string | null;
   serviceId?: string | null;
   presentedClientId?: string | null;
+  requestId?: string;
 }) {
   return prisma.activityEvent.create({
     data: {
-      requestId: e.requestId,
+      requestId: e.requestId ?? crypto.randomUUID(),
       lane: e.lane,
       decision: e.decision,
       reason: e.reason,
@@ -31,6 +32,10 @@ export async function recordActivity(e: {
 
 const HOURS_24 = 24 * 3_600_000;
 
+/**
+ * What Delegate can measure: declared agent activity. It sees every agent that
+ * identified itself to a service. It does not see traffic that never did.
+ */
 export async function activitySummary(now = new Date()) {
   const since = new Date(now.getTime() - HOURS_24);
   const events = await prisma.activityEvent.findMany({
@@ -38,8 +43,8 @@ export async function activitySummary(now = new Date()) {
     include: { principal: true, delegate: true, service: true },
     orderBy: { timestamp: "desc" },
   });
-  const agent = events.filter((e) => e.lane === "AUTHORISED_AGENT" || (e.lane === "UNTRUSTED" && e.presentedClientId));
   const declared = events.filter((e) => e.delegateId);
+  const unidentified = events.filter((e) => !e.delegateId);
 
   const by = <K extends string>(rows: typeof events, key: (e: (typeof events)[number]) => K | null) => {
     const m = new Map<K, typeof events>();
@@ -56,23 +61,11 @@ export async function activitySummary(now = new Date()) {
     principals: new Set(rows.map((r) => r.principalId).filter(Boolean)).size,
     denialRate: rows.filter((r) => r.decision === "DENY").length / rows.length,
   }));
-  const perPrincipal = [...by(declared, (e) => e.principal?.displayName ?? null)].map(([name, rows]) => ({
-    name,
-    transactions: rows.length,
-  }));
-  const perCapability = [...by(events, (e) => e.capability)]
-    .map(([capability, rows]) => ({
-      capability,
-      total: rows.length,
-      allowed: rows.filter((r) => r.decision === "ALLOW").length,
-    }))
+  const perPrincipal = [...by(declared, (e) => e.principal?.displayName ?? null)].map(([name, rows]) => ({ name, transactions: rows.length }));
+  const perCapability = [...by(declared, (e) => e.capability)]
+    .map(([capability, rows]) => ({ capability, total: rows.length, allowed: rows.filter((r) => r.decision === "ALLOW").length }))
     .sort((a, b) => b.total - a.total);
-
-  const lanes = (["AUTHORISED_AGENT", "AUTHENTICATED_HUMAN", "UNTRUSTED"] as const).map((lane) => ({
-    lane,
-    total: events.filter((e) => e.lane === lane).length,
-    allowed: events.filter((e) => e.lane === lane && e.decision === "ALLOW").length,
-  }));
+  const perService = [...by(declared, (e) => e.service?.name ?? null)].map(([name, rows]) => ({ name, transactions: rows.length }));
 
   return {
     since,
@@ -81,12 +74,11 @@ export async function activitySummary(now = new Date()) {
     denied: declared.filter((e) => e.decision === "DENY").length,
     authenticatedDelegates: new Set(declared.map((e) => e.delegateId)).size,
     principalsRepresented: new Set(declared.map((e) => e.principalId).filter(Boolean)).size,
+    unidentifiedAttempts: unidentified.length,
     perDelegate,
     perPrincipal,
     perCapability,
-    lanes,
+    perService,
     events: events.slice(0, 100),
-    outsideTrustedRoute: events.filter((e) => e.lane === "UNTRUSTED").length,
-    agentCount: agent.length,
   };
 }
