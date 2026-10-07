@@ -19,7 +19,7 @@ test("Sam signs in, sees her tax code, claims relief herself, and the claim is a
 
   await page.getByRole("link", { name: "Claim tax relief for working from home" }).click();
   await page.getByRole("button", { name: "Continue" }).click(); // without confirming
-  await expect(page.getByRole("alert")).toContainText("There is a problem");
+  await expect(page.locator(".error-summary")).toContainText("There is a problem");
   await page.getByLabel(/My employer required me to work from home/).check();
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("heading", { name: "Check your answers" })).toBeVisible();

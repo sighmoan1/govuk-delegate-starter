@@ -3,6 +3,7 @@ import { defineConfig } from "@playwright/test";
 // Expects the stack to be running: `docker compose up` (or db+simulator and `npm run dev`).
 export default defineConfig({
   testDir: "e2e",
+  globalSetup: "./e2e/global-setup.ts",
   timeout: 90_000,
   workers: 1,
   reporter: [["list"]],
