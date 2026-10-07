@@ -7,6 +7,7 @@ const SUBJECT = "urn:fdc:gov.uk:2022:56P4CMsGh_02YOlWpd8PAOI-2sVlB2nsNU7mcLZYhYw
 const MIN = 60_000;
 
 export async function seedDemo(prisma: PrismaClient) {
+  await prisma.principalUsage.deleteMany();
   await prisma.serviceEvent.deleteMany();
   await prisma.claim.deleteMany();
   await prisma.taxpayer.deleteMany();

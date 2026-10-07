@@ -7,7 +7,7 @@ import { fmtTime } from "@/lib/format";
 export const metadata: Metadata = { title: "Operations" };
 export const dynamic = "force-dynamic";
 
-const LANE_LABEL = { AUTHENTICATED_HUMAN: "Signed-in person", AUTHORISED_AGENT: "Authorised agent", UNTRUSTED: "Not identified" } as const;
+const LANE_LABEL = { AUTHENTICATED_HUMAN: "Signed-in person", AUTHORISED_AGENT: "Authorised agent", DECLARED_AGENT: "Agent without permission", UNTRUSTED: "Not identified" } as const;
 const CAP: Record<string, string> = {
   view_tax_code: "View tax code",
   claim_job_expenses: "Claim WFH relief",

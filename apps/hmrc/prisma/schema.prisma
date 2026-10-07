@@ -26,6 +26,11 @@ model Taxpayer {
   @@map("taxpayer")
 }
 
+enum ClaimStatus {
+  OPEN
+  CLOSED
+}
+
 enum SubmittedBy {
   SELF
   AGENT
@@ -41,6 +46,12 @@ model Claim {
   submittedBy SubmittedBy @map("submitted_by")
   agentName   String?     @map("agent_name")
   createdAt   DateTime    @default(now()) @map("created_at")
+  taxYear     String?     @map("tax_year")
+  // A fingerprint of the evidence; a resubmission needs a different one.
+  evidenceFingerprint String? @map("evidence_fingerprint")
+  status      ClaimStatus @default(OPEN)
+  mandateId   String?     @map("mandate_id")
+  delegationId String?    @map("delegation_id")
 
   taxpayer Taxpayer @relation(fields: [taxpayerId], references: [id])
 
@@ -50,6 +61,7 @@ model Claim {
 enum Lane {
   AUTHENTICATED_HUMAN
   AUTHORISED_AGENT
+  DECLARED_AGENT // a known agent without authority: redirected to the proper route
   UNTRUSTED
 }
 
@@ -74,7 +86,36 @@ model ServiceEvent {
   subject     String?
   latencyMs   Int      @map("latency_ms")
   delegateCheckId String? @map("delegate_check_id")
+  // The chain, as Delegate reported it.
+  mandateId          String?  @map("mandate_id")
+  delegationId       String?  @map("delegation_id")
+  parentDelegationId String?  @map("parent_delegation_id")
+  depth              Int?
+  agentLabel         String?  @map("agent_label")
+  assurance          String?
+  // Capacity against the person.
+  rule               String?
+  capacityUsed       Int?     @map("capacity_used")
+  capacityLimit      Int?     @map("capacity_limit")
+  // Evidence about who or what was on the other end.
+  userAgent          String?  @map("user_agent")
+  signatureAgent     String?  @map("signature_agent")
+  signatureResult    String?  @map("signature_result")
+  automationSignals  Json?    @map("automation_signals")
+  sessionId          String?  @map("session_id")
+  runTag             String?  @map("run_tag")
 
   @@index([timestamp])
   @@map("service_event")
+}
+
+// Use of a rate-limited rule by a person (One Login subject), whoever acted.
+model PrincipalUsage {
+  id      String   @id @default(uuid())
+  subject String
+  rule    String
+  at      DateTime @default(now())
+
+  @@index([subject, rule, at])
+  @@map("principal_usage")
 }

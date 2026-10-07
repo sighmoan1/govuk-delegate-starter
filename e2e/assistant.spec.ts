@@ -50,12 +50,24 @@ test("refused, ask for permission, approve: the bank change is then done, and ev
 
   await send(page, "Yes, ask me for permission");
   await approveOnGovUk(page);
+  // A sensitive change: even with permission, Sam approves each one on GOV.UK.
+  await expect(page.locator("ol.chat > li").last()).toContainText("approve it on GOV.UK each time");
+  const code = (await page.locator(".connect-card .muted").last().innerText()).replace("Code ", "").trim();
+  const govuk = await page.context().newPage();
+  await govuk.goto(`${process.env.DELEGATE_URL ?? "http://localhost:3300"}/approve?code=${code}`);
+  await signInIfAsked(govuk);
+  await expect(govuk.getByRole("heading", { level: 1 })).toContainText("wants to change the bank account for refunds");
+  await govuk.getByRole("button", { name: "Approve once" }).click();
+  await expect(govuk.getByRole("heading", { name: "Approved" })).toBeVisible();
+  await govuk.close();
+
+  await send(page, "I’ve approved it");
   await expect(page.locator("ol.chat > li").last()).toContainText("Done. HMRC will pay any tax refunds into your new bank account.");
   await expect(page.locator(".result-card").last()).toContainText("Refund bank account changed");
 
-  // Asking again now just works, with a reply.
+  // Asking again: approval was for one change only, and HMRC allows one change per 30 days anyway.
   await send(page, "Change my refund bank account to my new bank");
-  await expect(page.locator("ol.chat > li").last()).toContainText("Done.");
+  await expect(page.locator("ol.chat > li").last()).toContainText("approve it on GOV.UK each time");
 
   // No user message is ever left without an answer, and none appears twice in a row.
   const roles = await page.locator("ol.chat > li").evaluateAll((els) => els.map((e) => (e.classList.contains("from-user") ? "U" : "A")).join(""));

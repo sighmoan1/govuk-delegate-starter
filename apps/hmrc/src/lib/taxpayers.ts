@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { Taxpayer as TaxpayerRow } from "@/generated/prisma";
 import { prisma } from "./db";
 import type { Actor } from "./delegated-authority";
+import type { Admitted } from "./capacity";
 
 export type Taxpayer = TaxpayerRow;
 
@@ -29,15 +30,24 @@ export async function findOrCreateTaxpayer(subject: string, email?: string) {
 }
 
 const ref = (p: string) => `${p}-${randomUUID().slice(0, 8).toUpperCase()}`;
-const who = (actor: Actor) => (actor.kind === "AGENT" ? { submittedBy: "AGENT" as const, agentName: actor.name } : { submittedBy: "SELF" as const });
+const who = (actor: Actor) =>
+  actor.kind === "AGENT"
+    ? { submittedBy: "AGENT" as const, agentName: actor.name, mandateId: actor.chain.mandate_id, delegationId: actor.chain.delegation_id }
+    : { submittedBy: "SELF" as const };
 
 export async function viewTaxCode(taxpayer: Taxpayer) {
   return { taxpayer: taxpayer.name, tax_year: taxpayer.taxYear, tax_code: taxpayer.taxCode, employer: taxpayer.employer, synthetic: true };
 }
 
-export async function claimJobExpenses(taxpayer: Taxpayer, actor: Actor) {
+/** The capacity rules have already admitted this claim: a first claim, or a resubmission with new evidence. */
+export async function claimJobExpenses(taxpayer: Taxpayer, actor: Actor, admitted?: Admitted) {
+  const amendment = (admitted?.used ?? 1) > 1;
   const claim = await prisma.claim.create({
-    data: { taxpayerId: taxpayer.id, reference: ref("JE"), kind: "job_expenses", summary: `Tax relief for working from home, ${WFH_RELIEF}`, newTaxCode: WFH_NEW_CODE, ...who(actor) },
+    data: {
+      taxpayerId: taxpayer.id, reference: ref("JE"), kind: "job_expenses", taxYear: TAX_YEAR, evidenceFingerprint: admitted?.evidence ?? null,
+      summary: amendment ? "Tax relief for working from home: new evidence added" : `Tax relief for working from home, ${WFH_RELIEF}`,
+      newTaxCode: amendment ? null : WFH_NEW_CODE, ...who(actor),
+    },
   });
   await prisma.taxpayer.update({ where: { id: taxpayer.id }, data: { taxCode: WFH_NEW_CODE } });
   return { claim_reference: claim.reference, expense: "Working from home", tax_year: taxpayer.taxYear, relief: WFH_RELIEF, new_tax_code: WFH_NEW_CODE, synthetic: true };

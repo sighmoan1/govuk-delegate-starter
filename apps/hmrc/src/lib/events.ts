@@ -13,6 +13,20 @@ export async function logEvent(e: {
   subject?: string | null;
   latencyMs: number;
   delegateCheckId?: string | null;
+  mandateId?: string | null;
+  delegationId?: string | null;
+  parentDelegationId?: string | null;
+  depth?: number | null;
+  agentLabel?: string | null;
+  assurance?: string | null;
+  rule?: string | null;
+  capacityUsed?: number | null;
+  capacityLimit?: number | null;
+  userAgent?: string | null;
+  signatureAgent?: string | null;
+  signatureResult?: string | null;
+  sessionId?: string | null;
+  runTag?: string | null;
 }) {
   return prisma.serviceEvent.create({
     data: {
@@ -26,6 +40,20 @@ export async function logEvent(e: {
       subject: e.subject ?? null,
       latencyMs: e.latencyMs,
       delegateCheckId: e.delegateCheckId ?? null,
+      mandateId: e.mandateId ?? null,
+      delegationId: e.delegationId ?? null,
+      parentDelegationId: e.parentDelegationId ?? null,
+      depth: e.depth ?? null,
+      agentLabel: e.agentLabel ?? null,
+      assurance: e.assurance ?? null,
+      rule: e.rule ?? null,
+      capacityUsed: e.capacityUsed ?? null,
+      capacityLimit: e.capacityLimit ?? null,
+      userAgent: e.userAgent ?? null,
+      signatureAgent: e.signatureAgent ?? null,
+      signatureResult: e.signatureResult ?? null,
+      sessionId: e.sessionId ?? null,
+      runTag: e.runTag ?? null,
     },
   });
 }
@@ -36,7 +64,7 @@ const median = (xs: number[]) => {
   return s[Math.floor(s.length / 2)];
 };
 
-export const LANES = ["AUTHENTICATED_HUMAN", "AUTHORISED_AGENT", "UNTRUSTED"] as const;
+export const LANES = ["AUTHENTICATED_HUMAN", "AUTHORISED_AGENT", "DECLARED_AGENT", "UNTRUSTED"] as const;
 
 function laneRows(events: { lane: Lane; outcome: Outcome; latencyMs: number }[]) {
   return LANES.map((lane) => {

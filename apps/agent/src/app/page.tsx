@@ -18,6 +18,21 @@ function CardView({ card, live }: { card: Card; live: boolean }) {
       </div>
     );
   }
+  if (card.type === "approve") {
+    if (!live) return null;
+    return (
+      <div className="connect-card">
+        <div className="connect-card__head">
+          <span className="connect-card__logo" aria-hidden="true">GOV.UK</span>
+          <div>
+            <strong>Approve on GOV.UK</strong>
+            <span className="muted">Code {card.code}</span>
+          </div>
+        </div>
+        <a className="xai-button connect-card__go" href={card.url} target="_blank" rel="noopener">Open GOV.UK<span className="visually-hidden"> (opens in a new tab)</span></a>
+      </div>
+    );
+  }
   return (
     <div className="result-card">
       <strong>{card.title}</strong>
@@ -31,6 +46,7 @@ function CardView({ card, live }: { card: Card; live: boolean }) {
 }
 
 function suggestions(last: string | undefined, connected: boolean): string[] {
+  if (last?.includes("approve it on GOV.UK")) return ["I’ve approved it", "What’s my tax code?"];
   if (last?.includes("reconnect")) return ["Reconnect to HMRC", "Claim my working-from-home tax relief"];
   if (!connected) return ["Claim my working-from-home tax relief", "What’s my tax code?"];
   if (last?.includes("I can ask you for permission")) return ["Yes, ask me for permission", "What’s my tax code?"];
@@ -54,7 +70,9 @@ export default async function Assistant() {
           <ol className="chat" aria-live="polite" aria-label="Conversation">
             {messages.map((m, i) => {
               const card = m.card as Card | null;
-              const live = card?.type === "connect" && card.requestId === conn.pendingRequestId;
+              const live =
+                (card?.type === "connect" && card.requestId === conn.pendingRequestId) ||
+                (card?.type === "approve" && i === messages.length - 1 && Boolean(conn.pendingIntent?.startsWith("stepup:")));
               return (
                 <li key={m.id} id={i === messages.length - 1 ? "latest" : undefined} className={m.role === "USER" ? "from-user" : "from-ai"}>
                   <div className={`msg msg--${m.role === "USER" ? "user" : "agent"}`}>

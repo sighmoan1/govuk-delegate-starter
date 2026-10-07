@@ -3,13 +3,16 @@ import Link from "next/link";
 import { config } from "@/lib/config";
 import { requireSignedIn } from "@/lib/guard";
 import { claimsFor } from "@/lib/taxpayers";
+import { withPrincipalCapacity } from "@/lib/capacity";
 import { fmt } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Your tax" };
 
-export default async function YourTax({ searchParams }: { searchParams: Promise<{ claimed?: string }> }) {
-  const { claimed } = await searchParams;
+export default async function YourTax({ searchParams }: { searchParams: Promise<{ claimed?: string; refused?: string }> }) {
+  const { claimed, refused } = await searchParams;
   const taxpayer = await requireSignedIn("/your-tax", "view_tax_code");
+  // Looking up the tax code counts against the person, however it's done.
+  const view = await withPrincipalCapacity(taxpayer, "view_tax_code", {}, async () => null);
   const claims = await claimsFor(taxpayer.id);
   const hasWfh = claims.some((c) => c.kind === "job_expenses");
 
@@ -21,11 +24,17 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
           <p>Reference {claimed}</p>
         </div>
       )}
+      {refused && (
+        <div className="error-summary" role="alert">
+          <h2>Your claim was not sent</h2>
+          <p>{refused === "DUPLICATE_SUBMISSION" ? "This claim has already been made." : refused === "NEW_EVIDENCE_REQUIRED" ? "You’ve already claimed for this tax year. You can only claim again with new evidence." : "You have too many open claims and changes. Wait for one to be decided."}</p>
+        </div>
+      )}
       <span className="caption">{taxpayer.name}</span>
       <h1>Your tax</h1>
       <p>Tax year {taxpayer.taxYear}</p>
       <dl className="summary-list">
-        <div><dt>Tax code</dt><dd><strong>{taxpayer.taxCode}</strong></dd><dd /></div>
+        <div><dt>Tax code</dt><dd>{view.ok ? <strong>{taxpayer.taxCode}</strong> : "Your tax code has been looked up too many times in the last hour. Try again later."}</dd><dd /></div>
         <div><dt>Employer</dt><dd>{taxpayer.employer}</dd><dd /></div>
       </dl>
 

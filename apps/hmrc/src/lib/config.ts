@@ -23,7 +23,12 @@ export const config = {
   get aboutUrl() { return need("ABOUT_URL", "http://localhost:3304"); },
 };
 
-/** Simulated per-minute limits. The point is the difference, not the numbers. */
-export const LANE_LIMITS = { AUTHENTICATED_HUMAN: 600, AUTHORISED_AGENT: 600, UNTRUSTED: 5 } as const;
+/**
+ * Per-caller throttles, per minute: an operational safety valve, not the
+ * control. An authorised agent may act for many people, so its throttle is
+ * high; the scarce resource is each person's capacity (see capacity.ts).
+ * Unidentified traffic gets very little.
+ */
+export const LANE_LIMITS = { AUTHENTICATED_HUMAN: 600, AUTHORISED_AGENT: 5000, DECLARED_AGENT: 30, UNTRUSTED: 5 } as const;
 /** Simulated extra delay for traffic that will not identify itself. */
 export const UNTRUSTED_DELAY_MS = 1500;

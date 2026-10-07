@@ -73,8 +73,11 @@ export async function callHmrc(capability: string, identity: { token: string; pr
     headers["x-principal-id"] = identity.principalId;
   }
   const x = await exchange(`${config.hmrcInternalUrl}${a.path}`, { method: a.method, headers, body: a.method === "POST" ? body : undefined });
-  const r = (typeof x.response === "object" && x.response ? x.response : {}) as { decision?: string; reason?: string; result?: Record<string, unknown> };
-  return { exchange: x, allowed: x.status === 200, reason: r.reason ?? null, result: r.result ?? null };
+  const r = (typeof x.response === "object" && x.response ? x.response : {}) as {
+    decision?: string; reason?: string; result?: Record<string, unknown>; message?: string;
+    step_up?: { user_code: string; approve_url: string };
+  };
+  return { exchange: x, allowed: x.status === 200, reason: r.reason ?? null, result: r.result ?? null, message: r.message ?? null, stepUp: r.step_up ?? null };
 }
 
 export async function fetchHmrcPage(path: string) {

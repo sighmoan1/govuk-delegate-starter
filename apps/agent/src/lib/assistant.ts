@@ -6,7 +6,8 @@ import { callHmrc, readRequest, requestAuthority, signInToDelegate } from "./gov
 
 export type Card =
   | { type: "connect"; url: string; requestId: string; capabilities: string[] }
-  | { type: "result"; title: string; rows: [string, string][] };
+  | { type: "result"; title: string; rows: [string, string][] }
+  | { type: "approve"; url: string; code: string };
 
 const CONN = "hmrc";
 const FIRST_ASK = ["view_tax_code", "claim_job_expenses"];
@@ -23,10 +24,11 @@ const list = (caps: string[]) => {
   return xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}`;
 };
 
-type Intent = "claim" | "tax_code" | "bank" | "ask" | "connect";
+type Intent = "claim" | "tax_code" | "bank" | "ask" | "connect" | "approved";
 
 export function intentOf(text: string): Intent | null {
   const t = text.toLowerCase();
+  if (/i[’']?ve approved|approved it|i approved|done that/.test(t)) return "approved";
   if (/bank|refund account/.test(t)) return "bank";
   if (/ask for (it|that|permission)|^yes|ask me/.test(t)) return "ask";
   if (/reconnect|connect/.test(t)) return "connect";
@@ -82,6 +84,22 @@ async function hmrc(capability: string, body: Record<string, unknown> = {}): Pro
       await say(r.reason === "AUTHORISATION_EXPIRED"
         ? "My access to HMRC has expired. Want me to ask you to reconnect?"
         : "I no longer have access to HMRC. You removed it on GOV.UK. Want me to ask you to reconnect?");
+      break;
+    case "STEP_UP_REQUIRED":
+      if (r.stepUp) {
+        await prisma.connection.update({ where: { id: CONN }, data: { pendingIntent: `stepup:${capability}` } });
+        await say("This is a sensitive change, so HMRC needs you to approve it on GOV.UK each time. Approve it there, then tell me and I’ll finish it.", {
+          type: "approve", url: r.stepUp.approve_url, code: r.stepUp.user_code,
+        });
+        break;
+      }
+      await say("HMRC needs your approval for this, but didn’t say how. Try again later.");
+      break;
+    case "CAPACITY_EXCEEDED":
+    case "DUPLICATE_SUBMISSION":
+    case "NEW_EVIDENCE_REQUIRED":
+      // Limits on what can be done for you, however many assistants try.
+      await say(`HMRC said no: ${r.message ?? "you’ve reached a limit for now."}`);
       break;
     default:
       await say("HMRC didn’t accept that request. Try again later.");
@@ -144,6 +162,12 @@ async function run(intent: Intent) {
     }
     case "connect":
       return askForPermission(FIRST_ASK, null, "OK.");
+    case "approved": {
+      const waiting = conn.pendingIntent?.startsWith("stepup:") ? conn.pendingIntent.slice(7) : null;
+      const resume = waiting ? RESUME[INTENT_FOR[waiting] ?? ""] : undefined;
+      if (!resume) return say("Thanks. There’s nothing waiting for your approval.");
+      return resume();
+    }
   }
 }
 
