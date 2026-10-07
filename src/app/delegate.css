@@ -48,6 +48,6 @@
 @media print { .site-nav { display: none; } }
 
 /* design.css sets overflow-wrap:anywhere on main; reason codes and numeric headers must not break mid-word. */
-.mono, .activity-table th, .lane-table th { overflow-wrap: normal; word-break: normal; }
-.mono { white-space: nowrap; }
+.activity-table .mono, .activity-table th, .lane-table th { overflow-wrap: normal; word-break: normal; }
+.activity-table .mono { white-space: nowrap; }
 .lane-table th, .activity-table th { white-space: nowrap; }
