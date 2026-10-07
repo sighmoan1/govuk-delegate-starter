@@ -34,3 +34,16 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .console-grid .button { margin-bottom: 0; }
 .big { font-size: 2.2rem; font-weight: 700; line-height: 1.1; }
 .results td, .results th { vertical-align: top; }
+
+.scenarios { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; margin: 0 0 2rem; padding: 0; list-style: none; max-width: none; }
+.scenarios li { padding: 1.1rem 1.25rem; background: var(--white); border-left: 6px solid var(--teal); }
+.scenarios .caption { font-size: 1rem; margin-bottom: .25rem; }
+.scenarios h3 { margin: 0 0 .5rem; font-size: 1.3rem; }
+.scenarios p { margin: 0; font-size: 1.0625rem; }
+.start-from { max-width: 52rem; margin: 2rem 0 2.5rem; padding: 1.25rem 1.5rem; background: var(--white); border-left: 6px solid var(--aqua); }
+.start-from h2 { margin-top: 0; font-size: 1.5rem; }
+.start-from__options { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem 1.5rem; }
+.start-from__options .button { margin-bottom: .5rem; }
+.start-from__options .small { margin: 0; color: var(--muted); }
+.start-from__done { padding: .5rem .75rem; background: var(--soft-green); font-weight: 700; }
+.lanes-table th[scope="row"] { white-space: nowrap; }

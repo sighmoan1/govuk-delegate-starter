@@ -4,6 +4,7 @@ const env = (name: string, fallback: string) => process.env[name] || fallback;
 
 export const urls = {
   get delegate() { return env("DELEGATE_URL", "http://localhost:3300"); },
+  get delegateInternal() { return env("DELEGATE_INTERNAL_URL", this.delegate); },
   get hmrc() { return env("HMRC_URL", "http://localhost:3302"); },
   get hmrcInternal() { return env("HMRC_INTERNAL_URL", this.hmrc); },
   get agent() { return env("AGENT_URL", "http://localhost:3303"); },

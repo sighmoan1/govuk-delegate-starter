@@ -1,4 +1,4 @@
-import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
 export function hashSecret(secret: string): string {
   const salt = randomBytes(16).toString("hex");
@@ -17,4 +17,16 @@ export function safeEqual(a: string, b: string): boolean {
   const x = Buffer.from(a);
   const y = Buffer.from(b);
   return x.length === y.length && timingSafeEqual(x, y);
+}
+
+// scrypt is slow on purpose, and the check API runs it on every request a
+// service makes. Remember keys that have already verified (by their SHA-256,
+// never the key itself), so a busy service is checked once, not per request.
+const verified = new Set<string>();
+export function verifySecretCached(secret: string, stored: string): boolean {
+  const id = `${stored}:${createHash("sha256").update(secret).digest("hex")}`;
+  if (verified.has(id)) return true;
+  const ok = verifySecret(secret, stored);
+  if (ok) verified.add(id);
+  return ok;
 }

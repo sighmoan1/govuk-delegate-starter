@@ -163,3 +163,14 @@ Consequences:
 Why: the simulator's interactive form, which shows subject IDs, identity JSON and a "Continue" button, is a developer tool, and it dominated the journey.
 
 Consequences: any password works. `sam.taylor@example.com` (pre-filled) is the seeded person, and any other email is a stable, different person. Sign-ins are serialised through the simulator's single response configuration, which is fine for a one-person demo. The simulator's `/config` is not exposed publicly.
+
+## Decision 15 — Three scenarios, each with its own reset
+
+**Decision:** the about site presents three independent scenarios instead of one linear script:
+1. Sam asks her assistant to claim tax relief.
+2. Sam manages who can act for her.
+3. Government prioritises people and authorised agents.
+
+Each scenario page resets all three services from the UI, to either "clean" or "Example AI already connected". The services expose `POST /api/demo/reset`, protected by the demo key, which runs the same seed function as `npm run db:reset`. The flood console is part of scenario 3.
+
+Also: Delegate's check API now remembers service keys that have already verified, keyed on their SHA-256. Running scrypt on every request serialised 40 concurrent checks into about 1.5 seconds, which made the authorised agent look slower than the throttled bot.

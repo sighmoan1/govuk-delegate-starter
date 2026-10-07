@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { checkAuthority } from "@/lib/authority";
 import { verifyAgentToken } from "@/lib/agent-auth";
 import { recordActivity } from "@/lib/activity";
-import { verifySecret } from "@/lib/secrets";
+import { verifySecretCached } from "@/lib/secrets";
 import { readJson } from "@/lib/http";
 
 /**
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   const slug = String(b.service ?? "");
   const service = slug ? await prisma.service.findUnique({ where: { slug } }) : null;
   const key = req.headers.get("x-service-key") ?? "";
-  if (!service || !key || !verifySecret(key, service.apiKeyHash)) {
+  if (!service || !key || !verifySecretCached(key, service.apiKeyHash)) {
     return NextResponse.json({ error: "INVALID_SERVICE_AUTHENTICATION" }, { status: 401 });
   }
 

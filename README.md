@@ -12,7 +12,7 @@ The four systems in the scenario are mock-ups of real services. They carry no ex
 
 | App | Port | What it is |
 |---|---|---|
-| **About this prototype** (`apps/about`) | 3304 | The case, the four systems, the demo script, how it works (including HMRC's integration code), precedents, and a demo console for the flood test. **Start here.** |
+| **About this prototype** (`apps/about`) | 3304 | The case, the four systems, the three scenarios (each with its own reset), how it works (including HMRC's integration code), why, and precedents. **Start here.** |
 
 
 
@@ -31,13 +31,19 @@ Each service has its own database (one Postgres container, three databases) and 
 docker compose up --build
 ```
 
-Open **http://localhost:3304** and follow *Run the demo*. Data is seeded on first start. To return to the clean demo state: `npm install && npm run db:reset`.
+Open **http://localhost:3304** and pick a scenario. Data is seeded on first start. To start again, use **Reset everything** on the about site, or a scenario page’s starting-point buttons.
 
 For development: `docker compose up -d db simulator`, copy each `apps/*/.env.example` to `.env` (the about app has no database), then `npm install && npm run db:migrate --workspaces && npm run db:reset && npm run dev`.
 
-## The demo
+## The demo: three scenarios
 
-The script is on the about site at http://localhost:3304/demo. In short, as Sam: check your tax at HMRC, ask Example AI to claim your working-from-home relief, approve it on GOV.UK, watch it claim and then be refused something you didn't allow, flood HMRC from the demo console, remove access, and see the claim attributed to the agent at HMRC.
+Open http://localhost:3304. Each scenario has its own page, and each page resets everything to the right starting point with one button: clean, or with Example AI already connected.
+
+1. **Sam asks her assistant to claim tax relief.** Example AI gets Sam's permission through GOV.UK, then claims working-from-home relief with HMRC. It's refused when it tries something she didn't allow.
+2. **Sam manages who can act for her.** In her GOV.UK account she sees Example AI, what it can do and what it has done, and removes access. Its next request is refused.
+3. **Government prioritises people and authorised agents.** HMRC treats signed-in people, authorised agents and unidentified traffic differently. The page sends bursts of traffic as a bot, as Example AI and as an anonymous visitor, and shows who got through.
+
+**Reset everything** is on the overview page. From the command line, `npm run db:reset` does the same.
 
 ## Tests
 
@@ -46,7 +52,7 @@ With the stack running:
 ```bash
 npm test            # Vitest over HTTP: scenarios A–F at Delegate's check API and again through HMRC;
                     # one event per attempt in both logs; untrusted-lane friction; lifecycle; return URLs
-npm run test:e2e    # Playwright: the demo script across all five apps, each system alone, a check
+npm run test:e2e    # Playwright: the three scenarios (each started from its UI reset) across all apps, each system alone, a check
                     # that the services carry no demo copy, skip link, 320px reflow. Resets demo data first.
 ```
 

@@ -10,11 +10,12 @@ export const metadata: Metadata = {
 
 const LINKS = [
   { href: "/", label: "Overview" },
-  { href: "/demo", label: "Run the demo" },
+  { href: "/use-an-agent", label: "1. Use an agent" },
+  { href: "/manage-who-can-act", label: "2. Manage who can act" },
+  { href: "/prioritise-trusted-traffic", label: "3. Prioritise trusted traffic" },
   { href: "/how-it-works", label: "How it works" },
   { href: "/why", label: "Why" },
   { href: "/precedents", label: "Precedents" },
-  { href: "/console", label: "Demo console" },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

@@ -83,6 +83,7 @@ services:
       HMRC_SERVICE_KEY: dev-hmrc-service-key
       AGENT_URL: http://localhost:3303
       ABOUT_URL: http://localhost:3304
+      DEMO_CONSOLE_KEY: dev-demo-console-key
 
   hmrc:
     build:
@@ -108,6 +109,7 @@ services:
       DELEGATE_SERVICE_SLUG: hmrc-personal-tax
       HMRC_SERVICE_KEY: dev-hmrc-service-key
       ABOUT_URL: http://localhost:3304
+      DEMO_CONSOLE_KEY: dev-demo-console-key
 
   agent:
     build:
@@ -140,12 +142,14 @@ services:
       context: .
       dockerfile: apps/about/Dockerfile
     depends_on:
+      - delegate
       - hmrc
       - agent
     ports:
       - "3304:3304"
     environment:
       DELEGATE_URL: http://localhost:3300
+      DELEGATE_INTERNAL_URL: http://delegate:3300
       HMRC_URL: http://localhost:3302
       HMRC_INTERNAL_URL: http://hmrc:3302
       AGENT_URL: http://localhost:3303

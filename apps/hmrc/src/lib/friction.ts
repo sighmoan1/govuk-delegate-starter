@@ -25,3 +25,8 @@ export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Anonymous page visitors who pass the challenge get this cookie for ten minutes. */
 export const CHALLENGE_COOKIE = "hmrc_challenge_passed";
+
+/** Forget all rate-limit counters (demo reset). */
+export function resetFriction() {
+  buckets.clear();
+}
