@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./delegate.css";
-import { DemoGuide } from "./demo-guide";
 
 export const metadata: Metadata = {
   title: { default: "GOV.UK Delegate (prototype)", template: "%s – GOV.UK Delegate prototype" },
@@ -11,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 // Three surfaces share this shell: the agent's own app (/example-ai), GOV.UK
 // (consent and account settings) and the HMRC team's internal view. Each has its
-// own layout; the demo guide sits above all of them.
+// own layout.
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en-GB">
@@ -22,7 +21,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <a className="skip-link" href="#main-content">Skip to main content</a>
-        <DemoGuide />
         {children}
       </body>
     </html>

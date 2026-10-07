@@ -22,7 +22,7 @@ Back to a clean demo: `npm run db:reset`.
 
 ## The demo (about 2 minutes)
 
-You are **Sam**. A yellow guide strip at the top of every page says what to do next.
+You are **Sam**. The assistant suggests what to ask next; GOV.UK pages link back to it in the footer.
 
 1. **Example AI assistant** (`/example-ai`). Ask: *"Can you claim my working-from-home tax relief?"* The agent decides it needs permission and gives you a link to GOV.UK.
 2. **GOV.UK consent.** Sign in through the One Login simulator (press **Continue**), choose what to allow, then **Allow**. You are sent straight back to the agent.

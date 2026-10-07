@@ -4,15 +4,12 @@ import { test, expect } from "@playwright/test";
 // Run with the app in AGENT_MODE=scripted for deterministic agent replies.
 
 test("Sam asks the agent → consents on GOV.UK → agent acts → refused → Sam removes access → refused → HMRC view", async ({ page }) => {
-  const guide = page.getByRole("complementary", { name: "Demo guide" });
   const chat = page.getByRole("list", { name: "Conversation" });
 
   // 1. In the agent's app, Sam asks for help.
   await page.goto("/example-ai");
-  await expect(guide).toContainText("step 1 of 6");
   await page.getByRole("button", { name: "Can you claim my working-from-home tax relief?" }).click();
   await expect(page.getByRole("heading", { name: "Permission needed from GOV.UK" })).toBeVisible();
-  await expect(guide).toContainText("step 2 of 6");
 
   // 2. GOV.UK: a plain-English interstitial, then the real One Login simulator.
   await page.getByRole("link", { name: "Give permission on GOV.UK" }).click();
@@ -32,12 +29,10 @@ test("Sam asks the agent → consents on GOV.UK → agent acts → refused → S
   await expect(page).toHaveURL(/\/example-ai/);
   await expect(chat).toContainText("You gave Example AI assistant permission on GOV.UK");
   await expect(chat).toContainText("1288L");
-  await expect(guide).toContainText("step 3 of 6");
 
   // 5. Something Sam never allowed: HMRC refuses.
   await page.getByRole("button", { name: "Also change my refund bank account to my new bank" }).click();
   await expect(chat).toContainText("haven’t given me permission to change the bank account for refunds");
-  await expect(guide).toContainText("step 4 of 6");
 
   // 6. Sam removes access in their GOV.UK account.
   await page.getByRole("link", { name: "Manage who can act for you on GOV.UK" }).click();
@@ -46,16 +41,14 @@ test("Sam asks the agent → consents on GOV.UK → agent acts → refused → S
   await expect(page.getByRole("heading", { name: /Remove Example AI assistant’s access\?/ })).toBeVisible();
   await page.getByRole("button", { name: "Remove access" }).click();
   await expect(page.getByRole("heading", { name: "Access removed" })).toBeVisible();
-  await expect(guide).toContainText("step 5 of 6");
 
   // 7. The same agent is refused now, server-side.
-  await guide.getByRole("link", { name: "Back to the assistant" }).click();
+  await page.getByRole("contentinfo").getByRole("link", { name: /Example AI assistant/ }).click();
   await page.getByRole("button", { name: "What’s my tax code now?" }).click();
   await expect(chat).toContainText("you’ve removed my access");
-  await expect(guide).toContainText("step 6 of 6");
 
   // 8. HMRC's service team sees every attempt from this session.
-  await guide.getByRole("link", { name: "HMRC team view" }).click();
+  await page.goto("/operator/activity");
   const session = page.locator("#session table");
   for (const reason of ["VALID_AUTHORISATION", "PERMISSION_MISSING", "AUTHORISATION_REVOKED"]) {
     await expect(session.getByText(reason).first()).toBeVisible();
