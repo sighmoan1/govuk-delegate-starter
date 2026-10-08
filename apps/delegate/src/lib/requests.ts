@@ -96,6 +96,24 @@ export async function approveRequest(id: string, principalId: string, capability
 
   return prisma.$transaction(async (tx) => {
     const now = new Date();
+    // Serialise every approval for this principal/delegate/service, so two requests
+    // replacing the same relationship cannot interleave. Released at commit/rollback.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`${principalId}:${req.delegateId}:${req.serviceId}`}, 0))`;
+    // Single-use: compare-and-set PENDING -> APPROVED. Only one concurrent caller
+    // matches; the rest see count 0 and abort before touching any relationship.
+    const claimed = await tx.authorisationRequest.updateMany({
+      where: {
+        id,
+        status: "PENDING",
+        expiresAt: { gt: now },
+        OR: [{ principalId: null }, { principalId }],
+      },
+      data: { status: "APPROVED", principalId, respondedAt: now },
+    });
+    if (claimed.count !== 1) {
+      const current = await tx.authorisationRequest.findUnique({ where: { id }, select: { status: true } });
+      throw new DomainError("NOT_PENDING", `Request is ${current?.status ?? "unavailable"}`, 409);
+    }
     // One live relationship per principal/delegate/service: a new approval replaces the old.
     await tx.authorisation.updateMany({
       where: { principalId, delegateId: req.delegateId, serviceId: req.serviceId, status: "ACTIVE" },
@@ -121,10 +139,7 @@ export async function approveRequest(id: string, principalId: string, capability
         assurance: req.delegate.identityType === "WEB_BOT_AUTH" ? "VERIFIED" : req.delegate.identityType === "DECLARED" ? "DECLARED" : "REGISTERED",
       },
     });
-    await tx.authorisationRequest.update({
-      where: { id },
-      data: { status: "APPROVED", principalId, respondedAt: now, authorisationId: auth.id },
-    });
+    await tx.authorisationRequest.update({ where: { id }, data: { authorisationId: auth.id } });
     return auth;
   });
 }

@@ -222,3 +222,61 @@ describe("redirect hand-off (consent screen → agent)", () => {
     expect((await loadRequest(created.id))!.status).toBe("PENDING");
   });
 });
+
+describe("approval is atomic and single-use", () => {
+  const activeCount = (principalId: string) =>
+    prisma.authorisation.count({ where: { principalId, status: "ACTIVE" } });
+
+  it("concurrent approvals of one request: exactly one wins, the rest get 409, one relationship exists", async () => {
+    const p = await newPrincipal();
+    const { token } = await demoAgent();
+    const created = (await createRequest(token)).body;
+    const results = await Promise.allSettled(Array.from({ length: 8 }, () => approveRequest(created.id, p.id)));
+    const won = results.filter((r) => r.status === "fulfilled");
+    const lost = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+    expect(won).toHaveLength(1);
+    expect(lost).toHaveLength(7);
+    for (const l of lost) expect(l.reason).toMatchObject({ code: "NOT_PENDING", httpStatus: 409 });
+    expect(await prisma.authorisation.count({ where: { principalId: p.id } })).toBe(1);
+    expect(await prisma.delegation.count({ where: { mandate: { principalId: p.id } } })).toBe(1);
+    expect(await activeCount(p.id)).toBe(1);
+  });
+
+  it("concurrent approvals of different requests for the same relationship leave one ACTIVE", async () => {
+    const p = await newPrincipal();
+    const { token } = await demoAgent();
+    const reqs = await Promise.all(Array.from({ length: 5 }, () => createRequest(token).then((r) => r.body)));
+    const results = await Promise.allSettled(reqs.map((r) => approveRequest(r.id, p.id)));
+    expect(results.every((r) => r.status === "fulfilled")).toBe(true);
+    expect(await prisma.authorisation.count({ where: { principalId: p.id } })).toBe(5);
+    expect(await activeCount(p.id)).toBe(1);
+  });
+
+  it("a duplicate approval does not revoke the relationship the first one created", async () => {
+    const p = await newPrincipal();
+    const { token } = await demoAgent();
+    const created = (await createRequest(token)).body;
+    const first = await approveRequest(created.id, p.id);
+    await expect(approveRequest(created.id, p.id)).rejects.toMatchObject({ code: "NOT_PENDING", httpStatus: 409 });
+    expect((await prisma.authorisation.findUniqueOrThrow({ where: { id: first.id } })).status).toBe("ACTIVE");
+    expect((await check({ agent_token: token, principal_id: p.id })).body.authorised).toBe(true);
+  });
+
+  it("an invalid approval (unrequested capability) leaves an existing relationship alone", async () => {
+    const p = await newPrincipal();
+    const { token, authorisationId } = await authorise(p.id, ["view_tax_code"]);
+    const created = (await createRequest(token)).body;
+    await expect(approveRequest(created.id, p.id, ["change_address"])).rejects.toMatchObject({ code: "NOT_REQUESTED" });
+    expect((await prisma.authorisation.findUniqueOrThrow({ where: { id: authorisationId } })).status).toBe("ACTIVE");
+    expect((await loadRequest(created.id))!.status).toBe("PENDING");
+  });
+
+  it("the database refuses a second ACTIVE authorisation for the same relationship", async () => {
+    const p = await newPrincipal();
+    const { authorisationId } = await authorise(p.id, ["view_tax_code"]);
+    const a = await prisma.authorisation.findUniqueOrThrow({ where: { id: authorisationId } });
+    await expect(
+      prisma.authorisation.create({ data: { principalId: a.principalId, delegateId: a.delegateId, serviceId: a.serviceId, validUntil: a.validUntil } }),
+    ).rejects.toThrow();
+  });
+});
