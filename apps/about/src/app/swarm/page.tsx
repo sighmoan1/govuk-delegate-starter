@@ -93,7 +93,7 @@ function Results({ result }: { result: SwarmRun }) {
       <ul>
         <li><strong>A, B and B′ match.</strong> Spreading one person’s work across more agents, or hiding the agents entirely, adds nothing. B′ is the important one: HMRC sees only Sam’s own session, and still applies Sam’s limits.</li>
         <li><strong>C is different on purpose.</strong> {n} people each gave their own permission, so they have {n} sets of limits. That’s ordinary use of the service, not a swarm.</li>
-        <li><strong>Where the limits are decided.</strong> HMRC applies the per-person rules (claims, checks, open cases, bank changes). GOV.UK Delegate adds a shared budget per person and caps how deep a chain of agents can go.</li>
+        <li><strong>Where the limits are decided.</strong> HMRC applies the per-person rules (claims, checks, open cases, bank changes). GOV.UK Delegate only answers who may act, and caps how deep a chain of agents can go; asking it never uses up a person’s limits.</li>
       </ul>
       <details>
         <summary>Actual counts and reasons</summary>

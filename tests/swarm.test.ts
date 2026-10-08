@@ -4,7 +4,7 @@ import { prisma, newPrincipal, authorise, DELEGATE, HMRC, SERVICE } from "./help
 afterAll(() => prisma.$disconnect());
 
 // Can a swarm beat the system? The same workload, run four ways, through the
-// real HMRC API and GOV.UK Delegate. Capacity belongs to the person.
+// real HMRC API and GOV.UK Delegate. HMRC's business limits belong to the person.
 //
 //   A   1 person × 1 agent × N actions
 //   B   1 person × N sub-agents × 1 action each
@@ -130,10 +130,10 @@ describe("Scenario 4: can a swarm beat the system?", () => {
     expect(fourth).toEqual({ status: 429, reason: "CAPACITY_EXCEEDED" });
   });
 
-  it("identity assurance does not change capacity: an unregistered, declared or verified agent all spend the same person's budget", async () => {
+  it("identity assurance does not change HMRC's limits: an unregistered, declared or verified agent all spend the same person's allowance", async () => {
     const sam = await newPrincipal();
     const { token, authorisationId } = await authorise(sam.id, ["view_tax_code"]);
-    // Make the root delegation 'VERIFIED' halfway through: the shared budget carries on.
+    // Make the root delegation 'VERIFIED' halfway through: HMRC's shared allowance carries on.
     const first = await Promise.all(Array.from({ length: 30 }, () => view({ authorization: `Bearer ${token}`, "x-principal-id": sam.id })));
     await prisma.delegation.updateMany({ where: { mandateId: authorisationId }, data: { assurance: "VERIFIED" } });
     const second = await Promise.all(Array.from({ length: 40 }, () => view({ authorization: `Bearer ${token}`, "x-principal-id": sam.id })));
