@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { loadRequest } from "@/lib/requests";
-import { currentPrincipal } from "@/lib/session";
+import { cookies } from "next/headers";
+import { currentPrincipal, SESSION_COOKIE } from "@/lib/session";
+import { decisionToken } from "@/lib/consent-csrf";
 import { prisma } from "@/lib/db";
 
 export const metadata: Metadata = { title: "Check what you are allowing" };
@@ -17,6 +19,7 @@ export default async function Check({
   const { id } = await params;
   const sp = await searchParams;
   const principal = await currentPrincipal();
+  const csrf = decisionToken((await cookies()).get(SESSION_COOKIE)?.value ?? "", id);
   if (!principal) redirect(`/auth/login?returnTo=${encodeURIComponent(`/consent/${id}`)}`);
   const req = await loadRequest(id);
   if (!req || (req.principalId && req.principalId !== principal.id)) notFound();
@@ -47,6 +50,7 @@ export default async function Check({
       </dl>
       <form action={`/consent/${id}/decision`} method="post">
         <input type="hidden" name="decision" value="approve" />
+        <input type="hidden" name="csrf" value={csrf} />
                 {allowed.map((c) => <input key={c.id} type="hidden" name="c" value={c.code} />)}
         <button className="button" type="submit">Allow</button>
       </form>

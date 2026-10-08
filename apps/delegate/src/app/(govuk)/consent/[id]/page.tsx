@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { loadRequest } from "@/lib/requests";
-import { currentPrincipal } from "@/lib/session";
+import { cookies } from "next/headers";
+import { currentPrincipal, SESSION_COOKIE } from "@/lib/session";
+import { decisionToken } from "@/lib/consent-csrf";
 import { prisma } from "@/lib/db";
 import { CAPABILITY_COPY } from "@/lib/capabilities";
 
@@ -20,6 +22,7 @@ export default async function RequestPage({
   const { error } = sp;
   const kept = sp.c === undefined ? null : ([] as string[]).concat(sp.c);
   const principal = await currentPrincipal();
+  const csrf = decisionToken((await cookies()).get(SESSION_COOKIE)?.value ?? "", id);
   if (!principal) redirect(`/auth/login?returnTo=${encodeURIComponent(`/consent/${id}`)}`);
   const req = await loadRequest(id);
   if (!req || (req.principalId && req.principalId !== principal.id)) notFound();
@@ -88,6 +91,7 @@ export default async function RequestPage({
       </form>
       <form action={`/consent/${id}/decision`} method="post">
         <input type="hidden" name="decision" value="reject" />
+        <input type="hidden" name="csrf" value={csrf} />
         <button className="button button--secondary" type="submit">Reject request</button>
       </form>
     </div>
