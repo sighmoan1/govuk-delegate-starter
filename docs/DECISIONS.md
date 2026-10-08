@@ -229,7 +229,19 @@ Not built: real email or SMS. The "notice" is an in-account banner, which depend
 
 Why: HMRC can't see the chat, so the flag was the agent's own word and stopped nothing, while it refused honest, authorised, identified agents on a technicality. Friction belongs on traffic that won't identify itself. The controls that do work are the permission the person grants, the Delegate check, per-person limits, the log, and the receipt with its dispute button. This supersedes the "428 CONFIRMATION_REQUIRED" behaviour in Decision 18.
 
-## Decision 21 — Step-up approval is time-limited and covers the next use, not a transaction
+## Decision 21 — One client operation, at most one committed business transaction
+
+**Decision:** HMRC's mutating submissions are idempotent and atomic. This is HMRC's own behaviour: nothing is added to GOV.UK Delegate.
+
+- **Same attempt.** `POST /api/job-expenses` and `POST /api/claims/respond` honour an `Idempotency-Key` header. HMRC keeps an `idempotency_record` row, unique by person (One Login subject) + capability + key, with a digest of the normalised payload, the first response and its reference. The same key with the same payload returns the original result, flagged `idempotent_replay` (header `Idempotent-Replayed: true`), and runs nothing. The same key with a different payload is 409 `IDEMPOTENCY_KEY_REUSED`; nothing is overwritten. Keys are per person, not per agent, so two agents using one key share one outcome.
+- **Equivalent claim, different key.** Not a retry. It meets the business rules in `capacity.ts` as before (one claim per tax year, new evidence for an amendment, one answer per question). Legal eligibility, amendment rights and claim statuses are unchanged; a queued claim is never marked approved.
+- **Atomic.** The idempotency lookup, the capacity rules, the business handler and the record are one database transaction, under the person's advisory lock, with the unique index as the backstop. Handlers receive that transaction's client; they no longer write through the global client.
+- **Crashes and timeouts.** There is no PENDING status. An attempt that dies before commit rolls back completely (no claim, no record, no tax code change), and its retry is a first try. An attempt that commits has its record. So there is no success without a durable record and no record stuck in progress. Refusals are not recorded: a retry re-evaluates.
+- **Website forms.** The claim and answer forms carry a hidden `submission_id`, created when the page is rendered and used as the key (`form:<id>`). Pressing the button twice or resending the form is one submission. A form without one still works and is covered by the business rules.
+
+Not done: other mutating routes ignore the header; the claim-status read path still reopens disputed answers with the global client; records are kept indefinitely (a retention window would be added with a real store).
+
+## Decision 22 — Step-up approval is time-limited and covers the next use, not a transaction
 
 **Decision (issue #38):** A step-up approval authorises the next positive check for one mandate and capability, and only within `STEP_UP_MAX_AGE_MINUTES` (default 10) of `approvedAt`. An older approval is ignored and the agent gets the normal `STEP_UP_REQUIRED` with a new approval code. The boundary is inclusive: an approval exactly at the maximum age still works.
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { randomUUID } from "node:crypto";
 import { requireViewer } from "@/lib/guard";
 import { TAX_YEAR, WFH_NEW_CODE, WFH_RELIEF } from "@/lib/taxpayers";
 
@@ -22,6 +23,8 @@ export default async function Check({ searchParams }: { searchParams: Promise<{ 
         <div><dt>Your tax code will change</dt><dd>{taxpayer.taxCode} to {WFH_NEW_CODE}</dd><dd /></div>
       </dl>
       <form action="/claim/submit" method="post">
+        {/* Stable for this page: pressing Submit twice, or resending the form, is one submission. */}
+        <input type="hidden" name="submission_id" value={randomUUID()} />
         <button className="button" type="submit">Submit claim</button>
       </form>
     </div>

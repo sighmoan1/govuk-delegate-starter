@@ -65,7 +65,7 @@ The core idea, in one line: **identify the agent, authorise the mandate, limit t
 With the stack running:
 
 ```bash
-npm test            # Vitest over HTTP: scenarios A–F at Delegate's check API and again through HMRC;
+npm test            # Vitest: HMRC database-backed idempotency/atomicity tests (apps/hmrc/tests), then over HTTP: scenarios A–F at Delegate's check API and again through HMRC;
                     # one event per attempt in both logs; untrusted-lane friction; lifecycle; return URLs
 npm run test:e2e    # Playwright: the scenarios (each started from its UI reset) across all apps, each system alone, a check
                     # that the services carry no demo copy, skip link, 320px reflow. Resets demo data first.

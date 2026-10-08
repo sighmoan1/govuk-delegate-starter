@@ -1,9 +1,10 @@
 // How much any one person's authority may be used, whoever is using it: the
 // person, one agent, a hundred agents, or an agent HMRC can't see at all.
 // Every rule is keyed by the One Login subject, never by agent or session.
-import { createHash } from "node:crypto";
+import type { Prisma } from "@/generated/prisma";
 import { prisma } from "./db";
 import { TAX_YEAR } from "./taxpayers";
+import { IDEMPOTENT_CAPABILITIES, fingerprint, isValidKey, payloadDigest } from "./idempotency";
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -20,8 +21,8 @@ export const RULES = {
 export type RuleName = keyof typeof RULES;
 
 export type Refusal = {
-  reason: "CAPACITY_EXCEEDED" | "DUPLICATE_SUBMISSION" | "NEW_EVIDENCE_REQUIRED" | "QUERY_NOT_FOUND" | "INVALID_REQUEST";
-  rule: RuleName;
+  reason: "CAPACITY_EXCEEDED" | "DUPLICATE_SUBMISSION" | "NEW_EVIDENCE_REQUIRED" | "QUERY_NOT_FOUND" | "INVALID_REQUEST" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY";
+  rule: RuleName | "idempotency_key";
   limit: number;
   used: number;
   resetsAt: string | null;
@@ -30,10 +31,9 @@ export type Refusal = {
 
 export type Admitted = { rule: RuleName | null; limit: number | null; used: number | null; evidence: string | null };
 
-export const fingerprint = (evidence: unknown) =>
-  typeof evidence === "string" && evidence.trim() ? createHash("sha256").update(evidence.trim().toLowerCase()).digest("hex").slice(0, 32) : null;
+export { fingerprint };
 
-type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+export type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
 async function rateRule(tx: Tx, subject: string, rule: "tax_code_views_per_hour" | "refund_account_changes_per_30_days" | "claim_progress_checks_per_day", now: Date): Promise<Refusal | Admitted> {
   const { limit, windowMs } = RULES[rule];
@@ -62,20 +62,49 @@ async function openCases(tx: Tx, taxpayerId: string): Promise<Refusal | null> {
   return null;
 }
 
+export type CapacityOptions = {
+  now?: Date;
+  /** The client's Idempotency-Key (or a website form's `form:<id>`). Honoured for the capabilities in IDEMPOTENT_CAPABILITIES. */
+  idempotencyKey?: string | null;
+};
+
 /**
  * Admit one action against a person, then run it, with the person's lock held
  * so a swarm of concurrent requests can't race past the rules.
+ *
+ * Everything happens in one database transaction: the idempotency lookup, the
+ * capacity rules, the business handler (which must use the `tx` it is given,
+ * never the global client) and the idempotency record. They commit together or
+ * not at all. A retry of an attempt that already committed gets the stored
+ * outcome back (`replayed: true`) and nothing runs again.
  */
 export async function withPrincipalCapacity<T>(
   taxpayer: { id: string; oneLoginSubject: string },
   capability: string,
   body: Record<string, unknown>,
-  run: (admitted: Admitted) => Promise<T>,
-  now = new Date(),
-): Promise<{ ok: true; admitted: Admitted; result: T } | { ok: false; refusal: Refusal }> {
+  run: (admitted: Admitted, tx: Tx) => Promise<T>,
+  { now = new Date(), idempotencyKey = null }: CapacityOptions = {},
+): Promise<{ ok: true; admitted: Admitted; result: T; replayed: boolean } | { ok: false; refusal: Refusal }> {
+  const keyed = idempotencyKey != null && IDEMPOTENT_CAPABILITIES.has(capability);
+  if (keyed && !isValidKey(idempotencyKey.startsWith("form:") ? idempotencyKey.slice(5) : idempotencyKey)) {
+    return { ok: false, refusal: { reason: "INVALID_IDEMPOTENCY_KEY", rule: "idempotency_key", limit: 128, used: 0, resetsAt: null, message: "Idempotency-Key must be 1 to 128 visible characters with no spaces." } };
+  }
+  const digest = keyed ? payloadDigest(capability, body) : "";
   return prisma.$transaction(
     async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`principal:${taxpayer.oneLoginSubject}`}))`;
+      if (keyed) {
+        // Holding the person's lock, so no other attempt can be between this read and its own write.
+        const earlier = await tx.idempotencyRecord.findUnique({
+          where: { subject_operation_key: { subject: taxpayer.oneLoginSubject, operation: capability, key: idempotencyKey } },
+        });
+        if (earlier) {
+          if (earlier.payloadDigest !== digest) {
+            return { ok: false as const, refusal: { reason: "IDEMPOTENCY_KEY_REUSED" as const, rule: "idempotency_key" as const, limit: 1, used: 1, resetsAt: null, message: "This Idempotency-Key was already used for a different request. Use a new key for a new request." } };
+          }
+          return { ok: true as const, admitted: earlier.admitted as Admitted, result: earlier.response as T, replayed: true };
+        }
+      }
       let admitted: Admitted = { rule: null, limit: null, used: null, evidence: null };
 
       if (capability === "view_tax_code") {
@@ -135,8 +164,19 @@ export async function withPrincipalCapacity<T>(
         if (full) return { ok: false as const, refusal: full };
       }
 
-      const result = await run(admitted);
-      return { ok: true as const, admitted, result };
+      const result = await run(admitted, tx);
+      if (keyed) {
+        const r = (result ?? {}) as Record<string, unknown>;
+        const reference = [r.claim_reference, r.change_reference, r.query_id].find((v) => typeof v === "string") as string | undefined;
+        // The unique index is the backstop behind the lock: a second writer would fail here and roll back.
+        await tx.idempotencyRecord.create({
+          data: {
+            subject: taxpayer.oneLoginSubject, operation: capability, key: idempotencyKey, payloadDigest: digest, reference: reference ?? null,
+            response: result as Prisma.InputJsonValue, admitted: admitted as unknown as Prisma.InputJsonValue,
+          },
+        });
+      }
+      return { ok: true as const, admitted, result, replayed: false };
     },
     { timeout: 20_000, maxWait: 20_000 },
   );
@@ -148,4 +188,6 @@ export const REFUSAL_STATUS: Record<Refusal["reason"], number> = {
   NEW_EVIDENCE_REQUIRED: 409,
   QUERY_NOT_FOUND: 404,
   INVALID_REQUEST: 400,
+  IDEMPOTENCY_KEY_REUSED: 409,
+  INVALID_IDEMPOTENCY_KEY: 400,
 };

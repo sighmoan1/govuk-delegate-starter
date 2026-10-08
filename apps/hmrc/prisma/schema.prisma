@@ -84,6 +84,8 @@ model ClaimQuery {
   answerWithdrawn   Boolean     @default(false) @map("answer_withdrawn")
   // Which submission of the answer this is; goes up when the person disputes one, so each gets its own receipt.
   answerVersion     Int         @default(0) @map("answer_version")
+  // Set on every state change (asked, answered, withdrawn and reopened); progress polling compares it with `since`.
+  stateChangedAt    DateTime    @default(now()) @map("state_changed_at")
 
   claim Claim @relation(fields: [claimId], references: [id], onDelete: Cascade)
 
@@ -151,4 +153,31 @@ model PrincipalUsage {
 
   @@index([subject, rule, at])
   @@map("principal_usage")
+}
+
+// A client's retry of one mutating operation. Written in the same database
+// transaction as the claim or answer it describes, so there is never a record
+// without its business effect, or a business effect without its record. There
+// is deliberately no PENDING status: an attempt that crashes or times out rolls
+// back and leaves nothing, so a retry with the same key is simply a first try.
+enum IdempotencyStatus {
+  COMPLETED
+}
+
+model IdempotencyRecord {
+  id            String            @id @default(uuid())
+  subject       String // the person's One Login subject, whoever acted
+  operation     String // the capability, e.g. claim_job_expenses
+  key           String // the client's Idempotency-Key, or form:<id> for a website form
+  payloadDigest String            @map("payload_digest") // sha256 of the normalised payload
+  status        IdempotencyStatus @default(COMPLETED)
+  reference     String? // claim or change reference, or the query id
+  response      Json // what the first attempt returned: replayed verbatim
+  admitted      Json // the capacity position at the time, for the replayed response
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  @@unique([subject, operation, key])
+  @@index([createdAt])
+  @@map("idempotency_record")
 }
