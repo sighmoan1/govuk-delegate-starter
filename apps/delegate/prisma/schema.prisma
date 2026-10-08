@@ -354,6 +354,8 @@ model Receipt {
   reference      String
   text           String
   agentConfirmed Boolean       @map("agent_confirmed")
+  // Stable key from the service (service + query + submission version), so a retried write returns the same receipt.
+  idempotencyKey String?       @unique @map("idempotency_key")
   status         ReceiptStatus @default(RECORDED)
   createdAt      DateTime      @default(now()) @map("created_at")
   seenAt         DateTime?     @map("seen_at")

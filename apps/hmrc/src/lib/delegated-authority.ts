@@ -10,7 +10,7 @@
 // Detection (the agent's signature) is evidence, not the boundary: capacity
 // is keyed to the person, so it holds even when HMRC can't see the agent.
 import { NextResponse } from "next/server";
-import { askDelegate, reportOutcome, type DelegateChain } from "./delegate-client";
+import { askDelegate, reportOutcome, DelegateUnavailableError, type DelegateChain } from "./delegate-client";
 import { takeToken, clientKey, sleep } from "./friction";
 import { logEvent } from "./events";
 import { taxpayerFromRequest } from "./session";
@@ -105,6 +105,20 @@ export function requireDelegatedAuthority(capability: string, handler: Handler) 
 }
 
 async function actAsAgent(token: string, principalId: string, capability: string, body: Record<string, unknown>, handler: Handler, log: Log) {
+  try {
+    return await actAsAgentChecked(token, principalId, capability, body, handler, log);
+  } catch (e) {
+    if (!(e instanceof DelegateUnavailableError)) throw e;
+    // Delegate couldn't answer, or couldn't record the receipt. That is not a "no" and not a "yes": nothing was accepted.
+    await log({ lane: "AUTHORISED_AGENT", outcome: "REFUSED", reason: "DELEGATE_UNAVAILABLE" });
+    return NextResponse.json(
+      { decision: "DENY", reason: "DELEGATE_UNAVAILABLE", lane: "AUTHORISED_AGENT", retryable: true, message: "GOV.UK Delegate is not available, so nothing was done. Try the same request again shortly; retries will not duplicate anything." },
+      { status: 503, headers: { "retry-after": "30", "x-trusted-lane": "AUTHORISED_AGENT" } },
+    );
+  }
+}
+
+async function actAsAgentChecked(token: string, principalId: string, capability: string, body: Record<string, unknown>, handler: Handler, log: Log) {
   const check = await askDelegate({ agent_token: token, principal_id: principalId, capability });
   const chainLog = check.chain
     ? { mandateId: check.chain.mandate_id, delegationId: check.chain.delegation_id, parentDelegationId: check.chain.parent_delegation_id, depth: check.chain.depth, agentLabel: check.chain.label, assurance: check.chain.assurance }

@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { KNOWN_AGENTS, verifyRequest, fromRequest, type TrustedAgent, type Directory } from "@prototype/web-bot-auth";
+import { KNOWN_AGENTS, verifyOncePerRequest, authorityFromHeaders, fromRequest, type TrustedAgent, type Directory } from "@prototype/web-bot-auth";
 
 /** Agents whose Web Bot Auth signatures we recognise. The test agent only outside public mode. */
 export function trustedAgents(): TrustedAgent[] {
@@ -13,4 +13,6 @@ export function trustedAgents(): TrustedAgent[] {
 }
 
 /** Is this request signed by a known agent's operator? */
-export const verifyAgentSignature = (req: Request) => verifyRequest(fromRequest(req), { trusted: trustedAgents() });
+/** x-forwarded-host is honoured only when a trusted reverse proxy is declared (TRUSTED_PROXY=true). */
+const trustProxy = () => process.env.TRUSTED_PROXY === "true";
+export const verifyAgentSignature = (req: Request) => verifyOncePerRequest(req, fromRequest(req, { trustForwardedHost: trustProxy() }), { trusted: trustedAgents() });

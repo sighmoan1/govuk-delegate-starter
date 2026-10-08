@@ -4,11 +4,24 @@ node_modules
 test-results
 playwright-report
 *.tsbuildinfo
-apps/*/.next
+**/.next
+.next/
+out/
 apps/*/.env
-apps/*/next-env.d.ts
+next-env.d.ts
+**/next-env.d.ts
 apps/*/public/design.css
 apps/*/src/generated
 .env.public
 .public
 public.config.json
+
+# macOS / OS metadata
+**/.DS_Store
+._*
+Thumbs.db
+
+# Logs and misc generated
+*.log
+.vercel
+coverage

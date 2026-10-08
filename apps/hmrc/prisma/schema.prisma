@@ -82,6 +82,8 @@ model ClaimQuery {
   // GOV.UK Delegate's record of what the agent said the person agreed to.
   receiptId         String?     @map("receipt_id")
   answerWithdrawn   Boolean     @default(false) @map("answer_withdrawn")
+  // Which submission of the answer this is; goes up when the person disputes one, so each gets its own receipt.
+  answerVersion     Int         @default(0) @map("answer_version")
 
   claim Claim @relation(fields: [claimId], references: [id], onDelete: Cascade)
 

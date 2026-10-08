@@ -2,6 +2,16 @@
 // operator (RFC 9421 HTTP Message Signatures, as used by ChatGPT agent and
 // Google-Agent). This proves WHICH OPERATOR's agent sent the request. It says
 // nothing about whose authority the agent is using: that is GOV.UK Delegate.
+//
+// Verification requires the signature to cover @authority, signature-agent, @method and the
+// request target (@target-uri, or @path plus @query when the request has a query), a bounded
+// created/expires window and a nonce. Nonces are single-use via a ReplayCache.
+// Deployment assumptions: the default cache is per-process, so with several instances a
+// captured request can be replayed once per instance until a shared ReplayCache (Redis SET NX PX
+// or a unique index) is supplied. x-forwarded-host is trusted only with TRUSTED_PROXY=true.
+// Remaining risk: providers that sign only @authority + signature-agent (not method/target) are
+// rejected as "missing-components" rather than accepted unbound; server-component callers must
+// pass the true path including query. Verification does not bind the request body.
 import { createPublicKey, createPrivateKey, sign as edSign, verify as edVerify, randomBytes, type KeyObject } from "node:crypto";
 
 export type Jwk = { kty: string; crv: string; x: string; kid?: string; nbf?: number; exp?: number };
@@ -26,7 +36,9 @@ export type VerifyFailure =
   | "untrusted-agent"   // signed, but by an operator we don't recognise
   | "malformed"
   | "no-web-bot-auth-signature"
-  | "missing-components"
+  | "missing-components"   // signature does not cover method + target + authority + signature-agent
+  | "missing-freshness"    // no created/expires/nonce, or lifetime longer than we allow
+  | "replayed"             // same agent/key/nonce already seen inside its validity window
   | "expired"
   | "not-yet-valid"
   | "unknown-key"
@@ -99,7 +111,15 @@ export function signatureBase(input: SignatureInput, req: RequestLike): string |
       case "@path": value = req.path.split("?")[0] || "/"; break;
       case "@target-uri": value = `https://${req.authority.toLowerCase()}${req.path}`; break;
       case "@query": { const q = req.path.indexOf("?"); value = q >= 0 ? req.path.slice(q) : "?"; break; }
-      default: value = req.headers[c.name];
+      default: {
+        value = req.headers[c.name];
+        // RFC 9421 §2.1.2: ;key="x" selects one member of a Structured Field dictionary header.
+        const keyParam = c.params.find((p) => p.startsWith("key="));
+        if (keyParam && typeof value === "string") {
+          const member = keyParam.slice(4).replace(/^"|"$/g, "");
+          value = splitTopLevel(value).map((m) => m.trim()).find((m) => m.startsWith(`${member}=`)) ?? null;
+        }
+      }
     }
     if (value === null || value === undefined) return null;
     const name = `"${c.name}"${c.params.length ? `;${c.params.join(";")}` : ""}`;
@@ -107,6 +127,80 @@ export function signatureBase(input: SignatureInput, req: RequestLike): string |
   }
   lines.push(`"@signature-params": ${input.raw}`);
   return lines.join("\n");
+}
+
+/**
+ * Does this set of covered components bind the signature to the actual HTTP
+ * method and request target (path, plus query when the request has one)?
+ * Accepts the RFC 9421 forms: "@target-uri", or "@method" + "@path" (+ "@query").
+ * Authority is covered separately because @target-uri also includes it.
+ */
+export function coversRequestTarget(names: string[], req: RequestLike): boolean {
+  const has = (n: string) => names.includes(n);
+  if (!has("@method")) return false;
+  const hasQuery = req.path.includes("?");
+  if (has("@target-uri")) return true;
+  if (!has("@path")) return false;
+  return !hasQuery || has("@query");
+}
+
+// ── Replay protection ──
+
+/**
+ * Remembers (agent, key, nonce) until the signature would have expired anyway.
+ * The default is in-process memory: correct for one instance only. With several
+ * instances, behind a load balancer, supply a shared store (Redis SET NX PX or
+ * a unique-indexed table) implementing this interface via `opts.replayCache`;
+ * otherwise a captured request can be replayed once per instance.
+ */
+export interface ReplayCache {
+  /** Record the nonce; return false if it was already recorded and is unexpired. */
+  claim(key: string, expiresAtMs: number, nowMs: number): boolean | Promise<boolean>;
+}
+
+export class MemoryReplayCache implements ReplayCache {
+  private seen = new Map<string, number>();
+  constructor(private maxEntries = 50_000) {}
+  claim(key: string, expiresAtMs: number, nowMs: number): boolean {
+    const prior = this.seen.get(key);
+    if (prior !== undefined && prior > nowMs) return false;
+    if (this.seen.size >= this.maxEntries) {
+      for (const [k, exp] of this.seen) if (exp <= nowMs) this.seen.delete(k);
+      // Still full of live entries: fail closed rather than grow without bound.
+      if (this.seen.size >= this.maxEntries) return false;
+    }
+    this.seen.set(key, expiresAtMs);
+    return true;
+  }
+}
+
+const defaultReplayCache = new MemoryReplayCache();
+/** Longest validity (expires - created) we accept, and oldest created we accept. */
+export const MAX_SIGNATURE_LIFETIME_SECONDS = 300;
+
+/**
+ * Trust x-forwarded-host only when the deployment says a trusted reverse proxy
+ * sets it (and strips client-supplied copies). Otherwise use the Host header.
+ */
+export function authorityFromHeaders(headers: Record<string, string | null | undefined>, trustForwardedHost = false, fallback = ""): string {
+  const fwd = trustForwardedHost ? headers["x-forwarded-host"]?.split(",")[0].trim() : undefined;
+  return fwd || headers.host || fallback;
+}
+
+const memo = new WeakMap<object, Map<string, Promise<Verification>>>();
+/**
+ * Verify at most once per incoming request. Replay protection means a second
+ * verification of the same request would (correctly) look like a replay, so
+ * code that checks twice in one request must share the first answer. `scope`
+ * is the per-request object (the Request or Headers instance).
+ */
+export function verifyOncePerRequest(scope: object, req: RequestLike, opts?: VerifyOptions): Promise<Verification> {
+  const id = `${req.method} ${req.authority} ${req.path}`;
+  let m = memo.get(scope);
+  if (!m) memo.set(scope, (m = new Map()));
+  let p = m.get(id);
+  if (!p) m.set(id, (p = verifyRequest(req, opts)));
+  return p;
 }
 
 // ── Keys ──
@@ -135,10 +229,9 @@ const keyFromJwk = (jwk: Jwk): KeyObject => createPublicKey({ key: { kty: "OKP",
 
 const header = (req: RequestLike, name: string) => req.headers[name] ?? req.headers[name.toLowerCase()] ?? null;
 
-export async function verifyRequest(
-  req: RequestLike,
-  opts: { trusted?: TrustedAgent[]; now?: number; fetcher?: typeof fetch; skewSeconds?: number } = {},
-): Promise<Verification> {
+export type VerifyOptions = { trusted?: TrustedAgent[]; now?: number; fetcher?: typeof fetch; skewSeconds?: number; replayCache?: ReplayCache; maxLifetimeSeconds?: number };
+
+export async function verifyRequest(req: RequestLike, opts: VerifyOptions = {}): Promise<Verification> {
   const trusted = opts.trusted ?? KNOWN_AGENTS;
   const now = Math.floor((opts.now ?? Date.now()) / 1000);
   const skew = opts.skewSeconds ?? 60;
@@ -148,7 +241,8 @@ export async function verifyRequest(
   if (!sigAgentRaw && !sigInputRaw && !sigRaw) return { verified: false, reason: "absent" };
   if (!sigAgentRaw || !sigInputRaw || !sigRaw) return { verified: false, reason: "malformed" };
 
-  const agent = sigAgentRaw.trim().replace(/^"|"$/g, "");
+  // Signature-Agent is a string ("https://x") or a dictionary member (sig1="https://x").
+  const agent = sigAgentRaw.trim().replace(/^[a-z0-9_*-]+=/i, "").replace(/^"|"$/g, "");
   const known = trusted.find((t) => t.agent === agent);
   if (!known) return { verified: false, reason: "untrusted-agent", agent };
 
@@ -159,13 +253,21 @@ export async function verifyRequest(
   const candidate = inputs.find((i) => i.params.tag === "web-bot-auth");
   if (!candidate) return { verified: false, reason: "no-web-bot-auth-signature", agent };
   const names = candidate.components.map((c) => c.name);
-  // The signature must cover who it is for (@authority) and who sent it (signature-agent).
-  if (!names.includes("@authority") || !names.includes("signature-agent")) return { verified: false, reason: "missing-components", agent };
+  // The signature must cover who it is for (@authority), who sent it (signature-agent)
+  // and which operation it authorises (method + target, including any query).
+  if (!names.includes("@authority") || !names.includes("signature-agent") || !coversRequestTarget(names, req)) return { verified: false, reason: "missing-components", agent };
 
+  const maxLife = opts.maxLifetimeSeconds ?? MAX_SIGNATURE_LIFETIME_SECONDS;
   const created = Number(candidate.params.created);
   const expires = Number(candidate.params.expires);
-  if (!Number.isFinite(created) || created > now + skew) return { verified: false, reason: "not-yet-valid", agent };
-  if (Number.isFinite(expires) && expires < now - skew) return { verified: false, reason: "expired", agent };
+  const nonce = candidate.params.nonce;
+  // Freshness is mandatory: created, a bounded expires, and a nonce to make it single-use.
+  if (!Number.isFinite(created) || !Number.isFinite(expires) || typeof nonce !== "string" || !nonce || expires <= created || expires - created > maxLife) {
+    return { verified: false, reason: "missing-freshness", agent };
+  }
+  if (created > now + skew) return { verified: false, reason: "not-yet-valid", agent };
+  if (expires < now - skew) return { verified: false, reason: "expired", agent };
+  if (now - created > maxLife + skew) return { verified: false, reason: "expired", agent };
 
   const dir = await loadDirectory(known.directory, opts.fetcher ?? fetch);
   if (!dir) return { verified: false, reason: "directory-unavailable", agent };
@@ -178,7 +280,12 @@ export async function verifyRequest(
   const sig = sigs[candidate.label];
   if (!base || !sig) return { verified: false, reason: "malformed", agent };
   const ok = edVerify(null, Buffer.from(base), keyFromJwk(jwk), sig);
-  return ok ? { verified: true, agent, name: known.name, keyid, label: candidate.label } : { verified: false, reason: "bad-signature", agent };
+  if (!ok) return { verified: false, reason: "bad-signature", agent };
+  // Only record the nonce once the signature is genuine, so forgeries cannot fill or poison the cache.
+  const cache = opts.replayCache ?? defaultReplayCache;
+  const fresh = await cache.claim(`${agent}|${keyid}|${nonce}`, (expires + skew) * 1000, (opts.now ?? Date.now()));
+  if (!fresh) return { verified: false, reason: "replayed", agent };
+  return { verified: true, agent, name: known.name, keyid, label: candidate.label };
 }
 
 // ── Test signer: lets the tests (and a local agent) sign like ChatGPT does ──
@@ -186,15 +293,18 @@ export async function verifyRequest(
 export function signRequest(
   req: Omit<RequestLike, "headers">,
   key: { privateKeyPem: string; keyid: string; agent: string },
-  opts: { now?: number; ttlSeconds?: number; components?: string[] } = {},
+  opts: { now?: number; ttlSeconds?: number; components?: string[]; nonce?: string | null; agentDictionaryKey?: string } = {},
 ): Record<string, string> {
   const created = Math.floor((opts.now ?? Date.now()) / 1000);
   const expires = created + (opts.ttlSeconds ?? 60);
-  const components = opts.components ?? ["@authority", "@method", "@path", "signature-agent"];
-  const nonce = randomBytes(16).toString("base64");
-  const signatureAgent = `"${key.agent}"`;
-  const raw = `(${components.map((c) => `"${c}"`).join(" ")});created=${created};keyid="${key.keyid}";alg="ed25519";expires=${expires};nonce="${nonce}";tag="web-bot-auth"`;
-  const input: SignatureInput = { label: "sig1", components: components.map((name) => ({ name, params: [] })), params: {}, raw };
+  const components = opts.components ?? ["@authority", "@method", "@path", ...(req.path.includes("?") ? ["@query"] : []), "signature-agent"];
+  const nonce = opts.nonce === undefined ? randomBytes(16).toString("base64") : opts.nonce;
+  // ChatGPT-style: Signature-Agent is a dictionary member, covered as "signature-agent";key="sig1".
+  const dk = opts.agentDictionaryKey;
+  const signatureAgent = dk ? `${dk}="${key.agent}"` : `"${key.agent}"`;
+  const wire = (c: string) => (c === "signature-agent" && dk ? `"${c}";key="${dk}"` : `"${c}"`);
+  const raw = `(${components.map(wire).join(" ")});created=${created};keyid="${key.keyid}";alg="ed25519";expires=${expires}${nonce === null ? "" : `;nonce="${nonce}"`};tag="web-bot-auth"`;
+  const input: SignatureInput = { label: "sig1", components: components.map((name) => ({ name, params: name === "signature-agent" && dk ? [`key="${dk}"`] : [] })), params: {}, raw };
   const base = signatureBase(input, { ...req, headers: { "signature-agent": signatureAgent } });
   if (!base) throw new Error("Could not build signature base");
   const sig = edSign(null, Buffer.from(base), createPrivateKey(key.privateKeyPem));
@@ -202,10 +312,10 @@ export function signRequest(
 }
 
 /** Build a RequestLike from a fetch-style Request (route handlers). */
-export function fromRequest(req: Request, authorityOverride?: string): RequestLike {
+export function fromRequest(req: Request, opts: { authorityOverride?: string; trustForwardedHost?: boolean } = {}): RequestLike {
   const url = new URL(req.url);
   const headers: Record<string, string> = {};
   req.headers.forEach((v, k) => { headers[k] = v; });
-  const authority = authorityOverride ?? headers["x-forwarded-host"] ?? headers.host ?? url.host;
+  const authority = opts.authorityOverride ?? authorityFromHeaders(headers, opts.trustForwardedHost, url.host);
   return { method: req.method, authority, path: url.pathname + url.search, headers };
 }
