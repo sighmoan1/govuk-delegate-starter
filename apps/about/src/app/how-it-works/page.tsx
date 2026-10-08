@@ -32,6 +32,14 @@ export default function HowItWorks() {
 └──────────────────────────────────────────────────────────────────┘`}</pre>
 
       <div className="two-thirds">
+        <h2>Who manages tasks, and who manages authority?</h2>
+        <p>
+          An agent or AI provider manages the citizen’s task. Delegate checks a registered mandate; it does not
+          interpret goals or orchestrate work. Each receiving department defines its own actions and rules.
+          <Link href="/delegate-orchestrate"> See the Delegate / Orchestrate architecture</Link> and the
+          distinction between the current prototype and the proposed cross-government design.
+        </p>
+
         <h2>The relationship, not a token</h2>
         <p>
           The agent does not carry a signed permission around. Each time it calls HMRC, HMRC asks GOV.UK Delegate whether this agent may do
