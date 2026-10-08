@@ -23,7 +23,7 @@ export function GET() {
     components: { securitySchemes: { agentToken: { type: "http", scheme: "bearer", description: `An agent token or delegation token from GOV.UK Delegate (${config.delegateUrl}).` } } },
     paths: {
       "/api/tax-code": action("View the person's tax code", "get"),
-      "/api/job-expenses": action("Claim tax relief for working from home (more than once only with new evidence)", "post"),
+      "/api/job-expenses": action("Claim tax relief for working from home (more than once only with new evidence). Send an Idempotency-Key header (1 to 128 visible characters, a fresh one per claim) and retry safely: the same key with the same body returns the original reference with nothing made twice; the same key with a different body is 409 IDEMPOTENCY_KEY_REUSED. A new key is a new claim and meets the duplicate rules.", "post"),
       "/api/employment": action("Update employment details", "post"),
       "/api/refund-account": action("Change the bank account for refunds (needs the person's approval each time)", "post"),
       "/api/address": action("Change address", "post"),

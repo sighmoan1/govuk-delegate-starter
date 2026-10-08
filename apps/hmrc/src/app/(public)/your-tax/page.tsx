@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { config } from "@/lib/config";
 import { requireViewer, viewerCan } from "@/lib/guard";
@@ -83,6 +84,7 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
           {openQueries.map((q) => (
             <form key={q.id} action="/query/reply" method="post" className="form-group">
               <input type="hidden" name="query_id" value={q.id} />
+              <input type="hidden" name="submission_id" value={randomUUID()} />
               <p><strong>About claim {q.claim.reference}:</strong> {q.question}</p>
               {q.answerWithdrawn && <p className="inset-text">You told GOV.UK you did not agree to the answer sent for you before, so HMRC has not accepted it. Please answer again.</p>}
               <label className="label" htmlFor={`answer-${q.id}`}>Your answer</label>
