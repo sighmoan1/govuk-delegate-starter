@@ -185,6 +185,12 @@ The distinction is not **government AI versus commercial AI**. It is **authority
 
 No actor may approve its own grant. Unknown or unverified automation is not automatically malicious; it may need a legitimate route to identify itself.
 
+## 8a. Open question: should every authority record be owned by Delegate?
+
+**Not decided.** A shared citizen experience does not require a central source of truth for every legal or administrative representative relationship. Some authority can be issued through Delegate; other authority (department-managed agent relationships, appointed representatives and powers of attorney) may need to remain with its originating authority.
+
+The central registry, fully federated and hybrid alternatives—including privacy, provenance, revocation and outage consequences—are evaluated in [Where authority lives: central, federated or hybrid?](FEDERATED_AUTHORITY.md). We favour **testing** hybrid recognition, not pre-selecting it. No federation feature has been implemented.
+
 ## 9. Failure and trust boundaries
 
 - **Delegate unavailable:** the service must not infer an ALLOW. Provide safe retry or a legally adequate alternate route; accepted service transactions must not vanish.
@@ -221,6 +227,7 @@ Make Delegate generic by implementing: (1) service-owned catalogue registration 
 
 - [Product case](PRODUCT_CASE.md)
 - [Architectural decisions](DECISIONS.md) (Decision 21)
+- [Where authority lives: central, federated or hybrid?](FEDERATED_AUTHORITY.md) — **open decision**
 - [Original build specification](BUILD_SPEC.md) (historical brief)
 - [RFC 9396 — OAuth 2.0 Rich Authorization Requests](https://www.rfc-editor.org/rfc/rfc9396)
 - [RFC 8707 — Resource Indicators for OAuth 2.0](https://www.rfc-editor.org/rfc/rfc8707)
