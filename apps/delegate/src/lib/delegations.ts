@@ -8,7 +8,7 @@ type Parent = { kind: "agent"; delegateId: string } | { kind: "delegation"; dele
 /**
  * An agent passes part of its authority to a sub-agent. The child inherits the
  * mandate (and so the root principal), can't widen its parent's capabilities,
- * and can't go deeper than the mandate allows. It shares the person's capacity.
+ * and can't go deeper than the mandate allows.
  */
 export async function subDelegate(input: { parent: Parent; principalId: string; service: string; capabilities: string[]; label?: string }) {
   await expireDueAuthorisations();

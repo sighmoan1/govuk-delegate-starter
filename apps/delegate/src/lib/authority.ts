@@ -23,12 +23,11 @@ export type Chain = {
   delegateId: string;
 };
 
-export type Capacity = { rule: "agent_actions_per_hour"; limit: number; used: number; remaining: number; resetsAt: string };
-
-export type DenyReason = Exclude<Reason, "VALID_AUTHORISATION" | "INVALID_AGENT_AUTHENTICATION" | "RATE_LIMITED" | "HUMAN_SESSION">;
+// CAPACITY_EXCEEDED stays in the Reason enum only so historical activity rows still read; Delegate no longer issues it.
+export type DenyReason = Exclude<Reason, "VALID_AUTHORISATION" | "INVALID_AGENT_AUTHENTICATION" | "RATE_LIMITED" | "HUMAN_SESSION" | "CAPACITY_EXCEEDED">;
 
 export type CheckResult =
-  | { authorised: true; serviceId: string; chain: Chain; capacity: Capacity }
+  | { authorised: true; serviceId: string; chain: Chain }
   | {
       authorised: false;
       reason: DenyReason;
@@ -36,11 +35,8 @@ export type CheckResult =
       authorisationId?: string;
       serviceId?: string;
       chain?: Partial<Chain>;
-      capacity?: Capacity;
       stepUp?: { userCode: string; stepUpId: string };
     };
-
-const HOUR = 3_600_000;
 
 /** Flip ACTIVE authorisations whose time has run out. Authoritative, server-side. */
 export async function expireDueAuthorisations(now = new Date()) {
@@ -114,8 +110,11 @@ async function ancestorDenial(
  *   identity   → is the presenter a known, active agent?
  *   authority  → is there a live mandate from this person, and does the
  *                delegation chain cover this capability?
- *   capacity   → has everyone acting for this person with this service
- *                already used the person's budget?
+ *
+ * A yes proves exactly that and nothing more. It is a lookup, not a
+ * transaction: asking, and being told yes, spends nothing of the person's.
+ * Business limits on what the person may then DO belong to the service that
+ * performs the action (HMRC's capacity.ts), not to this check.
  */
 export async function checkAuthority(input: CheckInput, now = new Date()): Promise<CheckResult> {
   const service = await prisma.service.findUnique({ where: { slug: input.service } });
@@ -184,7 +183,7 @@ export async function checkAuthority(input: CheckInput, now = new Date()): Promi
   }
 
   // ── Sensitive actions need an agent whose identity is verified or registered.
-  // Assurance decides WHAT an agent may do; it never adds capacity.
+  // Assurance decides WHAT an agent may do.
   if (capability.riskLevel === "HIGH" && delegation.assurance === "DECLARED") {
     return { authorised: false, reason: "ASSURANCE_TOO_LOW", ...base };
   }
@@ -193,40 +192,25 @@ export async function checkAuthority(input: CheckInput, now = new Date()): Promi
   let stepUpId: string | null = null;
   if (capability.requiresStepUp) {
     const approved = await prisma.stepUp.findFirst({ where: { mandateId: mandate.id, capability: input.capability, status: "APPROVED" }, orderBy: { approvedAt: "asc" } });
-    if (!approved) {
-      const pending =
-        (await prisma.stepUp.findFirst({ where: { mandateId: mandate.id, capability: input.capability, status: "PENDING" } })) ??
-        (await prisma.stepUp.create({ data: { mandateId: mandate.id, capability: input.capability, userCode: userCode() } }));
-      return { authorised: false, reason: "STEP_UP_REQUIRED", ...base, stepUp: { userCode: pending.userCode, stepUpId: pending.id } };
-    }
+    if (!approved) return stepUpRequired(mandate.id, input.capability, base);
     stepUpId = approved.id;
   }
 
-  // ── Capacity: one budget per person per service, shared by every agent,
-  // mandate and delegation acting for them. Serialised per person so a swarm
-  // can't overshoot it.
-  const limit = service.principalActionsPerHour;
-  return prisma.$transaction(async (tx) => {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${mandate.principalId}:${service.id}`}))`;
-    const since = new Date(now.getTime() - HOUR);
-    const window = await tx.capacityUse.findMany({
-      where: { principalId: mandate.principalId, serviceId: service.id, at: { gt: since } },
-      select: { at: true },
-      orderBy: { at: "asc" },
-    });
-    const resetsAt = new Date((window[0]?.at ?? now).getTime() + HOUR).toISOString();
-    if (window.length >= limit) {
-      const capacity: Capacity = { rule: "agent_actions_per_hour", limit, used: window.length, remaining: 0, resetsAt };
-      return { authorised: false as const, reason: "CAPACITY_EXCEEDED" as const, ...base, capacity };
-    }
-    await tx.capacityUse.create({
-      data: { principalId: mandate.principalId, serviceId: service.id, mandateId: mandate.id, delegationId: delegation.id, capability: input.capability, at: now },
-    });
-    if (stepUpId) await tx.stepUp.update({ where: { id: stepUpId }, data: { status: "USED", usedAt: now } });
-    const used = window.length + 1;
-    const capacity: Capacity = { rule: "agent_actions_per_hour", limit, used, remaining: limit - used, resetsAt };
-    return { authorised: true as const, serviceId: service.id, chain, capacity };
-  });
+  // Today's step-up gate: one approval covers one positive check. Consume it
+  // atomically so two concurrent checks can't both ride on the same approval.
+  // (Issue #19 moves this consumption to the transaction itself.)
+  if (stepUpId) {
+    const used = await prisma.stepUp.updateMany({ where: { id: stepUpId, status: "APPROVED" }, data: { status: "USED", usedAt: now } });
+    if (used.count === 0) return stepUpRequired(mandate.id, input.capability, base);
+  }
+  return { authorised: true, serviceId: service.id, chain };
+}
+
+async function stepUpRequired(mandateId: string, capability: string, base: { status: "ACTIVE"; authorisationId: string; serviceId: string; chain: Chain }): Promise<CheckResult> {
+  const pending =
+    (await prisma.stepUp.findFirst({ where: { mandateId, capability, status: "PENDING" } })) ??
+    (await prisma.stepUp.create({ data: { mandateId, capability, userCode: userCode() } }));
+  return { authorised: false, reason: "STEP_UP_REQUIRED", ...base, stepUp: { userCode: pending.userCode, stepUpId: pending.id } };
 }
 
 /** Short, unambiguous codes a person can type: KQ7M-42XD. */

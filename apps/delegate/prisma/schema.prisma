@@ -62,13 +62,13 @@ enum Reason {
   NO_AUTHORISATION
   RATE_LIMITED
   HUMAN_SESSION
-  CAPACITY_EXCEEDED
+  CAPACITY_EXCEEDED // legacy: kept so old activity rows read; Delegate no longer issues it
   STEP_UP_REQUIRED
   DELEGATION_DEPTH_EXCEEDED
   ASSURANCE_TOO_LOW
 }
 
-// How sure Delegate is about who the agent is. It never changes capacity.
+// How sure Delegate is about who the agent is.
 enum Assurance {
   VERIFIED    // Web Bot Auth signature from a trusted key directory
   REGISTERED  // client credentials issued by Delegate
@@ -135,9 +135,6 @@ model Service {
   name       String
   slug       String @unique
   apiKeyHash String @map("api_key_hash")
-  // Capacity: agent actions per hour per person, shared by every agent and
-  // mandate acting for that person with this service.
-  principalActionsPerHour Int @default(300) @map("principal_actions_per_hour")
 
   capabilities   Capability[]
   requests       AuthorisationRequest[]
@@ -267,9 +264,6 @@ model ActivityEvent {
   parentDelegationId String?  @map("parent_delegation_id")
   depth              Int?
   assurance          Assurance?
-  // Capacity against the principal at the time of the check.
-  capacityUsed       Int?     @map("capacity_used")
-  capacityLimit      Int?     @map("capacity_limit")
 
   principal     Principal?     @relation(fields: [principalId], references: [id])
   delegate      Delegate?      @relation(fields: [delegateId], references: [id])
@@ -302,21 +296,6 @@ model Delegation {
 
   @@index([mandateId])
   @@map("delegation")
-}
-
-// One unit of capacity used against a person with a service, whichever agent,
-// mandate or delegation used it.
-model CapacityUse {
-  id           String   @id @default(uuid())
-  principalId  String   @map("principal_id")
-  serviceId    String   @map("service_id")
-  mandateId    String   @map("mandate_id")
-  delegationId String   @map("delegation_id")
-  capability   String
-  at           DateTime @default(now())
-
-  @@index([principalId, serviceId, at])
-  @@map("capacity_use")
 }
 
 // A fresh approval by the person for one consequential action.

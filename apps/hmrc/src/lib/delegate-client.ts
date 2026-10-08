@@ -8,18 +8,16 @@ export type DelegateChain = {
   label: string | null;
   assurance: "VERIFIED" | "REGISTERED" | "DECLARED";
 };
-export type DelegateCapacity = { rule: string; limit: number; used: number; remaining: number; resets_at: string };
 type DelegateInfo = { id: string; name: string; provider: string };
 
 export type DelegateCheck =
-  | { authorised: true; status: "ACTIVE"; authorisation_id: string; principal_id: string; subject: string; delegate: DelegateInfo; chain: DelegateChain; capacity: DelegateCapacity; check_id: string }
+  | { authorised: true; status: "ACTIVE"; authorisation_id: string; principal_id: string; subject: string; delegate: DelegateInfo; chain: DelegateChain; check_id: string }
   | {
       authorised: false;
       reason: string;
       status?: string | null;
       delegate?: DelegateInfo;
       chain?: DelegateChain | null;
-      capacity?: DelegateCapacity | null;
       step_up?: { user_code: string; approve_url: string };
       check_id: string;
     };
@@ -63,8 +61,8 @@ async function post(operation: string, path: string, body: unknown, retries: num
 
 /**
  * The one call HMRC makes to GOV.UK Delegate. HMRC presents its own service
- * key; Delegate verifies the agent, the mandate, the capability and the
- * person's capacity, and tells HMRC who the person is only if the answer is yes.
+ * key; Delegate verifies the agent, the mandate, the capability and
+ * assurance (it spends none of the person's business limits, which HMRC applies itself), and tells HMRC who the person is only if the answer is yes.
  * Throws DelegateUnavailableError if Delegate can't answer: that is not a "no".
  */
 export async function askDelegate(input: { agent_token: string; principal_id: string; capability: string }): Promise<DelegateCheck> {

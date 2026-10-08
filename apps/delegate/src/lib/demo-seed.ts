@@ -21,7 +21,6 @@ export type SeedResult = { principalId: string; granted: string[] };
 export async function seedDemo(prisma: PrismaClient, opts: SeedOptions = {}): Promise<SeedResult> {
   // Idempotent: re-running restores the clean demo starting state.
   await prisma.receipt.deleteMany();
-  await prisma.capacityUse.deleteMany();
   await prisma.stepUp.deleteMany();
   await prisma.delegation.deleteMany();
   await prisma.activityEvent.deleteMany();

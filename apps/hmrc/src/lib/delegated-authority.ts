@@ -4,7 +4,7 @@
 // It works out who is on the other end (a person, an authorised agent, an
 // agent without permission, or nobody it can identify), asks GOV.UK Delegate
 // one question when an agent is acting for someone, applies the person's
-// capacity limits (whoever is acting), logs the outcome, and either runs the
+// business limits (whoever is acting), logs the outcome, and either runs the
 // business handler or refuses with a machine-readable reason.
 //
 // Detection (the agent's signature) is evidence, not the boundary: capacity
@@ -128,11 +128,9 @@ async function actAsAgentChecked(token: string, principalId: string, capability:
     const lane = check.delegate ? "AUTHORISED_AGENT" : "UNTRUSTED";
     await log({
       lane, outcome: "REFUSED", reason: check.reason, ...agent, ...chainLog, delegateCheckId: check.check_id,
-      ...(check.capacity ? { rule: `delegate:${check.capacity.rule}`, capacityUsed: check.capacity.used, capacityLimit: check.capacity.limit } : {}),
     });
     return refusal(check.reason, lane, {
       delegate_check_id: check.check_id,
-      ...(check.capacity ? { rule: check.capacity.rule, limit: check.capacity.limit, used: check.capacity.used, resets_at: check.capacity.resets_at } : {}),
       ...(check.step_up ? { step_up: check.step_up } : {}),
     });
   }
@@ -163,7 +161,7 @@ async function actAsAgentChecked(token: string, principalId: string, capability:
     rule: run.admitted.rule, capacityUsed: run.admitted.used, capacityLimit: run.admitted.limit,
   });
   return NextResponse.json(
-    { decision: "ALLOW", lane: "AUTHORISED_AGENT", acting_for: taxpayer.name, tell_the_person: `Tell ${taxpayer.name} what you just did. They can see it, and change or remove your access, at ${config.delegateUrl}/account/delegates`, delegate_check_id: check.check_id, result: run.result, capacity: capacityJson(run.admitted), delegate_capacity: check.capacity },
+    { decision: "ALLOW", lane: "AUTHORISED_AGENT", acting_for: taxpayer.name, tell_the_person: `Tell ${taxpayer.name} what you just did. They can see it, and change or remove your access, at ${config.delegateUrl}/account/delegates`, delegate_check_id: check.check_id, result: run.result, capacity: capacityJson(run.admitted) },
     { headers: { "x-trusted-lane": "AUTHORISED_AGENT", "x-ratelimit-limit": String(rl.limit), "x-ratelimit-remaining": String(rl.remaining) } },
   );
 }
