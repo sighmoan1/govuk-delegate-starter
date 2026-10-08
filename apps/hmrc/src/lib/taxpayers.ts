@@ -81,7 +81,7 @@ export async function reopenDisputedAnswers(taxpayerId: string): Promise<{ check
   for (const q of answered.filter((q) => result.disputed.includes(q.receiptId!))) {
     await prisma.claimQuery.update({
       where: { id: q.id },
-      data: { status: "OPEN", answer: null, answeredAt: null, answeredBy: null, answeredByName: null, confirmedByPerson: false, mandateId: null, delegationId: null, receiptId: null, answerWithdrawn: true, answerVersion: { increment: 1 } },
+      data: { status: "OPEN", answer: null, answeredAt: null, answeredBy: null, answeredByName: null, confirmedByPerson: false, mandateId: null, delegationId: null, receiptId: null, answerWithdrawn: true, answerVersion: { increment: 1 }, stateChangedAt: new Date() },
     });
   }
   return { checked: true };
@@ -113,7 +113,7 @@ export async function claimProgress(taxpayer: Taxpayer, body: Record<string, unk
   const status = await claimStatus(taxpayer);
   const since = typeof body.since === "string" ? new Date(body.since) : null;
   const changed = since && !Number.isNaN(+since)
-    ? await prisma.claim.count({ where: { taxpayerId: taxpayer.id, OR: [{ createdAt: { gt: since } }, { queries: { some: { OR: [{ askedAt: { gt: since } }, { answeredAt: { gt: since } }] } } }] } })
+    ? await prisma.claim.count({ where: { taxpayerId: taxpayer.id, OR: [{ createdAt: { gt: since } }, { queries: { some: { OR: [{ askedAt: { gt: since } }, { answeredAt: { gt: since } }, { stateChangedAt: { gt: since } }] } } }] } })
     : null;
   return { ...status, checked_at: new Date().toISOString(), changed_since: changed === null ? null : changed > 0 };
 }
@@ -139,7 +139,7 @@ export async function answerQuery(taxpayer: Taxpayer, actor: Actor, body: Record
   const q = await db.claimQuery.update({
     where: { id: String(body.query_id) },
     data: {
-      status: "ANSWERED", answer, answeredAt: new Date(), confirmedByPerson,
+      status: "ANSWERED", answer, answeredAt: new Date(), stateChangedAt: new Date(), confirmedByPerson,
       answeredBy: actor.kind === "AGENT" ? "AGENT" : "SELF",
       answeredByName: actor.kind === "AGENT" ? actor.name : null,
       mandateId: actor.kind === "AGENT" ? actor.chain.mandate_id : null,
