@@ -11,17 +11,16 @@
 // (see runOperation). There is no PENDING state to get stuck: a crash,
 // timeout or error rolls the whole attempt back, and the retry is a first try.
 import { createHash } from "node:crypto";
+import { changeFields } from "./proposals";
+
+export { isValidKey } from "./idempotency-key";
 
 /** A fingerprint of the evidence; a resubmission needs a different one. */
 export const fingerprint = (evidence: unknown) =>
   typeof evidence === "string" && evidence.trim() ? createHash("sha256").update(evidence.trim().toLowerCase()).digest("hex").slice(0, 32) : null;
 
 /** Capabilities whose Idempotency-Key is honoured. Others ignore the header. */
-export const IDEMPOTENT_CAPABILITIES: ReadonlySet<string> = new Set(["claim_job_expenses", "respond_to_query"]);
-
-const KEY_PATTERN = /^[\x21-\x7e]{1,128}$/; // visible ASCII, no spaces, up to 128 characters
-
-export const isValidKey = (key: string) => KEY_PATTERN.test(key);
+export const IDEMPOTENT_CAPABILITIES: ReadonlySet<string> = new Set(["claim_job_expenses", "respond_to_query", "change_refund_account", "change_address"]);
 
 /** A website form's stable submission identifier, as a key. Namespaced so it can't collide with an API client's key. */
 export function formKey(submissionId: unknown): string | null {
@@ -38,6 +37,7 @@ export function normalisePayload(capability: string, body: Record<string, unknow
       confirmed_by_person: body.confirmed_by_person === true,
     };
   }
+  if (capability === "change_refund_account" || capability === "change_address") return changeFields(capability, body);
   return body;
 }
 

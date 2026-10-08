@@ -1,5 +1,5 @@
 import { describe, it, expect, afterAll } from "vitest";
-import { prisma, newPrincipal, authorise, check, revokeAuthorisation, DELEGATE, HMRC, SERVICE } from "./helpers";
+import { prisma, newPrincipal, authorise, check, revokeAuthorisation, DELEGATE, HMRC, SERVICE, approve, refundProposal, reserve } from "./helpers";
 
 afterAll(() => prisma.$disconnect());
 
@@ -99,15 +99,19 @@ describe("Delegate: a positive check spends nothing", () => {
     }
   });
 
-  it("the high-risk step-up gate still applies, and an approval is still used up by exactly one positive check", async () => {
+  it("the high-risk step-up gate still applies, but checking never uses an approval up: only a reservation does, and only one can win", async () => {
     const sam = await newPrincipal();
     const { token } = await authorise(sam.id, ["change_refund_account"]);
-    const first = await check({ agent_token: token, principal_id: sam.id, capability: "change_refund_account" });
+    const proposal = refundProposal();
+    const ask = () => check({ agent_token: token, principal_id: sam.id, capability: "change_refund_account", proposal });
+    const first = await ask();
     expect(first.body).toMatchObject({ authorised: false, reason: "STEP_UP_REQUIRED" });
-    await prisma.stepUp.update({ where: { userCode: first.body.step_up.user_code }, data: { status: "APPROVED", approvedAt: new Date() } });
-    const results = await Promise.all(Array.from({ length: 5 }, () => check({ agent_token: token, principal_id: sam.id, capability: "change_refund_account" })));
-    expect(results.filter((r) => r.body.authorised).length).toBe(1);
-    expect(results.filter((r) => r.body.reason === "STEP_UP_REQUIRED").length).toBe(4);
+    expect((await approve(first.body.step_up.user_code, sam.id)).ok).toBe(true);
+    const checks = await Promise.all(Array.from({ length: 5 }, ask));
+    expect(checks.every((r) => r.body.authorised === true && r.body.step_up.state === "APPROVED")).toBe(true);
+    const reservations = await Promise.all(Array.from({ length: 5 }, () => reserve({ agent_token: token, principal_id: sam.id, proposal })));
+    expect(reservations.filter((r) => r.body.reserved).length).toBe(1);
+    expect(reservations.filter((r) => r.body.reason === "STEP_UP_IN_USE").length).toBe(4);
   });
 });
 

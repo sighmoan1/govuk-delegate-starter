@@ -6,6 +6,7 @@ import { recordActivity } from "@/lib/activity";
 import { verifySecretCached } from "@/lib/secrets";
 import { readJson } from "@/lib/http";
 import { config } from "@/lib/config";
+import { stepUpJson, proposalFrom } from "@/lib/step-up-json";
 
 /**
  * The one call a government service makes before acting for someone on an
@@ -17,6 +18,10 @@ import { config } from "@/lib/config";
  * Identity: Delegate verifies the agent (or sub-agent) token itself.
  * Authority: a live mandate from the person, and a delegation chain covering the capability.
  * A yes is not a transaction: it spends none of the person's allowance. The service applies its own business limits.
+ * For capabilities that need the person's approval of a specific change, send
+ * proposal: { idempotency_key, payload }. The answer reports that approval's state
+ * (step_up.state) and never uses it up; the service reserves and completes it
+ * separately (POST /api/step-ups/reserve, /complete, /release).
  * The person's One Login subject is returned only when the answer is yes.
  */
 export async function POST(req: Request) {
@@ -53,6 +58,7 @@ export async function POST(req: Request) {
     presenter: presenter.kind === "agent" ? { kind: "agent", delegateId: presenter.delegateId } : { kind: "delegation", delegationId: presenter.delegationId },
     service: slug,
     capability,
+    proposal: proposalFrom(b.proposal),
   });
   if (!result.authorised && result.reason === "UNKNOWN_DELEGATE") {
     const ev = await recordActivity({ ...base, lane: "UNTRUSTED", decision: "DENY", reason: "UNKNOWN_DELEGATE" });
@@ -91,7 +97,7 @@ export async function POST(req: Request) {
       authorisation_id: result.authorisationId ?? null,
       delegate: delegateInfo,
       chain: chainJson ?? null,
-      ...(result.stepUp ? { step_up: { user_code: result.stepUp.userCode, approve_url: `${config.appUrl}/approve?code=${result.stepUp.userCode}` } } : {}),
+      ...(result.stepUp ? { step_up: stepUpJson(result.stepUp) } : {}),
       check_id: ev.id,
     });
   }
@@ -106,6 +112,7 @@ export async function POST(req: Request) {
     subject: principal!.oneLoginSubjectId,
     delegate: delegateInfo,
     chain: chainJson,
+    ...(result.stepUp ? { step_up: stepUpJson(result.stepUp) } : {}),
     check_id: ev.id,
   });
 }
