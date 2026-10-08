@@ -126,6 +126,7 @@ test("an agent using Sam's password is still the agent: it's sent to the proper 
   const agent = await agentCtx.newPage();
   await agent.goto(HMRC);
   await agent.getByRole("button", { name: "Start now" }).click();
+  await agent.getByRole("button", { name: "Sign in with GOV.UK One Login" }).click();
   await expect(agent.locator(".ol-warning")).toContainText("This sign-in is for people");
   await signIn(agent);
   await expect(agent.getByRole("heading", { name: "Act for someone" })).toBeVisible();

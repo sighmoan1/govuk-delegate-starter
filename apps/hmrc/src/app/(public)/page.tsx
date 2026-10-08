@@ -20,7 +20,7 @@ export default async function Start({ searchParams }: { searchParams: Promise<{ 
         <li>see claims made by you or by someone acting for you</li>
       </ul>
       <p>Your tax code will change so you pay less tax. You’ll usually get the relief within a few weeks.</p>
-      <a className="button" href={taxpayer ? "/your-tax" : "/auth/login?returnTo=/your-tax"} role="button" draggable="false">Start now</a>
+      <a className="button" href={taxpayer ? "/your-tax" : "/sign-in?returnTo=/your-tax"} role="button" draggable="false">Start now</a>
 
       <h2>Before you start</h2>
       <p>You’ll need to sign in with GOV.UK One Login.</p>

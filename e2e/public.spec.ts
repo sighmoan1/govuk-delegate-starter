@@ -59,9 +59,18 @@ test("public: an agent told to wait for approval is asked to pass the code on; h
   expect(Number(rows.trim())).toBe(1);
 });
 
+test("public: an agent that can't be identified is asked to get permission, not to sign in", async ({ page }) => {
+  await page.goto(HMRC);
+  await page.getByRole("button", { name: "Start now" }).click();
+  await expect(page.getByText("If you are an assistant or AI agent: don’t sign in.")).toBeVisible();
+  await page.getByRole("button", { name: "Ask the person for permission" }).click();
+  await expect(page.getByRole("heading", { name: "Act for someone" })).toBeVisible();
+});
+
 test("public: Sam signs in to HMRC herself", async ({ page }) => {
   await page.goto(HMRC);
   await page.getByRole("button", { name: "Start now" }).click();
+  await page.getByRole("button", { name: "Sign in with GOV.UK One Login" }).click();
   await expect(page).toHaveURL(new RegExp(`^${OL}/sign-in`));
   await signInAsSam(page);
   await expect(page).toHaveURL(new RegExp(`^${HMRC}/your-tax`));
@@ -70,6 +79,7 @@ test("public: Sam signs in to HMRC herself", async ({ page }) => {
 test("public: sign-in can't be done by clicking through: nothing pre-filled, wrong password and wrong code refused", async ({ page }) => {
   await page.goto(HMRC);
   await page.getByRole("button", { name: "Start now" }).click();
+  await page.getByRole("button", { name: "Sign in with GOV.UK One Login" }).click();
   await expect(page.getByLabel("Email address")).toHaveValue("");
   await page.getByLabel("Email address").fill("someone.else@example.com");
   await page.getByRole("button", { name: "Continue" }).click();

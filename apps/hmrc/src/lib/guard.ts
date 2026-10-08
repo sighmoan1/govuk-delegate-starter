@@ -67,7 +67,7 @@ export async function requireViewer(path: string, capability: string): Promise<V
       redirect(`/challenge?returnTo=${encodeURIComponent(path)}`);
     }
   }
-  redirect(`/auth/login?returnTo=${encodeURIComponent(path)}`);
+  redirect(`/sign-in?returnTo=${encodeURIComponent(path)}`);
 }
 
 /** Kept for pages that only people use. */

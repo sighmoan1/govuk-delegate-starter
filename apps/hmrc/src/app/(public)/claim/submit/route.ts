@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     checkId = check.check_id;
   } else {
     const person = await taxpayerFromRequest(req);
-    if (!person) return go("/auth/login?returnTo=/claim");
+    if (!person) return go("/sign-in?returnTo=/claim");
     if (sig.verified) {
       await logEvent({ ...evidence, lane: "DECLARED_AGENT", outcome: "REFUSED", reason: "AGENT_NOT_AUTHORISED", agentName: sig.name, subject: person.oneLoginSubject, latencyMs: Date.now() - started });
       return go("/act-for-someone?from=/claim");

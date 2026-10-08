@@ -4,10 +4,20 @@ import { test, expect } from "@playwright/test";
 // Login simulator, the internal operations view, and the challenge page.
 const HMRC = process.env.HMRC_URL ?? "http://localhost:3302";
 
+test("without a session, everyone is asked who they are: sign in yourself, or ask permission to act for someone", async ({ page }) => {
+  await page.goto(`${HMRC}/your-tax`); // a protected page
+  await expect(page).toHaveURL(/\/sign-in\?returnTo=/);
+  await expect(page.getByRole("heading", { name: "Sign in to continue" })).toBeVisible();
+  await expect(page.getByText("If you are an assistant or AI agent: don’t sign in.")).toBeVisible();
+  await page.getByRole("button", { name: "Ask the person for permission" }).click();
+  await expect(page.getByRole("heading", { name: "Act for someone" })).toBeVisible();
+});
+
 test("a person signs in, claims relief herself, and the claim is attributed to her", async ({ page }) => {
   await page.goto(`${HMRC}/`);
   await expect(page.getByRole("heading", { name: "Claim tax relief for your job expenses" })).toBeVisible();
   await page.getByRole("button", { name: "Start now" }).click();
+  await page.getByRole("button", { name: "Sign in with GOV.UK One Login" }).click();
   await expect(page).toHaveURL(/localhost:3301\/sign-in/);
   // A fresh person each run, so this test does not depend on what the demo test did to Sam.
   await page.getByLabel("Email address").fill(`e2e-${Date.now()}@example.com`);
