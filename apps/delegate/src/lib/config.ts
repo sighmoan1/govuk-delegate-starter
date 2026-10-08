@@ -21,21 +21,6 @@ export const config = {
 };
 
 /**
- * POLICY (owner to confirm; see Decision 22): how long a proposed sensitive
- * action stays approvable AND redeemable. One deadline, set when the service
- * proposes the transaction. It is not extended by approving or by reserving.
- * After it, the person has to approve a fresh proposal. 15 minutes is a
- * starting point: long enough to open GOV.UK, sign in and read the details,
- * short enough that an unused approval does not linger. Override for a
- * deployment with STEP_UP_VALIDITY_MINUTES.
- */
-export const STEP_UP_VALIDITY_MINUTES_DEFAULT = 15;
-export const stepUpValidityMs = () => {
-  const n = Number(process.env.STEP_UP_VALIDITY_MINUTES ?? STEP_UP_VALIDITY_MINUTES_DEFAULT);
-  return (Number.isFinite(n) && n > 0 ? n : STEP_UP_VALIDITY_MINUTES_DEFAULT) * 60_000;
-};
-
-/**
  * TECHNICAL, not policy: how long a service may hold an approval for one
  * in-flight operation before Delegate treats the holder as crashed and lets the
  * approval be reserved again. Longer than the service's own transaction timeout.
@@ -44,3 +29,20 @@ export const STEP_UP_RESERVATION_LEASE_SECONDS = 60;
 
 export const AUTHORISATION_DAYS = 30;
 export const REQUEST_DAYS = 7;
+
+/**
+ * POLICY (owner to confirm; Decision 23): the one validity window for a step-up
+ * approval (issues #38, #19). A proposed sensitive change is approvable and
+ * redeemable until this long after the service proposed it. The deadline is fixed
+ * when the proposal is made; approving or reserving does not extend it. A change
+ * already reserved when the window closes may still finish; nothing new may start.
+ * Ten minutes is long enough to go from the agent to GOV.UK, sign in, read the
+ * details and come back, and short enough that an abandoned approval cannot be
+ * picked up later while the mandate is still active. A product and risk call.
+ * Override with STEP_UP_MAX_AGE_MINUTES (a positive number; invalid values use the default).
+ */
+export const DEFAULT_STEP_UP_MAX_AGE_MINUTES = 10;
+export function stepUpMaxAgeMs(): number {
+  const n = Number(process.env.STEP_UP_MAX_AGE_MINUTES);
+  return (Number.isFinite(n) && n > 0 ? n : DEFAULT_STEP_UP_MAX_AGE_MINUTES) * 60_000;
+}

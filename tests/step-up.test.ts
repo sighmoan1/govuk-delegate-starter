@@ -71,11 +71,41 @@ describe("the approval is a read until the service reserves it", () => {
     }
   });
 
-  it("the validity window is the single named config value: a new proposal expires that long after it is made", async () => {
-    const { STEP_UP_VALIDITY_MINUTES_DEFAULT } = await import("@/lib/config");
+  it("the validity window is the single named config value (default 10 minutes, invalid values ignored): a proposal expires that long after it is made", async () => {
+    const { DEFAULT_STEP_UP_MAX_AGE_MINUTES, stepUpMaxAgeMs } = await import("@/lib/config");
+    expect(DEFAULT_STEP_UP_MAX_AGE_MINUTES).toBe(10);
+    const old = process.env.STEP_UP_MAX_AGE_MINUTES;
+    try {
+      delete process.env.STEP_UP_MAX_AGE_MINUTES;
+      expect(stepUpMaxAgeMs()).toBe(10 * 60_000);
+      process.env.STEP_UP_MAX_AGE_MINUTES = "2";
+      expect(stepUpMaxAgeMs()).toBe(2 * 60_000);
+      for (const bad of ["0", "-5", "abc", ""]) {
+        process.env.STEP_UP_MAX_AGE_MINUTES = bad;
+        expect(stepUpMaxAgeMs()).toBe(10 * 60_000);
+      }
+    } finally {
+      if (old === undefined) delete process.env.STEP_UP_MAX_AGE_MINUTES; else process.env.STEP_UP_MAX_AGE_MINUTES = old;
+    }
     const { first } = await approvedRefund();
     const expires = new Date(first.body.step_up.expires_at).getTime();
-    expect(Math.abs(expires - (Date.now() + STEP_UP_VALIDITY_MINUTES_DEFAULT * 60_000))).toBeLessThan(30_000);
+    expect(Math.abs(expires - (Date.now() + DEFAULT_STEP_UP_MAX_AGE_MINUTES * 60_000))).toBeLessThan(30_000);
+  });
+
+  it("the boundary is inclusive (kept from #41): exactly at the deadline still counts, a moment after does not", async () => {
+    const { viewOf } = await import("@/lib/step-ups");
+    const at = new Date("2026-01-01T12:00:00Z");
+    const row = { status: "APPROVED" as const, expiresAt: at, reservationExpiresAt: null };
+    expect(viewOf(row, at)).toBe("APPROVED");
+    expect(viewOf(row, new Date(+at + 1))).toBe("EXPIRED");
+    // The person approving exactly at the deadline works; a millisecond later does not.
+    const sam = await newPrincipal();
+    const { token } = await authorise(sam.id, ["change_refund_account"]);
+    const a = await ask(token, sam.id, refundProposal());
+    const b = await ask(token, sam.id, refundProposal());
+    const deadline = new Date(a.body.step_up.expires_at);
+    expect((await approve(a.body.step_up.user_code, sam.id, deadline)).ok).toBe(true);
+    expect(await approve(b.body.step_up.user_code, sam.id, new Date(+new Date(b.body.step_up.expires_at) + 1))).toEqual({ ok: false, reason: "EXPIRED" });
   });
 });
 

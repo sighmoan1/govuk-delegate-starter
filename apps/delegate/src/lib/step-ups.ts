@@ -1,5 +1,5 @@
 // A step-up approval is the person's yes to ONE proposed transaction (issue #19,
-// Decision 22). This file holds the model: what a proposal is, how it is bound,
+// Decision 23). This file holds the model: what a proposal is, how it is bound,
 // what state it is in, how the person decides it. Reserving and completing it
 // (what a service does when it admits and commits the operation) is in
 // step-up-redeem.ts.
@@ -10,7 +10,7 @@
 import { createHash } from "node:crypto";
 import type { Prisma, StepUp } from "@/generated/prisma";
 import { prisma } from "./db";
-import { stepUpValidityMs } from "./config";
+import { stepUpMaxAgeMs } from "./config";
 import { userCode } from "./user-code";
 
 export type DisplayRow = { label: string; value: string };
@@ -124,7 +124,7 @@ export type View = "PENDING" | "APPROVED" | "IN_PROGRESS" | "REDEEMED" | "DECLIN
 export function viewOf(row: Pick<StepUp, "status" | "expiresAt" | "reservationExpiresAt">, now: Date): View {
   if (row.status === "USED") return "REDEEMED";
   if (row.status === "EXPIRED") return "EXPIRED";
-  const proposalOver = row.expiresAt <= now;
+  const proposalOver = row.expiresAt < now; // inclusive: exactly at the deadline still counts (from #41)
   if (row.status === "RESERVED" && row.reservationExpiresAt && row.reservationExpiresAt > now) return "IN_PROGRESS"; // an in-flight commit may finish after the window
   if (proposalOver) return "EXPIRED";
   if (row.status === "DECLINED") return "DECLINED";
@@ -135,11 +135,11 @@ export function viewOf(row: Pick<StepUp, "status" | "expiresAt" | "reservationEx
 /** Record what time has done: lapsed leases go back to APPROVED, lapsed proposals become EXPIRED. */
 export async function sweepStepUps(mandateId: string, now: Date) {
   await prisma.stepUp.updateMany({
-    where: { mandateId, status: "RESERVED", reservationExpiresAt: { lte: now }, expiresAt: { gt: now } },
+    where: { mandateId, status: "RESERVED", reservationExpiresAt: { lte: now }, expiresAt: { gte: now } },
     data: { status: "APPROVED", reservationId: null, reservedAt: null, reservationExpiresAt: null },
   });
   await prisma.stepUp.updateMany({
-    where: { mandateId, expiresAt: { lte: now }, OR: [{ status: { in: ["PENDING", "APPROVED", "DECLINED"] } }, { status: "RESERVED", reservationExpiresAt: { lte: now } }] },
+    where: { mandateId, expiresAt: { lt: now }, OR: [{ status: { in: ["PENDING", "APPROVED", "DECLINED"] } }, { status: "RESERVED", reservationExpiresAt: { lte: now } }] },
     data: { status: "EXPIRED" },
   });
 }
@@ -180,7 +180,7 @@ export async function stepUpGate(ctx: GateContext, now: Date): Promise<Gate> {
     return blocked({ state: "KEY_USED_FOR_OTHER_TRANSACTION", message: "This Idempotency-Key was already used for a different change. Use a new key for a new change." });
   }
 
-  const expiresAt = new Date(Math.min(now.getTime() + stepUpValidityMs(), mandate.validUntil.getTime()));
+  const expiresAt = new Date(Math.min(now.getTime() + stepUpMaxAgeMs(), mandate.validUntil.getTime()));
   try {
     const row = await prisma.stepUp.create({
       data: {
@@ -245,7 +245,7 @@ async function whyNot(code: string, principalId: string, now: Date): Promise<Ext
  */
 export async function approveStepUp(code: string, principalId: string, now = new Date()): Promise<Decision> {
   const won = await prisma.stepUp.updateMany({
-    where: { userCode: code, status: "PENDING", expiresAt: { gt: now }, mandate: liveMandate(principalId, now) },
+    where: { userCode: code, status: "PENDING", expiresAt: { gte: now }, mandate: liveMandate(principalId, now) },
     data: { status: "APPROVED", approvedAt: now },
   });
   return won.count === 1 ? { ok: true } : whyNot(code, principalId, now);
@@ -254,7 +254,7 @@ export async function approveStepUp(code: string, principalId: string, now = new
 /** Decline this proposal. The row is kept, so the agent cannot simply ask again for the same thing. */
 export async function declineStepUp(code: string, principalId: string, now = new Date()): Promise<Decision> {
   const won = await prisma.stepUp.updateMany({
-    where: { userCode: code, status: "PENDING", expiresAt: { gt: now }, mandate: { principalId } },
+    where: { userCode: code, status: "PENDING", expiresAt: { gte: now }, mandate: { principalId } },
     data: { status: "DECLINED", declinedAt: now },
   });
   return won.count === 1 ? { ok: true } : whyNot(code, principalId, now);

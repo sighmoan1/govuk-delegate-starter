@@ -195,7 +195,7 @@ export async function checkAuthority(input: CheckInput, now = new Date()): Promi
   }
 
   // ── Consequential actions need the person's approval of THIS change.
-  // Reporting its state is a read: a check never uses the approval up (Decision 22).
+  // Reporting its state is a read: a check never uses the approval up (Decision 23).
   let stepUp: StepUpInfo | undefined;
   if (capability.requiresStepUp) {
     const gate = await stepUpGate({ mandate, serviceSlug: service.slug, capability: input.capability, proposal: input.proposal }, now);

@@ -305,7 +305,7 @@ model Delegation {
 // It is bound to the mandate, principal, service, capability, a digest of the
 // proposed content and the client's idempotency key, and it expires. Checking
 // never changes it. The service reserves it when it admits the operation and
-// completes it after its own commit (docs/DECISIONS.md, Decision 22).
+// completes it after its own commit (docs/DECISIONS.md, Decision 23).
 model StepUp {
   id             String       @id @default(uuid())
   mandateId      String       @map("mandate_id")

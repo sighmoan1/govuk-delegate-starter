@@ -61,7 +61,7 @@ export async function reserveStepUp(input: CheckInput & { reservationId: string 
   const won = await prisma.stepUp.updateMany({
     where: {
       id: proposalId,
-      expiresAt: { gt: now },
+      expiresAt: { gte: now },
       mandate: { status: "ACTIVE", validFrom: { lte: now }, validUntil: { gt: now } },
       OR: [{ status: "APPROVED" }, { status: "RESERVED", reservationExpiresAt: { lte: now } }],
     },
