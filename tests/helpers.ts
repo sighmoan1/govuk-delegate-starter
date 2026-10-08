@@ -8,14 +8,13 @@ import { signAgentToken } from "@/lib/agent-auth";
 // into Delegate's own code the way its consent screen does.
 export const DELEGATE = process.env.DELEGATE_URL ?? "http://localhost:3300";
 export const HMRC = process.env.HMRC_URL ?? "http://localhost:3302";
-export const AGENT = process.env.AGENT_URL ?? "http://localhost:3303";
 
 export const CLIENT_ID = process.env.DEMO_AGENT_CLIENT_ID ?? "demo-personal-agent";
 export const CLIENT_SECRET = process.env.DEMO_AGENT_CLIENT_SECRET ?? "dev-demo-agent-secret";
 export const HMRC_SERVICE_KEY = process.env.HMRC_SERVICE_KEY ?? "dev-hmrc-service-key";
 export const SERVICE = "hmrc-personal-tax";
 
-export const CAPS = ["view_tax_code", "claim_job_expenses", "update_employment", "change_refund_account", "change_address"] as const;
+export const CAPS = ["view_tax_code", "claim_job_expenses", "update_employment", "change_refund_account", "change_address", "view_claim_status", "respond_to_query", "check_claim_progress"] as const;
 export type Cap = (typeof CAPS)[number];
 
 /** A fresh synthetic principal per test, so tests never depend on each other's state. */

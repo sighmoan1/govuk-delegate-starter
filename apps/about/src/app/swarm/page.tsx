@@ -13,7 +13,7 @@ export default async function Swarm({ searchParams }: { searchParams: Promise<{ 
 
   return (
     <div>
-      <span className="caption">Scenario 5</span>
+      <span className="caption">Scenario 4</span>
       <h1>Can a swarm beat the system?</h1>
       <div className="two-thirds">
         <p className="lead">

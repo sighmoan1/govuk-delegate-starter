@@ -53,9 +53,40 @@ model Claim {
   mandateId   String?     @map("mandate_id")
   delegationId String?    @map("delegation_id")
 
-  taxpayer Taxpayer @relation(fields: [taxpayerId], references: [id])
+  taxpayer Taxpayer     @relation(fields: [taxpayerId], references: [id])
+  queries  ClaimQuery[]
 
   @@map("claim")
+}
+
+enum QueryStatus {
+  OPEN
+  ANSWERED
+}
+
+// HMRC asking for more information about a claim. An agent may only answer
+// once the person has agreed the wording; HMRC records that they did.
+model ClaimQuery {
+  id                String      @id @default(uuid())
+  claimId           String      @map("claim_id")
+  question          String
+  status            QueryStatus @default(OPEN)
+  askedAt           DateTime    @default(now()) @map("asked_at")
+  answer            String?
+  answeredAt        DateTime?   @map("answered_at")
+  answeredBy        SubmittedBy? @map("answered_by")
+  answeredByName    String?     @map("answered_by_name")
+  confirmedByPerson Boolean     @default(false) @map("confirmed_by_person")
+  mandateId         String?     @map("mandate_id")
+  delegationId      String?     @map("delegation_id")
+  // GOV.UK Delegate's record of what the agent said the person agreed to.
+  receiptId         String?     @map("receipt_id")
+  answerWithdrawn   Boolean     @default(false) @map("answer_withdrawn")
+
+  claim Claim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
+  @@map("claim_query")
 }
 
 enum Lane {

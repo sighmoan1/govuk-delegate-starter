@@ -7,8 +7,6 @@ export const urls = {
   get delegateInternal() { return env("DELEGATE_INTERNAL_URL", this.delegate); },
   get hmrc() { return env("HMRC_URL", "http://localhost:3302"); },
   get hmrcInternal() { return env("HMRC_INTERNAL_URL", this.hmrc); },
-  get agent() { return env("AGENT_URL", "http://localhost:3303"); },
-  get agentInternal() { return env("AGENT_INTERNAL_URL", this.agent); },
   get oneLogin() { return env("ONE_LOGIN_URL", "http://localhost:3301"); },
   get oneLoginInternal() { return env("ONE_LOGIN_INTERNAL_URL", this.oneLogin); },
 };

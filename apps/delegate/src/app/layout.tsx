@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-// Three surfaces share this shell: the agent's own app (/example-ai), GOV.UK
+// Three surfaces share this shell: GOV.UK
 // (consent and account settings) and the HMRC team's internal view. Each has its
 // own layout.
 export default function RootLayout({ children }: { children: React.ReactNode }) {

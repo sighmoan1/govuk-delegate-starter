@@ -2,7 +2,7 @@
 #   docker compose up --build            everything
 #   docker compose up -d db simulator    just the dependencies, for `npm run dev`
 #   npm run public / npm run public:stop  the same stack on temporary public URLs (see scripts/public.mjs)
-# Ports: Delegate 3300 · One Login 3301 (simulator behind it on 3399) · HMRC 3302 · Example AI 3303 · About 3304 · Postgres 5433
+# Ports: Delegate 3300 · One Login 3301 (simulator behind it on 3399) · HMRC 3302 · About 3304 · Postgres 5433
 services:
   db:
     image: postgres:16-alpine
@@ -86,7 +86,6 @@ services:
       DEMO_AGENT_CLIENT_ID: demo-personal-agent
       DEMO_AGENT_CLIENT_SECRET: ${AGENT_CLIENT_SECRET:-dev-demo-agent-secret}
       HMRC_SERVICE_KEY: ${HMRC_SERVICE_KEY:-dev-hmrc-service-key}
-      AGENT_URL: http://localhost:3303
       ABOUT_URL: http://localhost:3304
       DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:-dev-demo-console-key}
 
@@ -117,31 +116,6 @@ services:
       ABOUT_URL: http://localhost:3304
       DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:-dev-demo-console-key}
 
-  agent:
-    build:
-      context: .
-      dockerfile: apps/agent/Dockerfile
-    depends_on:
-      db:
-        condition: service_healthy
-      delegate:
-        condition: service_started
-      hmrc:
-        condition: service_started
-    ports:
-      - "3303:3303"
-    environment:
-      DATABASE_URL: postgresql://delegate:delegate@db:5432/agent
-      APP_URL: http://localhost:3303
-      DELEGATE_URL: ${DELEGATE_PUBLIC_URL:-http://localhost:3300}
-      DELEGATE_INTERNAL_URL: http://delegate:3300
-      AGENT_CLIENT_ID: demo-personal-agent
-      AGENT_CLIENT_SECRET: ${AGENT_CLIENT_SECRET:-dev-demo-agent-secret}
-      HMRC_URL: ${HMRC_PUBLIC_URL:-http://localhost:3302}
-      HMRC_INTERNAL_URL: http://hmrc:3302
-      ABOUT_URL: http://localhost:3304
-      DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:-dev-demo-console-key}
-
   # Not part of the scenario: the prototype's own notes and demo console.
   about:
     build:
@@ -151,7 +125,6 @@ services:
       - onelogin
       - delegate
       - hmrc
-      - agent
     ports:
       - "3304:3304"
     environment:
@@ -159,8 +132,6 @@ services:
       DELEGATE_INTERNAL_URL: http://delegate:3300
       HMRC_URL: ${HMRC_PUBLIC_URL:-http://localhost:3302}
       HMRC_INTERNAL_URL: http://hmrc:3302
-      AGENT_URL: http://localhost:3303
-      AGENT_INTERNAL_URL: http://agent:3303
       ONE_LOGIN_URL: ${ONELOGIN_PUBLIC_URL:-http://localhost:3301}
       ONE_LOGIN_INTERNAL_URL: http://onelogin:3301
       DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:-dev-demo-console-key}

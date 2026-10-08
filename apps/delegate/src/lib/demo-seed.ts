@@ -10,6 +10,8 @@ const hash = (s: string) => {
 
 // One Login subject of the seeded person (sam.taylor@example.com).
 export const SUBJECT = "urn:fdc:gov.uk:2022:56P4CMsGh_02YOlWpd8PAOI-2sVlB2nsNU7mcLZYhYw=";
+// The one return URL the seeded agent has registered. No app listens here.
+export const DEMO_AGENT_RETURN_URL = "https://assistant.example/callback";
 const MIN = 60_000;
 const DAY = 86_400_000;
 
@@ -18,6 +20,7 @@ export type SeedResult = { principalId: string; granted: string[] };
 
 export async function seedDemo(prisma: PrismaClient, opts: SeedOptions = {}): Promise<SeedResult> {
   // Idempotent: re-running restores the clean demo starting state.
+  await prisma.receipt.deleteMany();
   await prisma.capacityUse.deleteMany();
   await prisma.stepUp.deleteMany();
   await prisma.delegation.deleteMany();
@@ -35,12 +38,12 @@ export async function seedDemo(prisma: PrismaClient, opts: SeedOptions = {}): Pr
 
   const delegate = await prisma.delegate.create({
     data: {
-      name: "Example AI",
+      name: "Personal assistant",
       type: "SOFTWARE_AGENT",
-      provider: "Example AI Ltd",
+      provider: "Assistant Ltd",
       clientId: process.env.DEMO_AGENT_CLIENT_ID ?? "demo-personal-agent",
       clientSecretHash: hash(process.env.DEMO_AGENT_CLIENT_SECRET ?? "dev-demo-agent-secret"),
-      redirectUris: [`${process.env.AGENT_URL ?? "http://localhost:3303"}/callback`],
+      redirectUris: [DEMO_AGENT_RETURN_URL],
     },
   });
 
@@ -58,6 +61,9 @@ export async function seedDemo(prisma: PrismaClient, opts: SeedOptions = {}): Pr
     ["update_employment", "Update your employment details", "MEDIUM", false],
     ["change_refund_account", "Change the bank account for refunds", "HIGH", true],
     ["change_address", "Change your address", "HIGH", true],
+    ["view_claim_status", "See how your claims are going", "LOW", false],
+    ["respond_to_query", "Answer HMRC’s questions about your claim, once you have agreed the answer", "MEDIUM", false],
+    ["check_claim_progress", "Check your claim progress on a schedule (a few times a day)", "LOW", false],
   ] as const;
   const caps: Record<string, string> = {};
   for (const [i, [code, name, risk, step]] of defs.entries()) {
@@ -126,7 +132,7 @@ export async function seedDemo(prisma: PrismaClient, opts: SeedOptions = {}): Pr
     ],
   });
 
-  // Optional starting point: Sam has already let Example AI view her tax code
+  // Optional starting point: Sam has already let the assistant view her tax code
   // and claim working-from-home relief, as if she had done it on the consent screen.
   const granted = ["view_tax_code", "claim_job_expenses"];
   if (opts.withAuthority) {

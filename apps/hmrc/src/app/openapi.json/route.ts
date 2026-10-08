@@ -7,9 +7,10 @@ const action = (summary: string, method: "get" | "post") => ({
     security: [{ agentToken: [] }],
     parameters: [{ name: "x-principal-id", in: "header", required: true, schema: { type: "string" }, description: "The person you act for, as GOV.UK Delegate told you when they approved." }],
     responses: {
-      "200": { description: "Done" },
+      "200": { description: "Done. The body includes tell_the_person: pass it on. The person can review, and change or remove your access, on GOV.UK." },
       "403": { description: "Refused: PERMISSION_MISSING, AUTHORISATION_REVOKED, NO_AUTHORISATION, STEP_UP_REQUIRED (with step_up.user_code) or AGENT_NOT_AUTHORISED" },
       "409": { description: "DUPLICATE_SUBMISSION or NEW_EVIDENCE_REQUIRED" },
+      "428": { description: "CONFIRMATION_REQUIRED: the person has not agreed this answer yet" },
       "429": { description: "CAPACITY_EXCEEDED: the person's limit, shared by everyone acting for them" },
     },
   },
@@ -27,6 +28,9 @@ export function GET() {
       "/api/employment": action("Update employment details", "post"),
       "/api/refund-account": action("Change the bank account for refunds (needs the person's approval each time)", "post"),
       "/api/address": action("Change address", "post"),
+      "/api/claims": action("See the person's claims, their status, and anything HMRC has asked (open_queries)", "get"),
+      "/api/claims/progress": action("Scheduled claim progress check: same as /api/claims, plus ?since=<ISO time> to see if anything changed. A few checks a day per person.", "get"),
+      "/api/claims/respond": action("Answer a question HMRC asked about a claim. Body: { query_id, answer, confirmed_by_person: true }. Show the person the answer and get their agreement first; HMRC refuses without it.", "post"),
     },
   });
 }

@@ -28,7 +28,7 @@ export default function HowItWorks() {
    consent     │ redirect                          │ agent token + who it acts for
                ▼                                   │
 ┌──────────────────────────────────────────────────┴───────────────┐
-│ Example AI: signs in to Delegate as itself, never as Sam         │
+│ The agent: signs in to Delegate as itself, never as Sam          │
 └──────────────────────────────────────────────────────────────────┘`}</pre>
 
       <div className="two-thirds">
@@ -46,11 +46,21 @@ x-service-key: <HMRC's own key>
 { "agent_token": "...", "principal_id": "...",
   "service": "hmrc-personal-tax", "capability": "claim_job_expenses" }
 
-→ { "authorised": true, "subject": "<Sam's One Login id>", "delegate": { "name": "Example AI" } }
+→ { "authorised": true, "subject": "<Sam's One Login id>", "delegate": { "name": "<the agent>" } }
 → { "authorised": false, "reason": "PERMISSION_MISSING" }   // or AUTHORISATION_REVOKED, NO_AUTHORISATION, …`}</pre>
         <p>
           Delegate checks the agent’s identity itself, so HMRC never has to manage agent credentials. If the answer is yes, Delegate tells
           HMRC who the person is: the same One Login identifier HMRC saw when Sam signed in herself.
+        </p>
+
+        <h2>Two things an agent can do that need more care</h2>
+        <p>
+          <strong>Answering HMRC.</strong> When HMRC asks about a claim, an agent can suggest an answer, but HMRC only accepts it if the
+          request says the person agreed the wording. HMRC records that, and refuses the answer without it.
+        </p>
+        <p>
+          <strong>Checking in later.</strong> An agent can check a claim on a schedule while the person isn’t there. The permission ends on
+          a date, and HMRC allows a few checks a day for the person, however many agents ask. Removing access stops the next check.
         </p>
 
         <h2>Three lanes at the service</h2>
@@ -75,7 +85,7 @@ x-service-key: <HMRC's own key>
         </p>
         <p>
           Agents can pass part of their authority to sub-agents. Each one stays inside what its parent was given, down to a maximum depth,
-          and everything traces back to the person. <Link href="/swarm">Scenario 5</Link> runs it.
+          and everything traces back to the person. <Link href="/swarm">Scenario 4</Link> runs it.
         </p>
 
         <h2>What HMRC added</h2>
@@ -96,7 +106,6 @@ x-service-key: <HMRC's own key>
           <li><strong>One sign-in client.</strong> The One Login simulator supports one client, so GOV.UK Delegate and HMRC share it. In production they would be separate.</li>
           <li><strong>The same person ID in both places.</strong> Real One Login gives each service a different identifier for the same person. Production would need GOV.UK Delegate and services to share one, or Delegate to hold a mapping.</li>
           <li><strong>Friction stand-ins.</strong> The rate limit, delay and checkbox challenge only show the incentive. A real service would choose its own proportionate controls.</li>
-          <li><strong>A scripted assistant.</strong> Example AI follows a script. Whatever it tries, HMRC still asks GOV.UK Delegate.</li>
           <li><strong>Synthetic data.</strong> Nothing connects to real One Login, HMRC or anyone’s records.</li>
         </ul>
       </div>

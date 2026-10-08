@@ -2,13 +2,13 @@
   "name": "govuk-delegate-prototype",
   "version": "0.2.0",
   "private": true,
-  "description": "Independent prototype: GOV.UK Delegate, a mock HMRC service and a demo agent, as separate services. Not an official GOV.UK service.",
+  "description": "Independent prototype: GOV.UK Delegate, and a mock HMRC service, as separate services. Not an official GOV.UK service.",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -n onelogin,delegate,hmrc,agent,about -c gray,blue,green,magenta,cyan \"npm:dev -w apps/onelogin\" \"npm:dev -w apps/delegate\" \"npm:dev -w apps/hmrc\" \"npm:dev -w apps/agent\" \"npm:dev -w apps/about\"",
+    "dev": "concurrently -n onelogin,delegate,hmrc,about -c gray,blue,green,cyan \"npm:dev -w apps/onelogin\" \"npm:dev -w apps/delegate\" \"npm:dev -w apps/hmrc\" \"npm:dev -w apps/about\"",
     "public": "node scripts/public.mjs start",
     "public:stop": "node scripts/public.mjs stop",
     "build": "npm run build --workspaces --if-present",

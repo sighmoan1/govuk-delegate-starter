@@ -17,7 +17,6 @@ export const config = {
   },
   get sessionSecret() { return new TextEncoder().encode(need("SESSION_SECRET")); },
   get agentTokenSecret() { return new TextEncoder().encode(need("AGENT_TOKEN_SECRET")); },
-  get agentUrl() { return need("AGENT_URL", "http://localhost:3303"); },
   get aboutUrl() { return need("ABOUT_URL", "http://localhost:3304"); },
 };
 

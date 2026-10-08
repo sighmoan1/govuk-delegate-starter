@@ -41,7 +41,7 @@ const RUNS = [
 export default function WhichRoute() {
   return (
     <div>
-      <span className="caption">Scenario 4</span>
+      <span className="caption">Scenario 3</span>
       <h1>Which route do agents choose?</h1>
       <div className="two-thirds">
         <p className="lead">Give real agents a simple job and watch what they do when there’s a proper route and an improper one.</p>

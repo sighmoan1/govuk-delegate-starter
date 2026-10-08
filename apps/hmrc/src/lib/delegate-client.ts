@@ -39,3 +39,34 @@ export async function askDelegate(input: { agent_token: string; principal_id: st
   if (!res.ok) throw new Error(`GOV.UK Delegate answered ${res.status}`);
   return res.json();
 }
+
+/** Tell GOV.UK Delegate what an agent did in the person's name, in the agent's own words, so the person can see it. */
+export async function recordReceipt(r: { mandate_id: string; delegation_id: string; capability: string; reference: string; text: string; agent_confirmed: boolean }): Promise<string | null> {
+  try {
+    const res = await fetch(`${config.delegateInternalUrl}/api/receipts`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-service-key": config.serviceKey },
+      body: JSON.stringify({ ...r, service: config.serviceSlug }),
+      cache: "no-store",
+    });
+    return res.ok ? ((await res.json()).receipt_id as string) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Which of these receipts has the person said they did not agree to? */
+export async function disputedReceipts(ids: string[]): Promise<string[]> {
+  if (ids.length === 0) return [];
+  try {
+    const res = await fetch(`${config.delegateInternalUrl}/api/receipts/status`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-service-key": config.serviceKey },
+      body: JSON.stringify({ ids, service: config.serviceSlug }),
+      cache: "no-store",
+    });
+    return res.ok ? ((await res.json()).disputed as string[]) : [];
+  } catch {
+    return [];
+  }
+}

@@ -1,6 +1,6 @@
 import { demoConsoleKey, urls } from "./config";
 
-// Scenario 5: can a swarm beat the system? The same workload, run four ways,
+// Scenario 4: can a swarm beat the system? The same workload, run four ways,
 // through HMRC's real API and GOV.UK Delegate. Everything goes over HTTP.
 //
 //   A   1 person × 1 agent, doing all of it

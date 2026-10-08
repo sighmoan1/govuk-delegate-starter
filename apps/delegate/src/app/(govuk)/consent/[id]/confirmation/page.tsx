@@ -23,8 +23,6 @@ export default async function Confirmation({ params }: { params: Promise<{ id: s
         <Link href={`/account/delegates/${req.authorisationId}`}>View this authority</Link>
         {" · "}
         <Link href="/account/delegates">Your delegates</Link>
-        {" · "}
-        <Link href="/example-ai">Go to the Example AI</Link>
       </p>
     </div>
   );

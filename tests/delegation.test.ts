@@ -19,7 +19,7 @@ describe("A — authorised action", () => {
     const r = await check({ agent_token: token, principal_id: p.id });
     expect(r.status).toBe(200);
     expect(r.body).toMatchObject({ authorised: true, status: "ACTIVE", authorisation_id: authorisationId, principal_id: p.id, subject: p.oneLoginSubjectId });
-    expect(r.body.delegate.name).toBe("Example AI");
+    expect(r.body.delegate.name).toBe("Personal assistant");
     expect(await eventById(r.body.check_id)).toMatchObject({ decision: "ALLOW", reason: "VALID_AUTHORISATION", lane: "AUTHORISED_AGENT", principalId: p.id, authorisationId, capability: "view_tax_code" });
   });
 });
@@ -180,7 +180,7 @@ describe("HMRC-style request lifecycle", () => {
 });
 
 describe("redirect hand-off (consent screen → agent)", () => {
-  const AGENT = process.env.AGENT_URL ?? "http://localhost:3303";
+  const AGENT = "https://assistant.example";
 
   it("rejects a return_url the agent has not registered", async () => {
     const { token } = await demoAgent();

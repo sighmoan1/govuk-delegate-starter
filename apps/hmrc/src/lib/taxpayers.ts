@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { Taxpayer as TaxpayerRow } from "@/generated/prisma";
 import { prisma } from "./db";
 import type { Actor } from "./delegated-authority";
+import { recordReceipt, disputedReceipts } from "./delegate-client";
 import type { Admitted } from "./capacity";
 
 export type Taxpayer = TaxpayerRow;
@@ -59,7 +60,76 @@ export async function claimJobExpenses(taxpayer: Taxpayer, actor: Actor, admitte
     },
   });
   await prisma.taxpayer.update({ where: { id: taxpayer.id }, data: { taxCode: WFH_NEW_CODE } });
+  // HMRC checks the first claim and asks one question about it.
+  if (!amendment) await prisma.claimQuery.create({ data: { claimId: claim.id, question: HMRC_QUESTION } });
   return { claim_reference: claim.reference, expense: "Working from home", tax_year: taxpayer.taxYear, relief: WFH_RELIEF, new_tax_code: WFH_NEW_CODE, synthetic: true };
+}
+
+export const HMRC_QUESTION = "Please confirm what your employer’s working-from-home policy is, and from what date it applied to you.";
+
+/**
+ * The person can tell GOV.UK they did not agree to an answer an agent sent.
+ * HMRC asks Delegate, and if so treats the answer as never given.
+ */
+export async function reopenDisputedAnswers(taxpayerId: string) {
+  const answered = await prisma.claimQuery.findMany({ where: { status: "ANSWERED", answeredBy: "AGENT", receiptId: { not: null }, claim: { taxpayerId } } });
+  if (answered.length === 0) return;
+  const disputed = await disputedReceipts(answered.map((q) => q.receiptId!));
+  for (const q of answered.filter((q) => disputed.includes(q.receiptId!))) {
+    await prisma.claimQuery.update({
+      where: { id: q.id },
+      data: { status: "OPEN", answer: null, answeredAt: null, answeredBy: null, answeredByName: null, confirmedByPerson: false, mandateId: null, delegationId: null, receiptId: null, answerWithdrawn: true },
+    });
+  }
+}
+
+const claimJson = (c: { reference: string; summary: string; kind: string; createdAt: Date; queries: { id: string; question: string; status: string; askedAt: Date; answer: string | null; answerWithdrawn: boolean }[] }) => {
+  const open = c.queries.filter((q) => q.status === "OPEN");
+  return {
+    reference: c.reference, summary: c.summary, kind: c.kind, received: c.createdAt.toISOString(),
+    status: open.length ? "AWAITING_YOUR_REPLY" : "BEING_REVIEWED",
+    open_queries: open.map((q) => ({ query_id: q.id, question: q.question, asked: q.askedAt.toISOString(), ...(q.answerWithdrawn ? { earlier_answer_withdrawn: "The person said they did not agree to the answer sent before. Ask them again." } : {}) })),
+    answered_queries: c.queries.filter((q) => q.status === "ANSWERED").length,
+  };
+};
+
+/** The person's claims, each with its status and anything HMRC has asked. */
+export async function claimStatus(taxpayer: Taxpayer) {
+  await reopenDisputedAnswers(taxpayer.id);
+  const claims = await prisma.claim.findMany({ where: { taxpayerId: taxpayer.id }, include: { queries: true }, orderBy: { createdAt: "desc" } });
+  return { taxpayer: taxpayer.name, claims: claims.map(claimJson), synthetic: true };
+}
+
+/** A scheduled check: the same status, plus what changed since the agent last looked. */
+export async function claimProgress(taxpayer: Taxpayer, body: Record<string, unknown>) {
+  const status = await claimStatus(taxpayer);
+  const since = typeof body.since === "string" ? new Date(body.since) : null;
+  const changed = since && !Number.isNaN(+since)
+    ? await prisma.claim.count({ where: { taxpayerId: taxpayer.id, OR: [{ createdAt: { gt: since } }, { queries: { some: { OR: [{ askedAt: { gt: since } }, { answeredAt: { gt: since } }] } } }] } })
+    : null;
+  return { ...status, checked_at: new Date().toISOString(), changed_since: changed === null ? null : changed > 0 };
+}
+
+/** The capacity rules have already checked the query is this person's, open, and confirmed by them. */
+export async function answerQuery(taxpayer: Taxpayer, actor: Actor, body: Record<string, unknown>) {
+  const answer = String(body.answer).trim().slice(0, 1000);
+  const q = await prisma.claimQuery.update({
+    where: { id: String(body.query_id) },
+    data: {
+      status: "ANSWERED", answer, answeredAt: new Date(), confirmedByPerson: true,
+      answeredBy: actor.kind === "AGENT" ? "AGENT" : "SELF",
+      answeredByName: actor.kind === "AGENT" ? actor.name : null,
+      mandateId: actor.kind === "AGENT" ? actor.chain.mandate_id : null,
+      delegationId: actor.kind === "AGENT" ? actor.chain.delegation_id : null,
+    },
+    include: { claim: true },
+  });
+  // An agent's answer goes on the person's GOV.UK record, in its own words, for them to check.
+  if (actor.kind === "AGENT") {
+    const receiptId = await recordReceipt({ mandate_id: actor.chain.mandate_id, delegation_id: actor.chain.delegation_id, capability: "respond_to_query", reference: q.id, text: `To HMRC’s question “${q.question}” on claim ${q.claim.reference}: ${answer}`, agent_confirmed: body.confirmed_by_person === true });
+    if (receiptId) await prisma.claimQuery.update({ where: { id: q.id }, data: { receiptId } });
+  }
+  return { query_id: q.id, claim_reference: q.claim.reference, answered: true, status: "BEING_REVIEWED", synthetic: true };
 }
 
 export async function updateEmployment(taxpayer: Taxpayer, actor: Actor, body: Record<string, unknown>) {

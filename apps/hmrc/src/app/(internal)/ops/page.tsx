@@ -14,6 +14,9 @@ const CAP: Record<string, string> = {
   update_employment: "Update employment",
   change_refund_account: "Change refund account",
   change_address: "Change address",
+  view_claim_status: "View claim status",
+  respond_to_query: "Answer HMRC question",
+  check_claim_progress: "Scheduled progress check",
 };
 const pct = (n: number) => (Number.isFinite(n) ? `${Math.round(n * 100)}%` : "—");
 

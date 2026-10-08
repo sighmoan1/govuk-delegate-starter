@@ -18,7 +18,7 @@
 //   - fresh random secrets (the dev ones are in this repository, so anyone could forge sessions);
 //   - the local test agent isn't trusted (its private key is in this repository too);
 //   - demo endpoints (reset, swarm set-up) refuse anything that came through the tunnel.
-// The about site and Example AI stay on localhost. All data is synthetic.
+// The about site stays on localhost. All data is synthetic.
 import { spawn, execFileSync } from "node:child_process";
 import { homedir } from "node:os";
 import { randomBytes } from "node:crypto";
@@ -33,14 +33,14 @@ const TUNNELS = [
   { name: "delegate", port: 3300, env: "DELEGATE_PUBLIC_URL" },
   { name: "hmrc", port: 3302, env: "HMRC_PUBLIC_URL" },
 ];
-const APPS = ["onelogin", "delegate", "hmrc", "agent", "about"];
+const APPS = ["onelogin", "delegate", "hmrc", "about"];
 
 const sh = (cmd, args, opts = {}) => execFileSync(cmd, args, { stdio: "inherit", ...opts });
 const secret = () => randomBytes(32).toString("base64url");
 
 async function start() {
   if (existsSync(`${STATE}/pids.json`)) fail("Already running. Run `npm run public:stop` first.");
-  const busy = [3300, 3301, 3302, 3303, 3304].filter((p) => listenerIsNotDocker(p));
+  const busy = [3300, 3301, 3302, 3304].filter((p) => listenerIsNotDocker(p));
   if (busy.length) fail(`Ports ${busy.join(", ")} are in use (probably \`npm run dev\`). Stop the dev servers first.`);
 
   mkdirSync(STATE, { recursive: true });
@@ -94,7 +94,7 @@ async function start() {
   sh("docker", ["compose", "--env-file", ENV_FILE, "up", "--build", "-d"]);
 
   console.log("\nWaiting for the services…");
-  for (const port of [3300, 3301, 3302, 3303, 3304]) await waitFor(`http://localhost:${port}/`);
+  for (const port of [3300, 3301, 3302, 3304]) await waitFor(`http://localhost:${port}/`);
   // Through the tunnels, ask for something only these apps serve.
   await waitFor(`${urls.ONELOGIN_PUBLIC_URL}/.well-known/openid-configuration`, 120);
   await waitFor(`${urls.DELEGATE_PUBLIC_URL}/approve`, 120);
@@ -108,7 +108,6 @@ async function start() {
       .then((r) => { if (!r.ok) throw new Error(`reset on ${port}: ${r.status}`); return r.json(); });
   await reset(3300, {});
   await reset(3302, {});
-  await reset(3303, {});
 
   console.log(`
 Public URLs${named ? "" : " (temporary; they change every time)"}:
@@ -117,14 +116,17 @@ Public URLs${named ? "" : " (temporary; they change every time)"}:
   GOV.UK Delegate    ${urls.DELEGATE_PUBLIC_URL}/account/delegates
   GOV.UK One Login   ${urls.ONELOGIN_PUBLIC_URL}
 
-Local only:  about site http://localhost:3304 (reset buttons work) · Example AI http://localhost:3303
+Local only:  about site http://localhost:3304 (reset buttons work)
 
 Sign-in to One Login is strict in public mode: nothing is pre-filled, and it needs a password and a texted code.
 Sam's email, password and codes: http://localhost:3304/sams-phone (open it in your own browser, not the agent's).
 
-A prompt to try with an agent:
+Prompts to try with an agent (one at a time):
 
-  Claim my working-from-home tax relief at ${urls.HMRC_PUBLIC_URL}
+  1. Go to ${urls.HMRC_PUBLIC_URL} and tell me whether I have any claims with HMRC, what state they are in, and whether HMRC has asked me anything.
+  2. Go to ${urls.HMRC_PUBLIC_URL} and claim the working-from-home tax relief I'm entitled to.
+  3. HMRC may have asked a question about my claim at ${urls.HMRC_PUBLIC_URL}. Read it, suggest an answer, and check with me before you send anything.
+  4. Check my HMRC claim at ${urls.HMRC_PUBLIC_URL} once a day for the next week and tell me if anything changes.
 
 Sam approves at ${urls.DELEGATE_PUBLIC_URL}/approve — in your own browser, not the agent's.
 Stop with: npm run public:stop

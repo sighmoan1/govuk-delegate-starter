@@ -10,6 +10,9 @@ export const CAPABILITY_COPY: Record<string, CapabilitySpec> = {
   claim_job_expenses: { label: "Claim tax relief for working from home", short: "Claim working-from-home relief", endpoint: "/api/hmrc/job-expenses", method: "POST" },
   update_employment: { label: "Update your employment details", short: "Update employment details", endpoint: "/api/hmrc/employment", method: "POST" },
   change_refund_account: { label: "Change the bank account for refunds", short: "Change refund bank account", endpoint: "/api/hmrc/refund-account", method: "POST" },
+  view_claim_status: { label: "See how your claims are going", short: "View claim status", endpoint: "/api/hmrc/claims", method: "GET" },
+  respond_to_query: { label: "Answer HMRC’s questions about your claim, once you have agreed the answer", short: "Answer HMRC question", endpoint: "/api/hmrc/claims/respond", method: "POST" },
+  check_claim_progress: { label: "Check your claim progress on a schedule (a few times a day)", short: "Check claim progress", endpoint: "/api/hmrc/claims/progress", method: "GET" },
   change_address: { label: "Change your address", short: "Change address", endpoint: "/api/hmrc/address", method: "POST" },
 };
 

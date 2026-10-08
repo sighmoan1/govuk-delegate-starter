@@ -13,6 +13,9 @@ const ENDPOINT: Record<Cap, [string, string]> = {
   update_employment: ["POST", "/api/employment"],
   change_refund_account: ["POST", "/api/refund-account"],
   change_address: ["POST", "/api/address"],
+  view_claim_status: ["GET", "/api/claims"],
+  respond_to_query: ["POST", "/api/claims/respond"],
+  check_claim_progress: ["GET", "/api/claims/progress"],
 };
 
 const ip = () => `198.51.100.${Math.floor(Math.random() * 250)}`;
@@ -47,7 +50,7 @@ describe("A — authorised action", () => {
     expect(r.lane).toBe("AUTHORISED_AGENT");
 
     const hmrc = (await hmrcEvents(since)).find((e) => e.delegateCheckId === r.body.delegate_check_id);
-    expect(hmrc).toMatchObject({ lane: "AUTHORISED_AGENT", outcome: "ALLOWED", capability: "view_tax_code", agentName: "Example AI" });
+    expect(hmrc).toMatchObject({ lane: "AUTHORISED_AGENT", outcome: "ALLOWED", capability: "view_tax_code", agentName: "Personal assistant" });
     expect(await prisma.activityEvent.findUnique({ where: { id: r.body.delegate_check_id } })).toMatchObject({ decision: "ALLOW", principalId: p.id });
 
     const claim = await call("claim_job_expenses", { token, principalId: p.id });

@@ -27,6 +27,7 @@ export default async function Delegates({ searchParams }: { searchParams: Promis
       orderBy: { createdAt: "desc" },
     }),
   ]);
+  const unseen = await prisma.receipt.findMany({ where: { principalId: principal.id, seenAt: null, status: "RECORDED" }, orderBy: { createdAt: "desc" } });
   const active = auths.filter((a) => a.status === "ACTIVE");
   const ended = auths.filter((a) => a.status !== "ACTIVE");
   const sorted = (a: (typeof auths)[number]) => a.permissions.map((p) => p.capability).sort((x, y) => x.sortOrder - y.sortOrder);
@@ -35,6 +36,12 @@ export default async function Delegates({ searchParams }: { searchParams: Promis
     <div>
       <span className="caption">Your GOV.UK account</span>
       <h1>Who can act for you</h1>
+      {unseen.length > 0 && (
+        <div className="inset-text" role="status">
+          <p><strong>{unseen.length === 1 ? "Something was done in your name." : `${unseen.length} things were done in your name.`}</strong> Check you agreed to {unseen.length === 1 ? "it" : "them"}:</p>
+          <ul>{unseen.map((r) => <li key={r.id}><Link href={`/account/delegates/${r.mandateId}`}>{capabilityLabel(r.capability)}</Link></li>)}</ul>
+        </div>
+      )}
       {rejected && <div className="inset-text"><p>You rejected the request. Nothing was granted.</p></div>}
       <p>These people, organisations and AI agents have permission to act for you with government services. You can remove access at any time.</p>
 

@@ -54,7 +54,7 @@ async function sessionCookie(subject: string) {
   return (await res.json()).cookie as string;
 }
 
-describe("Scenario 5: can a swarm beat the system?", () => {
+describe("Scenario 4: can a swarm beat the system?", () => {
   // In dev, Next compiles a route on its first request; warm each route up
   // serially so the concurrent bursts below measure the rules, not the compiler.
   beforeAll(async () => {

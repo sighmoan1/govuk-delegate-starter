@@ -35,7 +35,7 @@ test("consent: sign in with One Login, narrow the request, allow; then remove ac
   await expect(page).toHaveURL(/localhost:3301\/sign-in/);
   await signInIfAsked(page);
 
-  await expect(page.getByRole("heading", { level: 1, name: "Example AI wants to act for you" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Personal assistant wants to act for you" })).toBeVisible();
   await page.getByLabel(/Update your employment details/).uncheck();
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("heading", { name: "Check what you are allowing" })).toBeVisible();
@@ -48,6 +48,37 @@ test("consent: sign in with One Login, narrow the request, allow; then remove ac
   await page.getByRole("link", { name: /Remove access/ }).first().click();
   await page.getByRole("button", { name: "Remove access" }).click();
   await expect(page.getByRole("heading", { name: "Access removed" })).toBeVisible();
+});
+
+test("the person sees what an agent said they agreed to, can say they didn't, and can stop one permission", async ({ page }) => {
+  const req = await createRequest();
+  await page.goto(req.consent_url);
+  await signInIfAsked(page);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Allow" }).click();
+  await expect(page.getByRole("heading", { name: "Agent authorised" })).toBeVisible();
+  await page.getByRole("link", { name: "View this authority" }).click();
+  await expect(page).toHaveURL(/\/account\/delegates\/[0-9a-f-]{36}$/);
+  const mandateId = page.url().split("/").pop()!;
+
+  const res = await fetch(`${DELEGATE}/api/receipts`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-service-key": process.env.HMRC_SERVICE_KEY ?? "dev-hmrc-service-key" },
+    body: JSON.stringify({ service: "hmrc-personal-tax", mandate_id: mandateId, capability: "view_tax_code", reference: "q-e2e", text: "Answered HMRC: my employer requires it.", agent_confirmed: true }),
+  });
+  expect(res.status).toBe(201);
+
+  await page.goto(`${DELEGATE}/account/delegates`);
+  await expect(page.getByText("Something was done in your name.")).toBeVisible();
+  await page.goto(`${DELEGATE}/account/delegates/${mandateId}`);
+  await expect(page.getByRole("heading", { name: "What it said you agreed to" })).toBeVisible();
+  await expect(page.locator("blockquote")).toContainText("my employer requires it");
+  await page.getByRole("button", { name: "I didn’t agree to this" }).click();
+  await expect(page.getByText("Marked as not agreed.")).toBeVisible();
+  await expect(page.getByText("You said you did not agree to this.")).toBeVisible();
+
+  await page.getByRole("button", { name: /Stop this/ }).first().click();
+  await expect(page.getByText("That permission has been taken away.")).toBeVisible();
 });
 
 test("Delegate has no front page of its own: the root goes to the account", async ({ page }) => {
@@ -72,7 +103,7 @@ test("reflow at 320px: no horizontal page scroll", async ({ page }) => {
   const req = await createRequest();
   await page.goto(req.consent_url);
   await signInIfAsked(page);
-  await expect(page.getByRole("heading", { level: 1, name: "Example AI wants to act for you" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Personal assistant wants to act for you" })).toBeVisible();
   for (const url of [req.consent_url, `${DELEGATE}/account/delegates`, `${DELEGATE}/ops`]) {
     await page.goto(url);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

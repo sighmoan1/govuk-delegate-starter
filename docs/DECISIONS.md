@@ -195,3 +195,29 @@ Also: Delegate's check API now remembers service keys that have already verified
 Why: the first live runs (Scenario 4) showed an agent that sends no identity looks exactly like a person, so a design that depends on detecting agents can't hold. What does hold is who the capacity belongs to.
 
 Consequences: limits are illustrative, chosen to make the demo legible, not policy. Page text alone didn't steer an unidentified agent to the proper route in the runs so far; verifiable identity (a signature) is the stronger lever, which is why the route is offered to every agent but only signed ones can be held to it.
+
+## Decision 17 — Example AI removed
+
+**Decision:** the scripted Example AI app (`apps/agent`, :3303) is gone. Real agents (ChatGPT, TinyFish and others) now drive the demo through HMRC's and Delegate's public routes, so the stand-in is no longer needed. Earlier decisions that describe it stand as history.
+
+- Scenario 1 (Sam asks her assistant) and the Example AI burst in the traffic scenario are removed. Scenarios are renumbered 1–4.
+- Delegate still seeds one registered agent, now called "Personal assistant", because the swarm runner, the tests and the "Who can act for you" starting point need a registered client. Its registered return URL is a placeholder (`https://assistant.example/callback`); no app listens there.
+
+## Decision 18 — Four things to ask an agent
+
+**Decision:** the demo is driven by a real agent the visitor already uses. The visitor plays Sam and asks it to do one of four things at HMRC: read where a claim is, submit a claim, answer a question HMRC has asked, or keep checking progress.
+
+- New capabilities: `view_claim_status`, `respond_to_query`, `check_claim_progress` (endpoints `/api/claims`, `/api/claims/respond`, `/api/claims/progress`). HMRC raises one question when the first working-from-home claim is submitted.
+- **Answers are confirmed in the agent's chat, not on GOV.UK.** The agent sends `confirmed_by_person: true` only after showing the person the wording; HMRC refuses (428 `CONFIRMATION_REQUIRED`) without it and records it. This is weaker evidence than a Delegate step-up, and cheaper for the person. Step-up stays for the high-risk capabilities.
+- **Scheduled checks are polled, not pushed**, so they work with chat platforms that cannot receive webhooks. The mandate's end date bounds the schedule, and HMRC allows 4 checks a day per person (`claim_progress_checks_per_day`), keyed to the person like every other capacity rule. Removing access stops the next check. The cap lives at HMRC, not in Delegate's grant, to keep Delegate's schema unchanged.
+
+## Decision 19 — The person can see what an agent said they agreed to, and undo it
+
+**Decision:** the confirmation in Decision 18 is the agent's word, so the person gets a way to check it.
+
+- **Receipts.** When an agent answers HMRC's question, HMRC tells Delegate (`POST /api/receipts`, service key) the exact words and whether the agent said the person agreed. The agent's page in "Who can act for you" lists them under "What it said you agreed to", and the account page shows a notice until they are seen.
+- **"I didn't agree to this."** Delegate marks the receipt disputed and removes that capability from the authority. HMRC asks Delegate (`POST /api/receipts/status`) when the claim is read, and if the receipt is disputed it reopens the question and flags the earlier answer as withdrawn. Delegate never calls HMRC, so the services still only ask Delegate.
+- **"Stop this".** The person can take away one permission without removing the rest. Existing delegations to sub-agents lose it too.
+- **The nudge.** HMRC's responses to an authorised agent carry `tell_the_person`, and `llms.txt` and the OpenAPI text say the same. It is a prompt, not a control. The control is that the record is shown to the person whether or not the agent mentions it.
+
+Not built: real email or SMS. The "notice" is an in-account banner, which depends on the person opening their account.

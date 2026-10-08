@@ -1,9 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { demoConsoleKey, urls } from "@/lib/config";
+import { urls } from "@/lib/config";
 
-export type Burst = { who: "bot" | "agent" | "web"; n: number; gotData: number; counts: Record<string, number>; medianMs: number; error?: string };
+export type Burst = { who: "bot" | "web"; n: number; gotData: number; counts: Record<string, number>; medianMs: number; error?: string };
 
 const N = 40;
 const PAGE = "/prioritise-trusted-traffic";
@@ -32,22 +32,6 @@ export async function botBurst() {
     }),
   );
   back(summarise("bot", rows, (r) => r.status === 200));
-}
-
-/** Example AI, acting for Sam with the permission she gave. It sends the requests itself. */
-export async function agentBurst() {
-  const res = await fetch(`${urls.agentInternal}/api/demo/flood`, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-demo-key": demoConsoleKey() },
-    body: JSON.stringify({ n: N }),
-    cache: "no-store",
-  });
-  const body = await res.json();
-  if (!res.ok) back({ who: "agent", n: 0, gotData: 0, counts: {}, medianMs: 0, error: "Example AI isn’t connected to HMRC for Sam. Start with Example AI already connected, above." });
-  const rows = (body.statuses as { status: number; ms: number; reason: string | null }[]).map((r) => ({
-    status: r.status, ms: r.ms, label: r.status === 200 ? "200 OK" : `${r.status} ${r.reason ?? ""}`.trim(),
-  }));
-  back(summarise("agent", rows, (r) => r.status === 200));
 }
 
 /** Someone not signed in loading HMRC's "Your tax" page over and over. */

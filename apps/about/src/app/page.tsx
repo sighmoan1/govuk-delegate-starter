@@ -4,32 +4,26 @@ import { resetDemo } from "@/lib/reset";
 
 const SCENARIOS = [
   {
-    href: "/use-an-agent",
-    n: 1,
-    title: "Sam asks her assistant to claim tax relief",
-    text: "An AI assistant gets Sam’s permission through GOV.UK, then claims working-from-home tax relief with HMRC for her.",
-  },
-  {
     href: "/manage-who-can-act",
-    n: 2,
+    n: 1,
     title: "Sam manages who can act for her",
     text: "In her GOV.UK account, Sam sees which agents can act for her and what they’ve done, and removes access.",
   },
   {
     href: "/prioritise-trusted-traffic",
-    n: 3,
+    n: 2,
     title: "Government prioritises people and authorised agents",
     text: "HMRC gives signed-in people and authorised agents a fast route, and slows down automation that won’t identify itself.",
   },
   {
     href: "/which-route",
-    n: 4,
+    n: 3,
     title: "Which route do agents choose?",
     text: "Real agents, given a simple job, with a proper route and an improper one. What HMRC could see, and what they did.",
   },
   {
     href: "/swarm",
-    n: 5,
+    n: 4,
     title: "Can a swarm beat the system?",
     text: "One person authorising a hundred agents, or running a hundred hidden sessions, gets no more than one person with one agent.",
   },
@@ -74,7 +68,9 @@ export default async function Overview({ searchParams }: { searchParams: Promise
         never gives more capacity, and the limits work when detection fails.
       </p>
 
-      <h2>Five scenarios</h2>
+      <p><a href="/ask-your-agent">Ask your own agent</a> to find out about a claim, submit one, answer HMRC’s question with you, or keep you posted.</p>
+
+      <h2>Four scenarios</h2>
       <p>Each one stands on its own and can reset everything to the right starting point.</p>
       <ul className="scenarios">
         {SCENARIOS.map((s) => (
@@ -86,7 +82,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
         ))}
       </ul>
 
-      <h2>The four systems</h2>
+      <h2>The three systems</h2>
       <ul className="systems">
         <li>
           <h3><a href={urls.oneLogin}>GOV.UK One Login</a></h3>
@@ -103,17 +99,12 @@ export default async function Overview({ searchParams }: { searchParams: Promise
           <p>Claim tax relief for your job expenses. People use it signed in; agents use its API.</p>
           <p className="added">Added: one registration and one middleware file.</p>
         </li>
-        <li>
-          <h3><a href={urls.agent}>Example AI</a></h3>
-          <p>Sam’s AI assistant. Acts with its own identity, never Sam’s.</p>
-          <p className="added">Added: one registration.</p>
-        </li>
       </ul>
 
       <section id="start" className="start-from" aria-labelledby="reset-h">
         <h2 id="reset-h">Reset the demo</h2>
         {reset && <p className="start-from__done" role="status">Reset. Everything is back to the start.</p>}
-        <p>Put GOV.UK Delegate, HMRC and Example AI back as they started. Each scenario page also has its own starting points.</p>
+        <p>Put GOV.UK Delegate and HMRC back as they started. Each scenario page also has its own starting points.</p>
         <form action={resetDemo}>
           <input type="hidden" name="mode" value="clean" />
           <input type="hidden" name="back" value="/" />

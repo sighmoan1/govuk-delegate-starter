@@ -6,6 +6,7 @@ import { currentPrincipal } from "@/lib/session";
 import { expireDueAuthorisations } from "@/lib/authority";
 import { capabilityLabel } from "@/lib/capabilities";
 import { fmt, fmtTime } from "@/lib/format";
+import { narrowAction, disputeAction } from "../../../actions";
 
 export const metadata: Metadata = { title: "Access details" };
 
@@ -14,10 +15,10 @@ export default async function AuthorisationDetail({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ removed?: string }>;
+  searchParams: Promise<{ removed?: string; narrowed?: string; disputed?: string }>;
 }) {
   const { id } = await params;
-  const { removed } = await searchParams;
+  const { removed, narrowed, disputed } = await searchParams;
   const principal = await currentPrincipal();
   if (!principal) redirect(`/auth/login?returnTo=${encodeURIComponent(`/account/delegates/${id}`)}`);
   await expireDueAuthorisations();
@@ -34,6 +35,8 @@ export default async function AuthorisationDetail({
     orderBy: { timestamp: "desc" },
     take: 10,
   });
+  const receipts = await prisma.receipt.findMany({ where: { mandateId: a.id }, orderBy: { createdAt: "desc" } });
+  await prisma.receipt.updateMany({ where: { mandateId: a.id, seenAt: null }, data: { seenAt: new Date() } });
   const label = a.status === "ACTIVE" ? "Active" : a.status === "REVOKED" ? "Removed" : "Expired";
 
   return (
@@ -42,17 +45,51 @@ export default async function AuthorisationDetail({
       {removed && (
         <div className="confirmation-panel"><h1>Access removed</h1><p>{a.delegate.name} can no longer act for you with {a.service.name}. HMRC will refuse anything it tries from now on.</p></div>
       )}
+      {narrowed && <div className="inset-text"><p>That permission has been taken away. The rest still applies.</p></div>}
+      {disputed && <div className="inset-text"><p>Marked as not agreed. {a.delegate.name} can no longer do that, and {a.service.name} has been told to treat the answer as not given.</p></div>}
       {!removed && <h1>{a.delegate.name}</h1>}
       <dl className="summary-list">
         <div><dt>Status</dt><dd><span className={`status status--${a.status.toLowerCase()}`}>{label}</span></dd><dd /></div>
         <div><dt>Delegate</dt><dd>{a.delegate.name} ({a.delegate.type.replace("_", " ").toLowerCase()}), provided by {a.delegate.provider}</dd><dd /></div>
         <div><dt>Government service</dt><dd>{a.service.name}</dd><dd /></div>
-        <div><dt>Allowed to</dt><dd>{allowed.map((c) => <span key={c.id}>{c.name}<br /></span>)}</dd><dd /></div>
+        <div><dt>Allowed to</dt><dd>{allowed.map((c) => (
+          <span key={c.id}>
+            {c.name}
+            {a.status === "ACTIVE" && (
+              <form action={narrowAction} style={{ display: "inline" }}>
+                <input type="hidden" name="id" value={a.id} />
+                <input type="hidden" name="capability" value={c.code} />
+                {" "}<button className="link-button" type="submit">Stop this<span className="visually-hidden"> ({c.name})</span></button>
+              </form>
+            )}
+            <br />
+          </span>
+        ))}</dd><dd /></div>
         <div><dt>Not allowed to</dt><dd>{notAllowed.map((c) => <span key={c.id}>{c.name}<br /></span>)}</dd><dd /></div>
         <div><dt>Given</dt><dd>{fmt(a.validFrom)}</dd><dd /></div>
         <div><dt>{a.status === "REVOKED" ? "Removed" : "Valid until"}</dt><dd>{fmt(a.status === "REVOKED" && a.revokedAt ? a.revokedAt : a.validUntil)}</dd><dd /></div>
       </dl>
       {a.status === "ACTIVE" && <Link className="button" href={`/account/delegates/${a.id}/remove`}>Remove access</Link>}
+
+      {receipts.length > 0 && (
+        <section aria-labelledby="said-h">
+          <h2 id="said-h">What it said you agreed to</h2>
+          <p>{a.service.name} recorded these in your name. If you did not agree to one, say so and {a.delegate.name} loses that permission.</p>
+          {receipts.map((r) => (
+            <div key={r.id} className={`delegate-card${r.status === "DISPUTED" ? " delegate-card--ended" : ""}`}>
+              <p><strong>{capabilityLabel(r.capability)}</strong>, {fmtTime(r.createdAt)}</p>
+              <blockquote>{r.text}</blockquote>
+              <p>{r.agentConfirmed ? `${a.delegate.name} told ${a.service.name} that you agreed.` : `${a.delegate.name} did not say you agreed.`}</p>
+              {r.status === "DISPUTED" ? <p><strong>You said you did not agree to this.</strong></p> : (
+                <form action={disputeAction}>
+                  <input type="hidden" name="receipt" value={r.id} />
+                  <button className="button button--secondary" type="submit">I didn’t agree to this</button>
+                </form>
+              )}
+            </div>
+          ))}
+        </section>
+      )}
 
       <h2>What it has done for you</h2>
       <p>Everything it has tried with {a.service.name}, including what was refused.</p>

@@ -9,6 +9,9 @@ const ACTIONS = [
   { code: "claim_job_expenses", label: "Claim tax relief for working from home" },
   { code: "update_employment", label: "Update their employment details" },
   { code: "change_refund_account", label: "Change the bank account for refunds" },
+  { code: "view_claim_status", label: "See how their claims are going" },
+  { code: "respond_to_query", label: "Answer HMRC’s questions about a claim, once they have agreed the answer" },
+  { code: "check_claim_progress", label: "Check their claim progress on a schedule" },
 ];
 
 const ENDED: Record<string, string> = {

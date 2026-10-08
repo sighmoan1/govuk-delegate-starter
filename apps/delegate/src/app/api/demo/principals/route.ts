@@ -6,7 +6,7 @@ import { AUTHORISATION_DAYS } from "@/lib/config";
 import { signAgentToken } from "@/lib/agent-auth";
 
 // Demo tooling, not part of the service: N separate people, each of whom has
-// given one agent permission, and that agent's token. Used by the swarm runner (Scenario 5). Not reachable
+// given one agent permission, and that agent's token. Used by the swarm runner (Scenario 4). Not reachable
 // through the public tunnel.
 export async function POST(req: Request) {
   if (!demoAllowed(req)) {

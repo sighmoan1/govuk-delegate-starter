@@ -141,7 +141,7 @@ async function actAsAgent(token: string, principalId: string, capability: string
     rule: run.admitted.rule, capacityUsed: run.admitted.used, capacityLimit: run.admitted.limit,
   });
   return NextResponse.json(
-    { decision: "ALLOW", lane: "AUTHORISED_AGENT", acting_for: taxpayer.name, delegate_check_id: check.check_id, result: run.result, capacity: capacityJson(run.admitted), delegate_capacity: check.capacity },
+    { decision: "ALLOW", lane: "AUTHORISED_AGENT", acting_for: taxpayer.name, tell_the_person: `Tell ${taxpayer.name} what you just did. They can see it, and change or remove your access, at ${config.delegateUrl}/account/delegates`, delegate_check_id: check.check_id, result: run.result, capacity: capacityJson(run.admitted), delegate_capacity: check.capacity },
     { headers: { "x-trusted-lane": "AUTHORISED_AGENT", "x-ratelimit-limit": String(rl.limit), "x-ratelimit-remaining": String(rl.remaining) } },
   );
 }
@@ -173,6 +173,6 @@ function refusal(reason: string, lane: string, extra: Record<string, unknown>) {
 }
 
 async function readBody(req: Request): Promise<Record<string, unknown>> {
-  if (req.method === "GET") return {};
+  if (req.method === "GET") return Object.fromEntries(new URL(req.url).searchParams); // e.g. ?since=
   return (await req.json().catch(() => ({}))) as Record<string, unknown>;
 }

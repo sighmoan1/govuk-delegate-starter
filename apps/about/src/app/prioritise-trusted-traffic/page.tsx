@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import { urls } from "@/lib/config";
 import { StartFrom } from "../start-from";
-import { agentBurst, botBurst, webBurst, type Burst } from "./actions";
+import { botBurst, webBurst, type Burst } from "./actions";
 
 export const metadata: Metadata = { title: "Government prioritises people and authorised agents" };
 
 const WHO = {
   bot: "Unregistered bot, 40 API requests at once",
-  agent: "Example AI acting for Sam, 40 API requests at once",
   web: "Not signed in, loading HMRC’s “Your tax” page 10 times",
 } as const;
 
@@ -18,7 +17,7 @@ export default async function Prioritise({ searchParams }: { searchParams: Promi
 
   return (
     <div>
-      <span className="caption">Scenario 3</span>
+      <span className="caption">Scenario 2</span>
       <h1>Government prioritises people and authorised agents</h1>
       <div className="two-thirds">
         <p className="lead">HMRC can tell three kinds of traffic apart, and treat them differently.</p>
@@ -40,7 +39,7 @@ export default async function Prioritise({ searchParams }: { searchParams: Promi
         </table>
       </div>
 
-      <StartFrom back="/prioritise-trusted-traffic" recommended="with-access" done={reset} />
+      <StartFrom back="/prioritise-trusted-traffic" recommended="clean" done={reset} />
 
       <h2>Send traffic to HMRC</h2>
       <p>Open <a href={`${urls.hmrc}/ops?live=1`}>HMRC’s operations view</a> in another window to watch from HMRC’s side.</p>
@@ -49,11 +48,6 @@ export default async function Prioritise({ searchParams }: { searchParams: Promi
           <h3>Unregistered bot</h3>
           <p>No identity, no permission. What a scraper, or an agent that hasn’t integrated, would do.</p>
           <form action={botBurst}><button className="button" type="submit">Send 40 requests as a bot</button></form>
-        </div>
-        <div>
-          <h3>Example AI, for Sam</h3>
-          <p>Its own identity, acting for Sam with the permission she gave on GOV.UK.</p>
-          <form action={agentBurst}><button className="button" type="submit">Send 40 requests as Example AI</button></form>
         </div>
         <div>
           <h3>Someone not signed in</h3>

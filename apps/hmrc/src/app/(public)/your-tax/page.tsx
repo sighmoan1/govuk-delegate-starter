@@ -2,19 +2,22 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { config } from "@/lib/config";
 import { requireViewer } from "@/lib/guard";
-import { claimsFor } from "@/lib/taxpayers";
+import { claimsFor, reopenDisputedAnswers } from "@/lib/taxpayers";
+import { prisma } from "@/lib/db";
 import { withPrincipalCapacity } from "@/lib/capacity";
 import { fmt } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Your tax" };
 
-export default async function YourTax({ searchParams }: { searchParams: Promise<{ claimed?: string; refused?: string }> }) {
-  const { claimed, refused } = await searchParams;
+export default async function YourTax({ searchParams }: { searchParams: Promise<{ claimed?: string; refused?: string; replied?: string; replyError?: string }> }) {
+  const { claimed, refused, replied, replyError } = await searchParams;
   const viewer = await requireViewer("/your-tax", "view_tax_code");
   const { taxpayer } = viewer;
   // Looking up the tax code counts against the person, however it's done.
   const view = await withPrincipalCapacity(taxpayer, "view_tax_code", {}, async () => null);
   const claims = await claimsFor(taxpayer.id);
+  await reopenDisputedAnswers(taxpayer.id);
+  const openQueries = await prisma.claimQuery.findMany({ where: { status: "OPEN", claim: { taxpayerId: taxpayer.id } }, include: { claim: true }, orderBy: { askedAt: "asc" } });
   const hasWfh = claims.some((c) => c.kind === "job_expenses");
 
   return (
@@ -23,6 +26,18 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
         <div className="confirmation-panel">
           <h1>Claim received</h1>
           <p>Reference {claimed}</p>
+        </div>
+      )}
+      {replied && (
+        <div className="confirmation-panel">
+          <h1>Reply sent</h1>
+          <p>HMRC will review your answer.</p>
+        </div>
+      )}
+      {replyError && (
+        <div className="error-summary" role="alert">
+          <h2>Your reply was not sent</h2>
+          <p>Write your answer in the box. It can be up to 1000 characters.</p>
         </div>
       )}
       {refused && (
@@ -49,6 +64,22 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
         <p>Your working-from-home claim for this year has been received.</p>
       )}
 
+      {openQueries.length > 0 && (
+        <>
+          <h2>HMRC has asked you a question</h2>
+          {openQueries.map((q) => (
+            <form key={q.id} action="/query/reply" method="post" className="form-group">
+              <input type="hidden" name="query_id" value={q.id} />
+              <p><strong>About claim {q.claim.reference}:</strong> {q.question}</p>
+              {q.answerWithdrawn && <p className="inset-text">You told GOV.UK you did not agree to the answer sent for you before, so HMRC has not accepted it. Please answer again.</p>}
+              <label className="label" htmlFor={`answer-${q.id}`}>Your answer</label>
+              <textarea className="textarea" id={`answer-${q.id}`} name="answer" rows={4} maxLength={1000} required />
+              <button className="button" type="submit">Send answer</button>
+            </form>
+          ))}
+        </>
+      )}
+
       <h2>Claims and changes</h2>
       {claims.length === 0 ? <p>None yet.</p> : (
         <ul className="claims">
@@ -57,6 +88,7 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
               <strong>{c.summary}</strong>
               {c.newTaxCode && <span>New tax code {c.newTaxCode}. </span>}
               <span>Reference {c.reference}, {fmt(c.createdAt)}.</span>{" "}
+              <span>{openQueries.some((q) => q.claimId === c.id) ? "Waiting for your reply. " : c.kind === "job_expenses" ? "Being reviewed. " : ""}</span>
               {c.submittedBy === "AGENT"
                 ? <span className="by">Submitted by {c.agentName} on your behalf</span>
                 : <span className="by by--self">Submitted by you</span>}

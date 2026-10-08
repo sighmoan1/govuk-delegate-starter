@@ -326,3 +326,31 @@ model StepUp {
   @@index([mandateId, capability, status])
   @@map("step_up")
 }
+
+enum ReceiptStatus {
+  RECORDED
+  DISPUTED
+}
+
+// What a service says an agent did in the person's name, with the exact words,
+// so the person can see it and say "I didn't agree to that".
+model Receipt {
+  id             String        @id @default(uuid())
+  principalId    String        @map("principal_id")
+  mandateId      String        @map("mandate_id")
+  delegationId   String?       @map("delegation_id")
+  delegateId     String        @map("delegate_id")
+  serviceId      String        @map("service_id")
+  capability     String
+  reference      String
+  text           String
+  agentConfirmed Boolean       @map("agent_confirmed")
+  status         ReceiptStatus @default(RECORDED)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  seenAt         DateTime?     @map("seen_at")
+  disputedAt     DateTime?     @map("disputed_at")
+
+  @@index([principalId, createdAt])
+  @@index([mandateId])
+  @@map("receipt")
+}

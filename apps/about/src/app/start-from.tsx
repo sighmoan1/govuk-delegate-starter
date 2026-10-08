@@ -4,14 +4,14 @@ type Mode = "clean" | "with-access";
 
 const LABEL: Record<Mode, string> = {
   clean: "Start clean",
-  "with-access": "Start with Example AI already connected",
+  "with-access": "Start with an agent already authorised",
 };
 const HINT: Record<Mode, string> = {
-  clean: "Nobody can act for Sam. Example AI isn’t connected to HMRC. HMRC has no claim from Sam.",
-  "with-access": "Sam has already let Example AI view her tax code and claim tax relief. HMRC has no claim yet.",
+  clean: "Nobody can act for Sam. HMRC has no claim from Sam.",
+  "with-access": "Sam has already let the assistant view her tax code and claim tax relief. HMRC has no claim yet.",
 };
 
-/** Resets all the services to a starting point for this scenario. */
+/** Resets the services to a starting point for this scenario. */
 export function StartFrom({ back, recommended, done }: { back: string; recommended: Mode; done?: string }) {
   const order: Mode[] = recommended === "clean" ? ["clean", "with-access"] : ["with-access", "clean"];
   return (
@@ -22,7 +22,7 @@ export function StartFrom({ back, recommended, done }: { back: string; recommend
           Reset. {done === "with-access" ? HINT["with-access"] : HINT.clean}
         </p>
       )}
-      <p>This resets GOV.UK Delegate, HMRC and Example AI. You’ll need to sign in again.</p>
+      <p>This resets GOV.UK Delegate and HMRC. You’ll need to sign in again.</p>
       <div className="start-from__options">
         {order.map((mode, i) => (
           <form action={resetDemo} key={mode}>

@@ -39,6 +39,14 @@ test("a person signs in, claims relief herself, and the claim is attributed to h
   await expect(page.getByRole("heading", { name: "Claim received" })).toBeVisible();
   await expect(page.locator("ul.claims")).toContainText("Submitted by you");
   await expect(page.locator("dl.summary-list")).toContainText("1288L");
+
+  // HMRC asks about the claim; the person answers herself.
+  await expect(page.getByRole("heading", { name: "HMRC has asked you a question" })).toBeVisible();
+  await page.getByLabel("Your answer").fill("My employer requires everyone in my team to work from home.");
+  await page.getByRole("button", { name: "Send answer" }).click();
+  await expect(page.getByRole("heading", { name: "Reply sent" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "HMRC has asked you a question" })).toHaveCount(0);
+  await expect(page.locator("ul.claims")).toContainText("Being reviewed");
 });
 
 test("operations view shows traffic by lane and the lane policy", async ({ page }) => {
