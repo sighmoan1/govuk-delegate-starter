@@ -6,7 +6,7 @@ import { logEvent } from "@/lib/events";
 import { withPrincipalCapacity } from "@/lib/capacity";
 import { verifyAgentSignature } from "@/lib/agent-identity";
 import { agentSessionFromRequest } from "@/lib/agent-session";
-import { askDelegate } from "@/lib/delegate-client";
+import { askDelegate, DelegateUnavailableError } from "@/lib/delegate-client";
 import type { Actor } from "@/lib/delegated-authority";
 
 const CAPABILITY = "respond_to_query";
@@ -18,6 +18,17 @@ const CAPABILITY = "respond_to_query";
  * and the person sees what it sent on GOV.UK, and can say they did not agree.
  */
 export async function POST(req: Request) {
+  try {
+    return await reply(req);
+  } catch (e) {
+    if (!(e instanceof DelegateUnavailableError)) throw e;
+    // Nothing was accepted: the question is still open for the agent to try again.
+    await logEvent({ path: "/query/reply", capability: CAPABILITY, lane: "AUTHORISED_AGENT", outcome: "REFUSED", reason: "DELEGATE_UNAVAILABLE", latencyMs: 0 });
+    return NextResponse.redirect(new URL("/your-tax?replyError=DELEGATE_UNAVAILABLE", config.appUrl), 303);
+  }
+}
+
+async function reply(req: Request) {
   const started = Date.now();
   const go = (path: string) => NextResponse.redirect(new URL(path, config.appUrl), 303);
   const sig = await verifyAgentSignature(req);

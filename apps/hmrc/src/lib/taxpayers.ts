@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { Taxpayer as TaxpayerRow } from "@/generated/prisma";
 import { prisma } from "./db";
 import type { Actor } from "./delegated-authority";
-import { recordReceipt, disputedReceipts } from "./delegate-client";
+import { recordReceipt, disputedReceipts, receiptKey } from "./delegate-client";
 import type { Admitted } from "./capacity";
 
 export type Taxpayer = TaxpayerRow;
@@ -70,17 +70,21 @@ export const HMRC_QUESTION = "Please confirm what your employer’s working-from
 /**
  * The person can tell GOV.UK they did not agree to an answer an agent sent.
  * HMRC asks Delegate, and if so treats the answer as never given.
+ * If Delegate can't say, answers are left as they are and the result says so
+ * (`checked: false`): "couldn't ask" is never reported as "nobody disputed".
  */
-export async function reopenDisputedAnswers(taxpayerId: string) {
+export async function reopenDisputedAnswers(taxpayerId: string): Promise<{ checked: boolean }> {
   const answered = await prisma.claimQuery.findMany({ where: { status: "ANSWERED", answeredBy: "AGENT", receiptId: { not: null }, claim: { taxpayerId } } });
-  if (answered.length === 0) return;
-  const disputed = await disputedReceipts(answered.map((q) => q.receiptId!));
-  for (const q of answered.filter((q) => disputed.includes(q.receiptId!))) {
+  if (answered.length === 0) return { checked: true };
+  const result = await disputedReceipts(answered.map((q) => q.receiptId!));
+  if (!result.ok) return { checked: false };
+  for (const q of answered.filter((q) => result.disputed.includes(q.receiptId!))) {
     await prisma.claimQuery.update({
       where: { id: q.id },
-      data: { status: "OPEN", answer: null, answeredAt: null, answeredBy: null, answeredByName: null, confirmedByPerson: false, mandateId: null, delegationId: null, receiptId: null, answerWithdrawn: true },
+      data: { status: "OPEN", answer: null, answeredAt: null, answeredBy: null, answeredByName: null, confirmedByPerson: false, mandateId: null, delegationId: null, receiptId: null, answerWithdrawn: true, answerVersion: { increment: 1 } },
     });
   }
+  return { checked: true };
 }
 
 const claimJson = (c: { reference: string; summary: string; kind: string; createdAt: Date; queries: { id: string; question: string; status: string; askedAt: Date; answer: string | null; answerWithdrawn: boolean }[] }) => {
@@ -95,9 +99,13 @@ const claimJson = (c: { reference: string; summary: string; kind: string; create
 
 /** The person's claims, each with its status and anything HMRC has asked. */
 export async function claimStatus(taxpayer: Taxpayer) {
-  await reopenDisputedAnswers(taxpayer.id);
+  const { checked } = await reopenDisputedAnswers(taxpayer.id);
   const claims = await prisma.claim.findMany({ where: { taxpayerId: taxpayer.id }, include: { queries: true }, orderBy: { createdAt: "desc" } });
-  return { taxpayer: taxpayer.name, claims: claims.map(claimJson), synthetic: true };
+  return {
+    taxpayer: taxpayer.name, claims: claims.map(claimJson), synthetic: true,
+    dispute_check: checked ? "OK" : "UNAVAILABLE",
+    ...(checked ? {} : { dispute_check_notice: "GOV.UK Delegate could not be asked whether the person disputes any answer sent for them. Answers shown as received may still be withdrawn. Check again shortly." }),
+  };
 }
 
 /** A scheduled check: the same status, plus what changed since the agent last looked. */
@@ -110,26 +118,42 @@ export async function claimProgress(taxpayer: Taxpayer, body: Record<string, unk
   return { ...status, checked_at: new Date().toISOString(), changed_since: changed === null ? null : changed > 0 };
 }
 
-/** The capacity rules have already checked the query is this person's, open. */
+/**
+ * The capacity rules have already checked the query is this person's, open.
+ * An agent's answer is only accepted once its receipt is on the person's GOV.UK record:
+ * if Delegate can't record it, this throws DelegateUnavailableError, the query stays open,
+ * and the agent can retry. The receipt key is stable, so a retry never makes a second receipt.
+ */
 export async function answerQuery(taxpayer: Taxpayer, actor: Actor, body: Record<string, unknown>) {
   const answer = String(body.answer).trim().slice(0, 1000);
+  const confirmedByPerson = actor.kind === "SELF" || body.confirmed_by_person === true;
+  let receiptId: string | null = null;
+  if (actor.kind === "AGENT") {
+    const open = await prisma.claimQuery.findUniqueOrThrow({ where: { id: String(body.query_id) }, include: { claim: true } });
+    receiptId = await recordReceipt({
+      mandate_id: actor.chain.mandate_id, delegation_id: actor.chain.delegation_id, capability: "respond_to_query", reference: open.id,
+      text: `To HMRC’s question “${open.question}” on claim ${open.claim.reference}: ${answer}`,
+      agent_confirmed: confirmedByPerson, idempotency_key: receiptKey(open.id, open.answerVersion),
+    });
+  }
   const q = await prisma.claimQuery.update({
     where: { id: String(body.query_id) },
     data: {
-      status: "ANSWERED", answer, answeredAt: new Date(), confirmedByPerson: actor.kind === "SELF" || body.confirmed_by_person === true,
+      status: "ANSWERED", answer, answeredAt: new Date(), confirmedByPerson,
       answeredBy: actor.kind === "AGENT" ? "AGENT" : "SELF",
       answeredByName: actor.kind === "AGENT" ? actor.name : null,
       mandateId: actor.kind === "AGENT" ? actor.chain.mandate_id : null,
       delegationId: actor.kind === "AGENT" ? actor.chain.delegation_id : null,
+      receiptId,
     },
     include: { claim: true },
   });
-  // An agent's answer goes on the person's GOV.UK record, in its own words, for them to check.
-  if (actor.kind === "AGENT") {
-    const receiptId = await recordReceipt({ mandate_id: actor.chain.mandate_id, delegation_id: actor.chain.delegation_id, capability: "respond_to_query", reference: q.id, text: `To HMRC’s question “${q.question}” on claim ${q.claim.reference}: ${answer}`, agent_confirmed: q.confirmedByPerson });
-    if (receiptId) await prisma.claimQuery.update({ where: { id: q.id }, data: { receiptId } });
-  }
-  return { query_id: q.id, claim_reference: q.claim.reference, answered: true, status: "BEING_REVIEWED", synthetic: true };
+  return {
+    query_id: q.id, claim_reference: q.claim.reference, answered: true, status: "BEING_REVIEWED", synthetic: true,
+    // Whether the person approved is the agent's say-so: HMRC has no independent evidence of it. The person can dispute the receipt.
+    person_approval: actor.kind === "SELF" ? "PERSON_SUBMITTED" : confirmedByPerson ? "AGENT_ASSERTED" : "NOT_DECLARED",
+    ...(receiptId ? { receipt_id: receiptId } : {}),
+  };
 }
 
 export async function updateEmployment(taxpayer: Taxpayer, actor: Actor, body: Record<string, unknown>) {
