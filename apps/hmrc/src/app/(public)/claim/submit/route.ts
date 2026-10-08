@@ -6,7 +6,7 @@ import { logEvent } from "@/lib/events";
 import { withPrincipalCapacity } from "@/lib/capacity";
 import { verifyAgentSignature } from "@/lib/agent-identity";
 import { agentSessionFromRequest } from "@/lib/agent-session";
-import { askDelegate } from "@/lib/delegate-client";
+import { askDelegate, reportOutcome } from "@/lib/delegate-client";
 import type { Actor } from "@/lib/delegated-authority";
 
 const CAPABILITY = "claim_job_expenses";
@@ -60,9 +60,11 @@ export async function POST(req: Request) {
   const who = { agentName: actor.kind === "AGENT" ? actor.name : null, subject: taxpayer.oneLoginSubject, delegateCheckId: checkId, ...(actor.kind === "AGENT" ? { delegationId: actor.chain.delegation_id, mandateId: actor.chain.mandate_id, assurance: actor.chain.assurance } : {}) };
   const run = await withPrincipalCapacity(taxpayer, CAPABILITY, body, (admitted) => claimJobExpenses(taxpayer, actor, admitted));
   if (!run.ok) {
+    if (checkId) await reportOutcome({ check_id: checkId, status: "FAILED", reason: run.refusal.reason });
     await logEvent({ ...evidence, ...who, lane, outcome: "REFUSED", reason: run.refusal.reason, rule: run.refusal.rule, capacityUsed: run.refusal.used, capacityLimit: run.refusal.limit, latencyMs: Date.now() - started });
     return go(`/your-tax?refused=${run.refusal.reason}`);
   }
+  if (checkId) await reportOutcome({ check_id: checkId, status: "COMPLETED", reference: run.result.claim_reference });
   await logEvent({ ...evidence, ...who, lane, outcome: "ALLOWED", rule: run.admitted.rule, capacityUsed: run.admitted.used, capacityLimit: run.admitted.limit, latencyMs: Date.now() - started });
   return go(`/your-tax?claimed=${encodeURIComponent(run.result.claim_reference)}`);
 }

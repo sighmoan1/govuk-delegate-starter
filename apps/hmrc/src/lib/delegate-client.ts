@@ -104,3 +104,22 @@ export async function disputedReceipts(ids: string[]): Promise<{ ok: true; dispu
     return { ok: false };
   }
 }
+
+/**
+ * Tell GOV.UK Delegate what happened after it said yes to a check. Best effort:
+ * a failure to report must never change what the person gets from HMRC.
+ * Reporting twice is safe; Delegate keeps one row per idempotency key.
+ */
+export async function reportOutcome(o: { check_id: string; status: "SUBMITTED" | "ACCEPTED" | "FAILED" | "COMPLETED"; reference?: string | null; reason?: string | null; idempotency_key?: string }): Promise<boolean> {
+  try {
+    const res = await fetch(`${config.delegateInternalUrl}/api/outcomes`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-service-key": config.serviceKey },
+      body: JSON.stringify({ ...o, service: config.serviceSlug }),
+      cache: "no-store",
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
