@@ -245,3 +245,15 @@ Why: HMRC can't see the chat, so the flag was the agent's own word and stopped n
 **Current gap:** `apps/delegate/src/lib/demo-seed.ts` and `apps/delegate/src/lib/capabilities.ts` still hard-code HMRC capabilities and display metadata. These are **prototype limitations**, not the intended ownership model. Service-published versioned catalogues, rich mandates, consent snapshots and multi-service grouping require follow-up implementation; this decision does not claim they already exist.
 
 **Related:** [Delegate and Orchestrate architecture](ARCHITECTURE.md), [product case](PRODUCT_CASE.md). Decisions 4 and 5 remain the original guiding pattern; this decision clarifies the service integration contract and product boundary. Decisions 16–20 describe historical demo states and must not be mistaken for a production specification.
+
+## Open question — Where authority is authoritative (not a settled decision)
+
+**Status:** Investigate; do not present as Decision 22 or as an implemented feature.
+
+A citizen-facing **Who can act for me?** service may combine:
+- **Delegate-issued** mandates, for which Delegate is source of truth;
+- **externally issued** authority (such as departmental agent relationships or legally appointed representation), for which the issuing system remains authoritative.
+
+This is distinct from Decision 21's settled Delegate/Orchestrate responsibility boundary. Central, federated and hybrid authority-storage models all remain possible. A **hybrid hypothesis** deserves a bounded synthetic experiment: show two differently sourced relationships, prove source-specific revocation and denial, and avoid misleading answers when the external issuer is unavailable.
+
+**Decision criteria:** legal origin, service recognition, reliability, privacy, revocation guarantees, provenance, citizen comprehension and feasible cross-service identity matching. See [Federated authority options and experiment](FEDERATED_AUTHORITY.md). Do not add generic external-authority ALLOW decisions before the trust and evidence model has been tested.
