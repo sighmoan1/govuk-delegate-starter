@@ -15,7 +15,7 @@ import { takeToken, clientKey, sleep } from "./friction";
 import { logEvent } from "./events";
 import { taxpayerFromRequest } from "./session";
 import { findOrCreateTaxpayer, type Taxpayer } from "./taxpayers";
-import { withPrincipalCapacity, REFUSAL_STATUS, type Admitted } from "./capacity";
+import { withPrincipalCapacity, REFUSAL_STATUS, type Admitted, type Tx } from "./capacity";
 import { verifyAgentSignature } from "./agent-identity";
 import { agentSessionFromRequest } from "./agent-session";
 import { config, UNTRUSTED_DELAY_MS } from "./config";
@@ -23,7 +23,7 @@ import { config, UNTRUSTED_DELAY_MS } from "./config";
 export type Actor =
   | { kind: "SELF" }
   | { kind: "AGENT"; name: string; id: string; chain: DelegateChain };
-export type Handler = (ctx: { taxpayer: Taxpayer; actor: Actor; body: Record<string, unknown>; admitted: Admitted }) => Promise<Record<string, unknown>>;
+export type Handler = (ctx: { taxpayer: Taxpayer; actor: Actor; body: Record<string, unknown>; admitted: Admitted; db: Tx }) => Promise<Record<string, unknown>>;
 
 const STATUS: Record<string, number> = {
   PERMISSION_MISSING: 403, AUTHORISATION_REVOKED: 403, AUTHORISATION_EXPIRED: 403, NO_AUTHORISATION: 403,
@@ -45,6 +45,7 @@ export function requireDelegatedAuthority(capability: string, handler: Handler) 
     };
     const log: Log = (e) => logEvent({ ...evidence, ...e, path, capability, latencyMs: Date.now() - started });
     const body = await readBody(req);
+    const idempotencyKey = req.headers.get("idempotency-key")?.trim() ?? null;
 
     // An agent acting in a browser, after the person approved it on GOV.UK.
     const agentSession = await agentSessionFromRequest(req);
@@ -54,13 +55,13 @@ export function requireDelegatedAuthority(capability: string, handler: Handler) 
         await log({ lane: "UNTRUSTED", outcome: "REFUSED", reason: "AGENT_SESSION_NOT_BOUND", agentName: agentSession.agentName, subject: agentSession.subject });
         return refusal("AGENT_SESSION_NOT_BOUND", "UNTRUSTED", { message: "This session belongs to a different agent." });
       }
-      return actAsAgent(agentSession.delegationToken, agentSession.principalId, capability, body, handler, log);
+      return actAsAgent(agentSession.delegationToken, agentSession.principalId, capability, body, handler, log, idempotencyKey);
     }
 
     // An agent presenting its own GOV.UK Delegate token (or a sub-agent's delegation token).
     const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
     const principalId = req.headers.get("x-principal-id");
-    if (token && principalId) return actAsAgent(token, principalId, capability, body, handler, log);
+    if (token && principalId) return actAsAgent(token, principalId, capability, body, handler, log, idempotencyKey);
 
     // A person signed in to HMRC.
     const person = await taxpayerFromRequest(req);
@@ -75,14 +76,14 @@ export function requireDelegatedAuthority(capability: string, handler: Handler) 
         await log({ lane: "AUTHENTICATED_HUMAN", outcome: "THROTTLED", subject: person.oneLoginSubject });
         return NextResponse.json({ error: "RATE_LIMITED" }, { status: 429, headers: { "retry-after": String(rl.resetSeconds) } });
       }
-      const run = await withPrincipalCapacity(person, capability, body, (admitted) => handler({ taxpayer: person, actor: { kind: "SELF" }, body, admitted }));
+      const run = await withPrincipalCapacity(person, capability, body, (admitted, db) => handler({ taxpayer: person, actor: { kind: "SELF" }, body, admitted, db }), { idempotencyKey });
       if (!run.ok) {
         const f = run.refusal;
         await log({ lane: "AUTHENTICATED_HUMAN", outcome: "REFUSED", reason: f.reason, subject: person.oneLoginSubject, rule: f.rule, capacityUsed: f.used, capacityLimit: f.limit });
         return refusal(f.reason, "AUTHENTICATED_HUMAN", { rule: f.rule, limit: f.limit, used: f.used, resets_at: f.resetsAt, message: f.message });
       }
-      await log({ lane: "AUTHENTICATED_HUMAN", outcome: "ALLOWED", subject: person.oneLoginSubject, rule: run.admitted.rule, capacityUsed: run.admitted.used, capacityLimit: run.admitted.limit });
-      return NextResponse.json({ decision: "ALLOW", lane: "AUTHENTICATED_HUMAN", result: run.result, capacity: capacityJson(run.admitted) });
+      await log({ lane: "AUTHENTICATED_HUMAN", outcome: "ALLOWED", ...(run.replayed ? { reason: "IDEMPOTENT_REPLAY" } : {}), subject: person.oneLoginSubject, rule: run.admitted.rule, capacityUsed: run.admitted.used, capacityLimit: run.admitted.limit });
+      return NextResponse.json({ decision: "ALLOW", lane: "AUTHENTICATED_HUMAN", result: run.result, capacity: capacityJson(run.admitted), ...replayJson(run.replayed) }, { headers: replayHeaders(run.replayed) });
     }
 
     // A known agent with no permission: show it the proper route. Better than
@@ -104,9 +105,9 @@ export function requireDelegatedAuthority(capability: string, handler: Handler) 
   };
 }
 
-async function actAsAgent(token: string, principalId: string, capability: string, body: Record<string, unknown>, handler: Handler, log: Log) {
+async function actAsAgent(token: string, principalId: string, capability: string, body: Record<string, unknown>, handler: Handler, log: Log, idempotencyKey: string | null) {
   try {
-    return await actAsAgentChecked(token, principalId, capability, body, handler, log);
+    return await actAsAgentChecked(token, principalId, capability, body, handler, log, idempotencyKey);
   } catch (e) {
     if (!(e instanceof DelegateUnavailableError)) throw e;
     // Delegate couldn't answer, or couldn't record the receipt. That is not a "no" and not a "yes": nothing was accepted.
@@ -118,7 +119,7 @@ async function actAsAgent(token: string, principalId: string, capability: string
   }
 }
 
-async function actAsAgentChecked(token: string, principalId: string, capability: string, body: Record<string, unknown>, handler: Handler, log: Log) {
+async function actAsAgentChecked(token: string, principalId: string, capability: string, body: Record<string, unknown>, handler: Handler, log: Log, idempotencyKey: string | null) {
   const check = await askDelegate({ agent_token: token, principal_id: principalId, capability });
   const chainLog = check.chain
     ? { mandateId: check.chain.mandate_id, delegationId: check.chain.delegation_id, parentDelegationId: check.chain.parent_delegation_id, depth: check.chain.depth, agentLabel: check.chain.label, assurance: check.chain.assurance }
@@ -143,7 +144,7 @@ async function actAsAgentChecked(token: string, principalId: string, capability:
   // The One Login subject Delegate returned is the same one HMRC saw when the person signed in.
   const taxpayer = await findOrCreateTaxpayer(check.subject);
   const actor: Actor = { kind: "AGENT", name: check.delegate.name, id: check.delegate.id, chain: check.chain };
-  const run = await withPrincipalCapacity(taxpayer, capability, body, (admitted) => handler({ taxpayer, actor, body, admitted })).catch(async (e) => {
+  const run = await withPrincipalCapacity(taxpayer, capability, body, (admitted, db) => handler({ taxpayer, actor, body, admitted, db }), { idempotencyKey }).catch(async (e) => {
     await reportOutcome({ check_id: check.check_id, status: "FAILED", reason: "HANDLER_ERROR" });
     throw e;
   });
@@ -157,12 +158,12 @@ async function actAsAgentChecked(token: string, principalId: string, capability:
   const reference = [res.claim_reference, res.change_reference].find((v) => typeof v === "string") as string | undefined;
   await reportOutcome({ check_id: check.check_id, status: "COMPLETED", reference: reference ?? null });
   await log({
-    lane: "AUTHORISED_AGENT", outcome: "ALLOWED", reason: "VALID_AUTHORISATION", ...agent, ...chainLog, subject: check.subject, delegateCheckId: check.check_id,
+    lane: "AUTHORISED_AGENT", outcome: "ALLOWED", reason: run.replayed ? "IDEMPOTENT_REPLAY" : "VALID_AUTHORISATION", ...agent, ...chainLog, subject: check.subject, delegateCheckId: check.check_id,
     rule: run.admitted.rule, capacityUsed: run.admitted.used, capacityLimit: run.admitted.limit,
   });
   return NextResponse.json(
-    { decision: "ALLOW", lane: "AUTHORISED_AGENT", acting_for: taxpayer.name, tell_the_person: `Tell ${taxpayer.name} what you just did. They can see it, and change or remove your access, at ${config.delegateUrl}/account/delegates`, delegate_check_id: check.check_id, result: run.result, capacity: capacityJson(run.admitted) },
-    { headers: { "x-trusted-lane": "AUTHORISED_AGENT", "x-ratelimit-limit": String(rl.limit), "x-ratelimit-remaining": String(rl.remaining) } },
+    { decision: "ALLOW", lane: "AUTHORISED_AGENT", acting_for: taxpayer.name, tell_the_person: `Tell ${taxpayer.name} what you just did. They can see it, and change or remove your access, at ${config.delegateUrl}/account/delegates`, delegate_check_id: check.check_id, result: run.result, capacity: capacityJson(run.admitted), ...replayJson(run.replayed) },
+    { headers: { ...replayHeaders(run.replayed), "x-trusted-lane": "AUTHORISED_AGENT", "x-ratelimit-limit": String(rl.limit), "x-ratelimit-remaining": String(rl.remaining) } },
   );
 }
 
@@ -184,6 +185,9 @@ async function declaredAgent(name: string, req: Request, log: Log, subject: stri
 }
 
 const capacityJson = (a: Admitted) => (a.rule ? { rule: a.rule, limit: a.limit, used: a.used } : null);
+// A retry answered from the first attempt's stored outcome: same result and reference, nothing run again.
+const replayJson = (replayed: boolean) => (replayed ? { idempotent_replay: true } : {});
+const replayHeaders = (replayed: boolean): Record<string, string> => (replayed ? { "idempotent-replayed": "true" } : {});
 
 function refusal(reason: string, lane: string, extra: Record<string, unknown>) {
   return NextResponse.json(

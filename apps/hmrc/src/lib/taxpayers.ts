@@ -4,7 +4,7 @@ import type { Taxpayer as TaxpayerRow } from "@/generated/prisma";
 import { prisma } from "./db";
 import type { Actor } from "./delegated-authority";
 import { recordReceipt, disputedReceipts, receiptKey } from "./delegate-client";
-import type { Admitted } from "./capacity";
+import type { Admitted, Tx } from "./capacity";
 
 export type Taxpayer = TaxpayerRow;
 
@@ -50,18 +50,18 @@ export async function viewTaxCode(taxpayer: Taxpayer) {
 }
 
 /** The capacity rules have already admitted this claim: a first claim, or a resubmission with new evidence. */
-export async function claimJobExpenses(taxpayer: Taxpayer, actor: Actor, admitted?: Admitted) {
+export async function claimJobExpenses(taxpayer: Taxpayer, actor: Actor, admitted: Admitted | undefined, db: Tx) {
   const amendment = (admitted?.used ?? 1) > 1;
-  const claim = await prisma.claim.create({
+  const claim = await db.claim.create({
     data: {
       taxpayerId: taxpayer.id, reference: ref("JE"), kind: "job_expenses", taxYear: TAX_YEAR, evidenceFingerprint: admitted?.evidence ?? null,
       summary: amendment ? "Tax relief for working from home: new evidence added" : `Tax relief for working from home, ${WFH_RELIEF}`,
       newTaxCode: amendment ? null : WFH_NEW_CODE, ...who(actor),
     },
   });
-  await prisma.taxpayer.update({ where: { id: taxpayer.id }, data: { taxCode: WFH_NEW_CODE } });
+  await db.taxpayer.update({ where: { id: taxpayer.id }, data: { taxCode: WFH_NEW_CODE } });
   // HMRC checks the first claim and asks one question about it.
-  if (!amendment) await prisma.claimQuery.create({ data: { claimId: claim.id, question: HMRC_QUESTION } });
+  if (!amendment) await db.claimQuery.create({ data: { claimId: claim.id, question: HMRC_QUESTION } });
   return { claim_reference: claim.reference, expense: "Working from home", tax_year: taxpayer.taxYear, relief: WFH_RELIEF, new_tax_code: WFH_NEW_CODE, synthetic: true };
 }
 
@@ -124,19 +124,19 @@ export async function claimProgress(taxpayer: Taxpayer, body: Record<string, unk
  * if Delegate can't record it, this throws DelegateUnavailableError, the query stays open,
  * and the agent can retry. The receipt key is stable, so a retry never makes a second receipt.
  */
-export async function answerQuery(taxpayer: Taxpayer, actor: Actor, body: Record<string, unknown>) {
+export async function answerQuery(taxpayer: Taxpayer, actor: Actor, body: Record<string, unknown>, db: Tx) {
   const answer = String(body.answer).trim().slice(0, 1000);
   const confirmedByPerson = actor.kind === "SELF" || body.confirmed_by_person === true;
   let receiptId: string | null = null;
   if (actor.kind === "AGENT") {
-    const open = await prisma.claimQuery.findUniqueOrThrow({ where: { id: String(body.query_id) }, include: { claim: true } });
+    const open = await db.claimQuery.findUniqueOrThrow({ where: { id: String(body.query_id) }, include: { claim: true } });
     receiptId = await recordReceipt({
       mandate_id: actor.chain.mandate_id, delegation_id: actor.chain.delegation_id, capability: "respond_to_query", reference: open.id,
       text: `To HMRC’s question “${open.question}” on claim ${open.claim.reference}: ${answer}`,
       agent_confirmed: confirmedByPerson, idempotency_key: receiptKey(open.id, open.answerVersion),
     });
   }
-  const q = await prisma.claimQuery.update({
+  const q = await db.claimQuery.update({
     where: { id: String(body.query_id) },
     data: {
       status: "ANSWERED", answer, answeredAt: new Date(), confirmedByPerson,
@@ -156,19 +156,19 @@ export async function answerQuery(taxpayer: Taxpayer, actor: Actor, body: Record
   };
 }
 
-export async function updateEmployment(taxpayer: Taxpayer, actor: Actor, body: Record<string, unknown>) {
+export async function updateEmployment(taxpayer: Taxpayer, actor: Actor, body: Record<string, unknown>, db: Tx) {
   const summary = typeof body.details === "string" && body.details.trim() ? body.details.trim().slice(0, 200) : "Employment details updated";
-  const claim = await prisma.claim.create({ data: { taxpayerId: taxpayer.id, reference: ref("EM"), kind: "employment_update", summary, ...who(actor) } });
+  const claim = await db.claim.create({ data: { taxpayerId: taxpayer.id, reference: ref("EM"), kind: "employment_update", summary, ...who(actor) } });
   return { change_reference: claim.reference, update: summary, synthetic: true };
 }
 
-export async function changeRefundAccount(taxpayer: Taxpayer, actor: Actor) {
-  const claim = await prisma.claim.create({ data: { taxpayerId: taxpayer.id, reference: ref("BA"), kind: "refund_account", summary: "Refund bank account changed (mock: no details held)", ...who(actor) } });
+export async function changeRefundAccount(taxpayer: Taxpayer, actor: Actor, db: Tx) {
+  const claim = await db.claim.create({ data: { taxpayerId: taxpayer.id, reference: ref("BA"), kind: "refund_account", summary: "Refund bank account changed (mock: no details held)", ...who(actor) } });
   return { change_reference: claim.reference, updated: true, synthetic: true };
 }
 
-export async function changeAddress(taxpayer: Taxpayer, actor: Actor) {
-  const claim = await prisma.claim.create({ data: { taxpayerId: taxpayer.id, reference: ref("AD"), kind: "address", summary: "Address changed (mock: no address held)", ...who(actor) } });
+export async function changeAddress(taxpayer: Taxpayer, actor: Actor, db: Tx) {
+  const claim = await db.claim.create({ data: { taxpayerId: taxpayer.id, reference: ref("AD"), kind: "address", summary: "Address changed (mock: no address held)", ...who(actor) } });
   return { change_reference: claim.reference, updated: true, synthetic: true };
 }
 

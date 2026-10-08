@@ -2,4 +2,4 @@ import { requireDelegatedAuthority } from "@/lib/delegated-authority";
 import { claimJobExpenses } from "@/lib/taxpayers";
 
 export const dynamic = "force-dynamic";
-export const POST = requireDelegatedAuthority("claim_job_expenses", ({ taxpayer, actor, admitted }) => claimJobExpenses(taxpayer, actor, admitted));
+export const POST = requireDelegatedAuthority("claim_job_expenses", ({ taxpayer, actor, admitted, db }) => claimJobExpenses(taxpayer, actor, admitted, db));
