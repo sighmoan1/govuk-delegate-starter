@@ -76,6 +76,39 @@ export async function rootDelegationFor(mandate: { id: string; delegateId: strin
 }
 
 /**
+ * Walk from a delegation up to the root mandate delegation, checking each
+ * ancestor against its CURRENT state. Returns a deny reason, or null if the
+ * whole chain is sound. Fails closed on cycles, cross-mandate parents, broken
+ * depth numbering and depth beyond the mandate's limit.
+ */
+async function ancestorDenial(
+  start: { id: string; mandateId: string; parentDelegationId: string | null; depth: number },
+  mandate: { id: string; maxDepth: number },
+  capability: string,
+): Promise<{ reason: DenyReason; at: string } | null> {
+  if (start.depth > mandate.maxDepth) return { reason: "DELEGATION_DEPTH_EXCEEDED", at: start.id };
+  const seen = new Set<string>([start.id]);
+  let child: { id: string; depth: number } = start;
+  let parentId = start.parentDelegationId;
+  if (parentId === null && start.depth !== 0) return { reason: "NO_AUTHORISATION", at: start.id };
+  while (parentId !== null) {
+    if (seen.has(parentId)) return { reason: "NO_AUTHORISATION", at: parentId }; // cycle
+    seen.add(parentId);
+    const parent = await prisma.delegation.findUnique({ where: { id: parentId }, include: { delegate: true } });
+    if (!parent || parent.mandateId !== mandate.id || parent.depth !== child.depth - 1) return { reason: "NO_AUTHORISATION", at: parentId };
+    if (parent.status !== "ACTIVE") return { reason: "AUTHORISATION_REVOKED", at: parent.id };
+    if (parent.delegate.status !== "ACTIVE") return { reason: "UNKNOWN_DELEGATE", at: parent.id };
+    // The child can only hold what every ancestor still holds.
+    if (!parent.capabilities.includes(capability)) return { reason: "PERMISSION_MISSING", at: parent.id };
+    child = parent;
+    parentId = parent.parentDelegationId;
+  }
+  // The chain must end at the mandate's root (depth 0).
+  if (child.depth !== 0) return { reason: "NO_AUTHORISATION", at: child.id };
+  return null;
+}
+
+/**
  * The check — the heart of Delegate.
  *
  *   identity   → is the presenter a known, active agent?
@@ -141,6 +174,13 @@ export async function checkAuthority(input: CheckInput, now = new Date()): Promi
   const capability = mandate.permissions.find((p) => p.capability.code === input.capability)?.capability;
   if (!capability || !delegation.capabilities.includes(input.capability)) {
     return { authorised: false, reason: "PERMISSION_MISSING", ...base };
+  }
+
+  // ── ...and in every ancestor, as they stand now (revoked or narrowed parents bind their descendants).
+  const denial = await ancestorDenial(delegation, mandate, input.capability);
+  if (denial) {
+    console.warn(`[authority] chain refused: ${denial.reason} at ancestor ${denial.at} (delegation ${delegation.id}, mandate ${mandate.id}, depth ${delegation.depth})`);
+    return { authorised: false, reason: denial.reason, ...base };
   }
 
   // ── Sensitive actions need an agent whose identity is verified or registered.
