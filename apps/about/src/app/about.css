@@ -78,3 +78,13 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .viz-scroll { overflow-x: auto; }
 .viz-scroll .viz-svg { min-width: 560px; }
 .viz-scroll:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* Architecture: concise, readable responsibility diagram; source of truth in docs/ARCHITECTURE.md. */
+.boundary-flow { max-width: 48rem; margin: 1rem 0 1.25rem; }
+.boundary-flow__box { padding: 1rem 1.3rem; border: 2px solid var(--border); background: var(--white); }
+.boundary-flow__box strong { display: block; font-size: 1.2rem; margin-bottom: .35rem; }
+.boundary-flow__box p { margin: .4rem 0; }
+.boundary-flow__box .small { font-size: .93rem; }
+.boundary-flow__box--authority { border-color: var(--teal); background: var(--soft-aqua); }
+.boundary-flow__box--service { border-color: var(--coral); }
+.boundary-flow__arrow { text-align: center; color: var(--muted); margin: .5rem 0; font-weight: 700; }
