@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { config } from "@/lib/config";
 import { approveRequest, rejectRequest, loadRequest, returnTo, DomainError } from "@/lib/requests";
-import { principalFromRequest } from "@/lib/session";
+import { principalFromRequest, cookieFromHeader, SESSION_COOKIE } from "@/lib/session";
+import { requestOrigin, verifyDecisionToken } from "@/lib/consent-csrf";
 import { verifyAgentSignature } from "@/lib/agent-identity";
 
 // The person's decision on the consent screen. A plain form POST answered with a
@@ -11,10 +12,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const go = (url: string) => NextResponse.redirect(new URL(url, config.appUrl), 303);
 
-  // Same-origin only: a form on another site must not be able to approve.
-  const origin = req.headers.get("origin");
-  if (origin && origin !== new URL(config.appUrl).origin) {
+  // Same-origin only: a form on another site must not be able to approve. A
+  // missing Origin (and Referer) is not let through.
+  if (requestOrigin(req) !== new URL(config.appUrl).origin) {
     return NextResponse.json({ error: "CROSS_ORIGIN" }, { status: 403 });
+  }
+  const form = await req.formData();
+  // Origin can be absent or spoofed by non-browser clients, so the decision also
+  // needs the token issued with this form for this session and this request.
+  const session = cookieFromHeader(req.headers.get("cookie"), SESSION_COOKIE);
+  if (!verifyDecisionToken(session, id, form.get("csrf"))) {
+    return NextResponse.json({ error: "BAD_CSRF_TOKEN" }, { status: 403 });
   }
   const principal = await principalFromRequest(req);
   if (!principal) return go(`/auth/login?returnTo=${encodeURIComponent(`/consent/${id}`)}`);
@@ -24,7 +32,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const signed = await verifyAgentSignature(req);
   if (signed.verified) return go(`/consent/${id}?error=AGENT_CANNOT_APPROVE`);
 
-  const form = await req.formData();
   const decision = String(form.get("decision"));
   try {
     if (decision === "approve") {
