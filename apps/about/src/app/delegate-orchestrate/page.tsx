@@ -97,6 +97,11 @@ export default function DelegateOrOrchestrate() {
         </div>
       </div>
       <p className="small">
+        <strong>Request path:</strong> The assistant calls the receiving department's own API. That department
+        asks Delegate whether the representative is authorised. Delegate does not proxy or orchestrate
+        the transaction.
+      </p>
+      <p className="small">
         This is the <strong>proposed cross-government architecture</strong>, not a statement that the current prototype
         integrates with DWP or DVLA. Orchestrate is hypothetical.
       </p>
