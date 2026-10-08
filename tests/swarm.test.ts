@@ -114,7 +114,7 @@ describe("Scenario 4: can a swarm beat the system?", () => {
     const cookie = await sessionCookie(bp.oneLoginSubjectId);
     const Bp = await Promise.all(Array.from({ length: LIMIT + OVER }, () => view({ cookie })));
 
-    for (const arm of [A, B, Bp]) expect(tally(arm)).toEqual({ accepted: LIMIT, CAPACITY_EXCEEDED: OVER });
+    for (const arm of [A, B, Bp]) expect(tally(arm)).toEqual({ accepted: LIMIT, RATE_LIMITED: OVER });
   });
 
   it("more claims need materially new evidence; the same evidence twice is a duplicate; open cases are capped", async () => {
@@ -127,7 +127,7 @@ describe("Scenario 4: can a swarm beat the system?", () => {
     expect((await hmrc("/api/job-expenses", "POST", h, { evidence: "employer letter, march " })).reason).toBe("DUPLICATE_SUBMISSION");
     expect((await hmrc("/api/job-expenses", "POST", h, { evidence: "Home office electricity bill" })).status).toBe(200);
     const fourth = await hmrc("/api/job-expenses", "POST", h, { evidence: "Yet another document" });
-    expect(fourth).toEqual({ status: 429, reason: "CAPACITY_EXCEEDED" });
+    expect(fourth).toEqual({ status: 409, reason: "CAPACITY_EXCEEDED" }); // a business refusal (provisional open-case limit), not a throttle
   });
 
   it("identity assurance does not change HMRC's limits: an unregistered, declared or verified agent all spend the same person's allowance", async () => {
@@ -137,6 +137,6 @@ describe("Scenario 4: can a swarm beat the system?", () => {
     const first = await Promise.all(Array.from({ length: 30 }, () => view({ authorization: `Bearer ${token}`, "x-principal-id": sam.id })));
     await prisma.delegation.updateMany({ where: { mandateId: authorisationId }, data: { assurance: "VERIFIED" } });
     const second = await Promise.all(Array.from({ length: 40 }, () => view({ authorization: `Bearer ${token}`, "x-principal-id": sam.id })));
-    expect(tally([...first, ...second])).toEqual({ accepted: 60, CAPACITY_EXCEEDED: 10 });
+    expect(tally([...first, ...second])).toEqual({ accepted: 60, RATE_LIMITED: 10 });
   });
 });

@@ -8,7 +8,7 @@
 //   3. a genuine amendment (new evidence): a new key and a new fingerprint.
 //
 // The record is written in the same database transaction as the claim or answer
-// (see withPrincipalCapacity). There is no PENDING state to get stuck: a crash,
+// (see runOperation). There is no PENDING state to get stuck: a crash,
 // timeout or error rolls the whole attempt back, and the retry is a first try.
 import { createHash } from "node:crypto";
 

@@ -3,19 +3,27 @@
 // Every API route is wrapped in requireDelegatedAuthority(capability, handler).
 // It works out who is on the other end (a person, an authorised agent, an
 // agent without permission, or nobody it can identify), asks GOV.UK Delegate
-// one question when an agent is acting for someone, applies the person's
-// business limits (whoever is acting), logs the outcome, and either runs the
-// business handler or refuses with a machine-readable reason.
+// one question when an agent is acting for someone, admits the request
+// (throughput.ts: traffic limits), checks the transaction is permissible
+// (domain-policy.ts: the person's business rules, whoever is acting), logs the
+// outcome, and either runs the business handler or refuses with a
+// machine-readable reason.
 //
-// Detection (the agent's signature) is evidence, not the boundary: capacity
-// is keyed to the person, so it holds even when HMRC can't see the agent.
+// Three kinds of "no" stay apart in the response (`kind`) and in the log:
+// identity/permission (401/403), business refusal (409/404/400) and technical
+// throttle or unavailability (429/503, with Retry-After).
+//
+// Detection (the agent's signature) is evidence, not the boundary: the
+// business rules are keyed to the person, so they hold even when HMRC can't
+// see the agent.
 import { NextResponse } from "next/server";
 import { askDelegate, reportOutcome, DelegateUnavailableError, type DelegateChain } from "./delegate-client";
 import { takeToken, clientKey, sleep } from "./friction";
-import { logEvent } from "./events";
+import { logEvent, refusalEventFields } from "./events";
+import { retryHeaders } from "./throughput";
 import { taxpayerFromRequest } from "./session";
 import { findOrCreateTaxpayer, type Taxpayer } from "./taxpayers";
-import { withPrincipalCapacity, REFUSAL_STATUS, type Admitted, type Tx } from "./capacity";
+import { runOperation, REFUSAL_STATUS, type Admitted, type Refusal, type Tx } from "./operation";
 import { verifyAgentSignature } from "./agent-identity";
 import { agentSessionFromRequest } from "./agent-session";
 import { config, UNTRUSTED_DELAY_MS } from "./config";
@@ -27,7 +35,7 @@ export type Handler = (ctx: { taxpayer: Taxpayer; actor: Actor; body: Record<str
 
 const STATUS: Record<string, number> = {
   PERMISSION_MISSING: 403, AUTHORISATION_REVOKED: 403, AUTHORISATION_EXPIRED: 403, NO_AUTHORISATION: 403,
-  STEP_UP_REQUIRED: 403, CAPACITY_EXCEEDED: 429, DELEGATION_DEPTH_EXCEEDED: 403, ASSURANCE_TOO_LOW: 403, AGENT_NOT_AUTHORISED: 403, AGENT_SESSION_NOT_BOUND: 401,
+  STEP_UP_REQUIRED: 403, DELEGATION_DEPTH_EXCEEDED: 403, ASSURANCE_TOO_LOW: 403, AGENT_NOT_AUTHORISED: 403, AGENT_SESSION_NOT_BOUND: 401,
 };
 
 type Log = (e: Omit<Parameters<typeof logEvent>[0], "path" | "latencyMs" | "capability">) => Promise<unknown>;
@@ -69,20 +77,16 @@ export function requireDelegatedAuthority(capability: string, handler: Handler) 
       // ...unless the browser signs its requests as an AI agent: that's an agent
       // using the person's own session or password, not the person.
       if (sig.verified) return declaredAgent(sig.name, req, log, person.oneLoginSubject);
-      // An agent HMRC can't see would look exactly like this. It still spends
-      // this person's capacity, because capacity is keyed to the person.
-      const rl = takeToken(`human:${person.id}`, "AUTHENTICATED_HUMAN");
-      if (!rl.allowed) {
-        await log({ lane: "AUTHENTICATED_HUMAN", outcome: "THROTTLED", subject: person.oneLoginSubject });
-        return NextResponse.json({ error: "RATE_LIMITED" }, { status: 429, headers: { "retry-after": String(rl.resetSeconds) } });
-      }
-      const run = await withPrincipalCapacity(person, capability, body, (admitted, db) => handler({ taxpayer: person, actor: { kind: "SELF" }, body, admitted, db }), { idempotencyKey });
+      // An agent HMRC can't see would look exactly like this. It draws on this
+      // person's business rules and this person's traffic budget, because both
+      // are keyed to the person.
+      const run = await runOperation(person, capability, body, (admitted, db) => handler({ taxpayer: person, actor: { kind: "SELF" }, body, admitted, db }), { idempotencyKey, operator: { kind: "human", key: person.id } });
       if (!run.ok) {
         const f = run.refusal;
-        await log({ lane: "AUTHENTICATED_HUMAN", outcome: "REFUSED", reason: f.reason, subject: person.oneLoginSubject, rule: f.rule, capacityUsed: f.used, capacityLimit: f.limit });
-        return refusal(f.reason, "AUTHENTICATED_HUMAN", { rule: f.rule, limit: f.limit, used: f.used, resets_at: f.resetsAt, message: f.message });
+        await log({ lane: "AUTHENTICATED_HUMAN", subject: person.oneLoginSubject, ...refusalEventFields(f, run.costClass) });
+        return refuseRun(f, "AUTHENTICATED_HUMAN");
       }
-      await log({ lane: "AUTHENTICATED_HUMAN", outcome: "ALLOWED", ...(run.replayed ? { reason: "IDEMPOTENT_REPLAY" } : {}), subject: person.oneLoginSubject, rule: run.admitted.rule, capacityUsed: run.admitted.used, capacityLimit: run.admitted.limit });
+      await log({ lane: "AUTHENTICATED_HUMAN", outcome: "ALLOWED", ...(run.replayed ? { reason: "IDEMPOTENT_REPLAY" } : {}), costClass: run.costClass, subject: person.oneLoginSubject, rule: run.admitted.rule, capacityUsed: run.admitted.used, capacityLimit: run.admitted.limit });
       return NextResponse.json({ decision: "ALLOW", lane: "AUTHENTICATED_HUMAN", result: run.result, capacity: capacityJson(run.admitted), ...replayJson(run.replayed) }, { headers: replayHeaders(run.replayed) });
     }
 
@@ -93,7 +97,7 @@ export function requireDelegatedAuthority(capability: string, handler: Handler) 
     // Nobody we can identify. Slower, tightly limited, and no structured API.
     const rl = takeToken(`anon:${clientKey(req)}`, "UNTRUSTED");
     if (!rl.allowed) {
-      await log({ lane: "UNTRUSTED", outcome: "THROTTLED" });
+      await log({ lane: "UNTRUSTED", outcome: "THROTTLED", reason: "RATE_LIMITED", throttleScope: "operator", retryAfterSeconds: rl.resetSeconds });
       return new NextResponse("Too many requests.\n", { status: 429, headers: { "content-type": "text/plain; charset=utf-8", "retry-after": String(rl.resetSeconds), "x-trusted-lane": "UNTRUSTED" } });
     }
     await sleep(UNTRUSTED_DELAY_MS);
@@ -111,9 +115,9 @@ async function actAsAgent(token: string, principalId: string, capability: string
   } catch (e) {
     if (!(e instanceof DelegateUnavailableError)) throw e;
     // Delegate couldn't answer, or couldn't record the receipt. That is not a "no" and not a "yes": nothing was accepted.
-    await log({ lane: "AUTHORISED_AGENT", outcome: "REFUSED", reason: "DELEGATE_UNAVAILABLE" });
+    await log({ lane: "AUTHORISED_AGENT", outcome: "REFUSED", reason: "DELEGATE_UNAVAILABLE", retryAfterSeconds: 30 });
     return NextResponse.json(
-      { decision: "DENY", reason: "DELEGATE_UNAVAILABLE", lane: "AUTHORISED_AGENT", retryable: true, message: "GOV.UK Delegate is not available, so nothing was done. Try the same request again shortly; retries will not duplicate anything." },
+      { decision: "DENY", reason: "DELEGATE_UNAVAILABLE", kind: "UNAVAILABLE", lane: "AUTHORISED_AGENT", retryable: true, retry_after_seconds: 30, message: "GOV.UK Delegate is not available, so nothing was done. Try the same request again shortly; retries will not duplicate anything." },
       { status: 503, headers: { "retry-after": "30", "x-trusted-lane": "AUTHORISED_AGENT" } },
     );
   }
@@ -135,35 +139,30 @@ async function actAsAgentChecked(token: string, principalId: string, capability:
       ...(check.step_up ? { step_up: check.step_up } : {}),
     });
   }
-  const rl = takeToken(`agent:${check.delegate.id}`, "AUTHORISED_AGENT");
-  if (!rl.allowed) {
-    await log({ lane: "AUTHORISED_AGENT", outcome: "THROTTLED", ...agent, ...chainLog, subject: check.subject });
-    await reportOutcome({ check_id: check.check_id, status: "FAILED", reason: "RATE_LIMITED" });
-    return NextResponse.json({ decision: "DENY", reason: "RATE_LIMITED" }, { status: 429, headers: { "retry-after": String(rl.resetSeconds) } });
-  }
   // The One Login subject Delegate returned is the same one HMRC saw when the person signed in.
   const taxpayer = await findOrCreateTaxpayer(check.subject);
   const actor: Actor = { kind: "AGENT", name: check.delegate.name, id: check.delegate.id, chain: check.chain };
-  const run = await withPrincipalCapacity(taxpayer, capability, body, (admitted, db) => handler({ taxpayer, actor, body, admitted, db }), { idempotencyKey }).catch(async (e) => {
+  // Delegate's check said yes, and it spends nothing. Traffic and business rules are HMRC's, and are applied now.
+  const run = await runOperation(taxpayer, capability, body, (admitted, db) => handler({ taxpayer, actor, body, admitted, db }), { idempotencyKey, operator: { kind: "agent", key: check.delegate.id } }).catch(async (e) => {
     await reportOutcome({ check_id: check.check_id, status: "FAILED", reason: "HANDLER_ERROR" });
     throw e;
   });
   if (!run.ok) {
     const f = run.refusal;
     await reportOutcome({ check_id: check.check_id, status: "FAILED", reason: f.reason });
-    await log({ lane: "AUTHORISED_AGENT", outcome: "REFUSED", reason: f.reason, ...agent, ...chainLog, subject: check.subject, delegateCheckId: check.check_id, rule: f.rule, capacityUsed: f.used, capacityLimit: f.limit });
-    return refusal(f.reason, "AUTHORISED_AGENT", { rule: f.rule, limit: f.limit, used: f.used, resets_at: f.resetsAt, message: f.message, delegate_check_id: check.check_id });
+    await log({ lane: "AUTHORISED_AGENT", ...agent, ...chainLog, subject: check.subject, delegateCheckId: check.check_id, authorisedCheck: true, ...refusalEventFields(f, run.costClass) });
+    return refuseRun(f, "AUTHORISED_AGENT", { delegate_check_id: check.check_id });
   }
   const res = run.result as Record<string, unknown>;
   const reference = [res.claim_reference, res.change_reference].find((v) => typeof v === "string") as string | undefined;
   await reportOutcome({ check_id: check.check_id, status: "COMPLETED", reference: reference ?? null });
   await log({
     lane: "AUTHORISED_AGENT", outcome: "ALLOWED", reason: run.replayed ? "IDEMPOTENT_REPLAY" : "VALID_AUTHORISATION", ...agent, ...chainLog, subject: check.subject, delegateCheckId: check.check_id,
-    rule: run.admitted.rule, capacityUsed: run.admitted.used, capacityLimit: run.admitted.limit,
+    rule: run.admitted.rule, capacityUsed: run.admitted.used, capacityLimit: run.admitted.limit, costClass: run.costClass, authorisedCheck: true,
   });
   return NextResponse.json(
     { decision: "ALLOW", lane: "AUTHORISED_AGENT", acting_for: taxpayer.name, tell_the_person: `Tell ${taxpayer.name} what you just did. They can see it, and change or remove your access, at ${config.delegateUrl}/account/delegates`, delegate_check_id: check.check_id, result: run.result, capacity: capacityJson(run.admitted), ...replayJson(run.replayed) },
-    { headers: { ...replayHeaders(run.replayed), "x-trusted-lane": "AUTHORISED_AGENT", "x-ratelimit-limit": String(rl.limit), "x-ratelimit-remaining": String(rl.remaining) } },
+    { headers: { ...replayHeaders(run.replayed), "x-trusted-lane": "AUTHORISED_AGENT" } },
   );
 }
 
@@ -171,8 +170,11 @@ async function actAsAgentChecked(token: string, principalId: string, capability:
 async function declaredAgent(name: string, req: Request, log: Log, subject: string | null) {
   const rl = takeToken(`declared:${clientKey(req)}`, "DECLARED_AGENT");
   if (!rl.allowed) {
-    await log({ lane: "DECLARED_AGENT", outcome: "THROTTLED", agentName: name, subject });
-    return NextResponse.json({ decision: "DENY", reason: "RATE_LIMITED", lane: "DECLARED_AGENT" }, { status: 429 });
+    await log({ lane: "DECLARED_AGENT", outcome: "THROTTLED", reason: "RATE_LIMITED", throttleScope: "operator", retryAfterSeconds: rl.resetSeconds, agentName: name, subject });
+    return NextResponse.json(
+      { decision: "DENY", reason: "RATE_LIMITED", kind: "TECHNICAL_THROTTLE", lane: "DECLARED_AGENT", retryable: true, retry_after_seconds: rl.resetSeconds, scope: "operator", entitlement_affected: false },
+      { status: 429, headers: { "retry-after": String(rl.resetSeconds), "x-ratelimit-limit": String(rl.limit) } },
+    );
   }
   await log({ lane: "DECLARED_AGENT", outcome: "REFUSED", reason: "AGENT_NOT_AUTHORISED", agentName: name, subject });
   return refusal("AGENT_NOT_AUTHORISED", "DECLARED_AGENT", {
@@ -189,11 +191,32 @@ const capacityJson = (a: Admitted) => (a.rule ? { rule: a.rule, limit: a.limit, 
 const replayJson = (replayed: boolean) => (replayed ? { idempotent_replay: true } : {});
 const replayHeaders = (replayed: boolean): Record<string, string> => (replayed ? { "idempotent-replayed": "true" } : {});
 
+/** Identity or permission refused (401/403) is the default `kind`. Business, throttle and unavailable answers set their own. */
 function refusal(reason: string, lane: string, extra: Record<string, unknown>) {
   return NextResponse.json(
-    { decision: "DENY", reason, lane, ...extra },
-    { status: REFUSAL_STATUS[reason as keyof typeof REFUSAL_STATUS] ?? STATUS[reason] ?? 401, headers: { "x-trusted-lane": lane } },
+    { decision: "DENY", reason, kind: "AUTHORITY_REFUSAL", lane, ...extra },
+    { status: REFUSAL_STATUS[reason] ?? STATUS[reason] ?? 401, headers: { "x-trusted-lane": lane } },
   );
+}
+
+/** The response for a refusal from runOperation: 429 or 503 with Retry-After, or a business 409/404/400. */
+function refuseRun(f: Refusal, lane: string, extra: Record<string, unknown> = {}) {
+  if (f.kind === "TECHNICAL_THROTTLE") {
+    return NextResponse.json(
+      {
+        decision: "DENY", reason: f.reason, kind: f.kind, lane, retryable: true, retry_after_seconds: f.retryAfterSeconds, scope: f.scope, cost_class: f.costClass, operation: f.operation,
+        rule: f.rule, limit: f.limit, window_seconds: f.windowSeconds, resets_at: f.resetsAt, entitlement_affected: false, message: f.message, ...extra,
+      },
+      { status: 429, headers: { ...retryHeaders(f), "x-trusted-lane": lane } },
+    );
+  }
+  if (f.kind === "UNAVAILABLE") {
+    return NextResponse.json(
+      { decision: "DENY", reason: f.reason, kind: f.kind, lane, retryable: true, retry_after_seconds: f.retryAfterSeconds, cost_class: f.costClass, operation: f.operation, entitlement_affected: false, message: f.message, ...extra },
+      { status: 503, headers: { ...retryHeaders(f), "x-trusted-lane": lane } },
+    );
+  }
+  return refusal(f.reason, lane, { kind: f.kind, retryable: false, rule: f.rule, limit: f.limit, used: f.used, resets_at: f.resetsAt, message: f.message, ...extra });
 }
 
 async function readBody(req: Request): Promise<Record<string, unknown>> {
