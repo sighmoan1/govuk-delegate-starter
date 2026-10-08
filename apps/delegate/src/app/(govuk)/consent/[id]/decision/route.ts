@@ -18,14 +18,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "CROSS_ORIGIN" }, { status: 403 });
   }
   const form = await req.formData();
+  // Nobody signed in has anything to forge: send them to sign in first.
+  const principal = await principalFromRequest(req);
+  if (!principal) return go(`/auth/login?returnTo=${encodeURIComponent(`/consent/${id}`)}`);
   // Origin can be absent or spoofed by non-browser clients, so the decision also
   // needs the token issued with this form for this session and this request.
   const session = cookieFromHeader(req.headers.get("cookie"), SESSION_COOKIE);
   if (!verifyDecisionToken(session, id, form.get("csrf"))) {
     return NextResponse.json({ error: "BAD_CSRF_TOKEN" }, { status: 403 });
   }
-  const principal = await principalFromRequest(req);
-  if (!principal) return go(`/auth/login?returnTo=${encodeURIComponent(`/consent/${id}`)}`);
 
   // Only the person can give permission. A browser that signs its requests as
   // an AI agent is the agent, even if it holds the person's session.
