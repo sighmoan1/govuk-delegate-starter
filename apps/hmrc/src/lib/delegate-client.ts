@@ -10,15 +10,37 @@ export type DelegateChain = {
 };
 type DelegateInfo = { id: string; name: string; provider: string };
 
+/**
+ * The state of the person's approval of the specific change HMRC asked about.
+ * APPROVED: unspent, may be reserved. IN_PROGRESS: held by another operation.
+ * REDEEMED: spent; only a stored result may be returned. The rest mean the
+ * person has to act (or the request was malformed). See GOV.UK Delegate, Decision 22.
+ */
+export type StepUpState =
+  | "AWAITING_APPROVAL" | "EXPIRED" | "DECLINED" | "PROPOSAL_REQUIRED" | "PROPOSAL_INVALID" | "KEY_USED_FOR_OTHER_TRANSACTION"
+  | "APPROVED" | "IN_PROGRESS" | "REDEEMED";
+export type StepUpReport = {
+  state: StepUpState;
+  message: string;
+  proposal_id?: string;
+  proposal_hash?: string;
+  user_code?: string;
+  approve_url?: string;
+  expires_at?: string;
+  retry_after_seconds?: number;
+  details?: { label: string; value: string }[];
+};
+export type Proposal = { idempotency_key: string; payload: Record<string, string> };
+
 export type DelegateCheck =
-  | { authorised: true; status: "ACTIVE"; authorisation_id: string; principal_id: string; subject: string; delegate: DelegateInfo; chain: DelegateChain; check_id: string }
+  | { authorised: true; status: "ACTIVE"; authorisation_id: string; principal_id: string; subject: string; delegate: DelegateInfo; chain: DelegateChain; check_id: string; step_up?: StepUpReport }
   | {
       authorised: false;
       reason: string;
       status?: string | null;
       delegate?: DelegateInfo;
       chain?: DelegateChain | null;
-      step_up?: { user_code: string; approve_url: string };
+      step_up?: StepUpReport;
       check_id: string;
     };
 
@@ -65,10 +87,54 @@ async function post(operation: string, path: string, body: unknown, retries: num
  * assurance (it spends none of the person's business limits, which HMRC applies itself), and tells HMRC who the person is only if the answer is yes.
  * Throws DelegateUnavailableError if Delegate can't answer: that is not a "no".
  */
-export async function askDelegate(input: { agent_token: string; principal_id: string; capability: string }): Promise<DelegateCheck> {
+export async function askDelegate(input: { agent_token: string; principal_id: string; capability: string; proposal?: Proposal }): Promise<DelegateCheck> {
   const res = await post("check", "/api/authorisations/check", { ...input, service: config.serviceSlug }, 0);
   if (!res.ok) throw new DelegateUnavailableError("check", false, `status ${res.status}`);
   return res.json();
+}
+
+export type ReserveOutcome =
+  | { reserved: true }
+  | { reserved: false; reason: string; state: StepUpState | null; message: string; retryAfterSeconds: number | null };
+
+/**
+ * Hold the person's approval for the one operation HMRC is about to make.
+ * Delegate re-checks everything and flips the approval to RESERVED in one atomic
+ * step; of any number of concurrent callers one wins. `reservation_id` is HMRC's
+ * own id for this attempt, so repeating a lost request here is safe. Throws
+ * DelegateUnavailableError if Delegate cannot answer: the operation must not proceed.
+ */
+export async function reserveStepUp(r: { agent_token: string; principal_id: string; capability: string; proposal: Proposal; reservation_id: string }): Promise<ReserveOutcome> {
+  const res = await post("step-up reserve", "/api/step-ups/reserve", { ...r, service: config.serviceSlug }, 2);
+  const body = await res.json().catch(() => null);
+  if (res.ok && body?.reserved === true) return { reserved: true };
+  if (res.status === 401 || !body) throw new DelegateUnavailableError("step-up reserve", false, `status ${res.status}`);
+  return { reserved: false, reason: String(body.reason ?? "STEP_UP_NOT_APPROVED"), state: body.state ?? null, message: String(body.message ?? "The approval is not available."), retryAfterSeconds: typeof body.retry_after_seconds === "number" ? body.retry_after_seconds : null };
+}
+
+/**
+ * Tell Delegate the change this approval covers has been made. Idempotent, so
+ * it is safe to repeat: HMRC does so whenever it answers a retry from its stored
+ * result. Returns false rather than throwing: the change already exists and must
+ * be reported to the caller as made.
+ */
+export async function recordStepUpDone(c: { proposal_id: string; reference?: string | null }): Promise<boolean> {
+  try {
+    const res = await post("step-up done", "/api/step-ups/complete", { ...c, service: config.serviceSlug }, 2);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/** The operation was not made: give the approval back. Best effort; Delegate's lease is the backstop. */
+export async function giveBackStepUp(c: { proposal_id: string; reservation_id: string }): Promise<boolean> {
+  try {
+    const res = await post("step-up give back", "/api/step-ups/release", { ...c, service: config.serviceSlug }, 1);
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 /** The stable key for one submission of one answer: service + query + submission version. */

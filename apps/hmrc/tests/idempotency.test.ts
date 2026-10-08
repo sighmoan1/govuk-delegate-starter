@@ -2,7 +2,7 @@ import { describe, it, expect, afterAll } from "vitest";
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { withPrincipalCapacity } from "@/lib/capacity";
-import { answerQuery, changeAddress, claimJobExpenses, findOrCreateTaxpayer, type Taxpayer } from "@/lib/taxpayers";
+import { answerQuery, updateEmployment, claimJobExpenses, findOrCreateTaxpayer, type Taxpayer } from "@/lib/taxpayers";
 import { signSession, SESSION_COOKIE } from "@/lib/session";
 import { POST as submitClaimForm } from "@/app/(public)/claim/submit/route";
 import { POST as replyForm } from "@/app/(public)/query/reply/route";
@@ -99,7 +99,7 @@ describe("same attempt: Idempotency-Key", () => {
 
   it("ignores the key for operations that don't support it yet", async () => {
     const t = await person();
-    const run = () => withPrincipalCapacity(t, "change_address", {}, (_a, tx) => changeAddress(t, SELF, tx), { idempotencyKey: "same-key" });
+    const run = () => withPrincipalCapacity(t, "update_employment", {}, (_a, tx) => updateEmployment(t, SELF, {}, tx), { idempotencyKey: "same-key" });
     expect((await run()).ok).toBe(true);
     expect((await run()).ok).toBe(true);
     expect(await recordsOf(t)).toBe(0);

@@ -10,7 +10,9 @@
 // Detection (the agent's signature) is evidence, not the boundary: capacity
 // is keyed to the person, so it holds even when HMRC can't see the agent.
 import { NextResponse } from "next/server";
-import { askDelegate, reportOutcome, DelegateUnavailableError, type DelegateChain } from "./delegate-client";
+import { randomUUID } from "node:crypto";
+import { askDelegate, reportOutcome, reserveStepUp, recordStepUpDone, giveBackStepUp, DelegateUnavailableError, type DelegateChain } from "./delegate-client";
+import { STEP_UP_CAPABILITIES, buildProposal } from "./proposals";
 import { takeToken, clientKey, sleep } from "./friction";
 import { logEvent } from "./events";
 import { taxpayerFromRequest } from "./session";
@@ -27,7 +29,7 @@ export type Handler = (ctx: { taxpayer: Taxpayer; actor: Actor; body: Record<str
 
 const STATUS: Record<string, number> = {
   PERMISSION_MISSING: 403, AUTHORISATION_REVOKED: 403, AUTHORISATION_EXPIRED: 403, NO_AUTHORISATION: 403,
-  STEP_UP_REQUIRED: 403, CAPACITY_EXCEEDED: 429, DELEGATION_DEPTH_EXCEEDED: 403, ASSURANCE_TOO_LOW: 403, AGENT_NOT_AUTHORISED: 403, AGENT_SESSION_NOT_BOUND: 401,
+  STEP_UP_REQUIRED: 403, STEP_UP_NOT_APPROVED: 403, STEP_UP_IN_USE: 409, STEP_UP_ALREADY_USED: 409, IDEMPOTENCY_KEY_REQUIRED: 400, CAPACITY_EXCEEDED: 429, DELEGATION_DEPTH_EXCEEDED: 403, ASSURANCE_TOO_LOW: 403, AGENT_NOT_AUTHORISED: 403, AGENT_SESSION_NOT_BOUND: 401,
 };
 
 type Log = (e: Omit<Parameters<typeof logEvent>[0], "path" | "latencyMs" | "capability">) => Promise<unknown>;
@@ -119,20 +121,34 @@ async function actAsAgent(token: string, principalId: string, capability: string
   }
 }
 
+/** Delegate's approval for this change could not be used to start it. Thrown inside the transaction so nothing is written. */
+class StepUpRefused extends Error {
+  constructor(readonly reason: string, readonly extra: Record<string, unknown>) { super(reason); }
+}
+
 async function actAsAgentChecked(token: string, principalId: string, capability: string, body: Record<string, unknown>, handler: Handler, log: Log, idempotencyKey: string | null) {
-  const check = await askDelegate({ agent_token: token, principal_id: principalId, capability });
+  // High-risk changes: the person approves THIS change. Tell Delegate exactly what it is.
+  const built = STEP_UP_CAPABILITIES.has(capability) ? buildProposal(capability, body, idempotencyKey) : null;
+  const proposal = built?.ok ? built.proposal : undefined;
+  const check = await askDelegate({ agent_token: token, principal_id: principalId, capability, ...(proposal ? { proposal } : {}) });
   const chainLog = check.chain
     ? { mandateId: check.chain.mandate_id, delegationId: check.chain.delegation_id, parentDelegationId: check.chain.parent_delegation_id, depth: check.chain.depth, agentLabel: check.chain.label, assurance: check.chain.assurance }
     : {};
   const agent = check.delegate ? { agentName: check.delegate.name, agentId: check.delegate.id } : {};
   if (!check.authorised) {
     const lane = check.delegate ? "AUTHORISED_AGENT" : "UNTRUSTED";
+    // Permitted in principle, but the request itself is not one the person could be asked to approve.
+    const malformed = check.step_up?.state === "PROPOSAL_REQUIRED" && built && !built.ok ? built : null;
+    const keyReused = check.step_up?.state === "KEY_USED_FOR_OTHER_TRANSACTION";
+    const reason = malformed ? malformed.reason : keyReused ? "IDEMPOTENCY_KEY_REUSED" : check.reason;
     await log({
-      lane, outcome: "REFUSED", reason: check.reason, ...agent, ...chainLog, delegateCheckId: check.check_id,
+      lane, outcome: "REFUSED", reason, ...agent, ...chainLog, delegateCheckId: check.check_id,
     });
-    return refusal(check.reason, lane, {
+    return refusal(reason, lane, {
       delegate_check_id: check.check_id,
-      ...(check.step_up ? { step_up: check.step_up } : {}),
+      ...(malformed ? { message: malformed.message } : {}),
+      ...(keyReused ? { message: check.step_up?.message } : {}),
+      ...(check.step_up && !malformed && !keyReused ? { step_up: check.step_up } : {}),
     });
   }
   const rl = takeToken(`agent:${check.delegate.id}`, "AUTHORISED_AGENT");
@@ -144,10 +160,40 @@ async function actAsAgentChecked(token: string, principalId: string, capability:
   // The One Login subject Delegate returned is the same one HMRC saw when the person signed in.
   const taxpayer = await findOrCreateTaxpayer(check.subject);
   const actor: Actor = { kind: "AGENT", name: check.delegate.name, id: check.delegate.id, chain: check.chain };
-  const run = await withPrincipalCapacity(taxpayer, capability, body, (admitted, db) => handler({ taxpayer, actor, body, admitted, db }), { idempotencyKey }).catch(async (e) => {
+  // For a change the person had to approve: the approval is only ever reserved here, inside the same
+  // transaction as the change, after HMRC's own rules have admitted it (so a refusal spends nothing).
+  const approval = check.step_up;
+  const held: { reservationId?: string } = {};
+  let run;
+  try {
+    run = await withPrincipalCapacity(taxpayer, capability, body, async (admitted, db) => {
+      if (approval) {
+        // withPrincipalCapacity has already answered a retry of a change HMRC made from its stored result,
+        // without getting here. Reaching here means this would be a NEW change.
+        if (!proposal || !approval.proposal_id) throw new StepUpRefused("STEP_UP_NOT_APPROVED", { message: "There is no approval for this change." });
+        if (approval.state === "REDEEMED") {
+          throw new StepUpRefused("STEP_UP_ALREADY_USED", { message: "The person's approval for this change was already used, and HMRC holds no result for it. Ask for a new approval with a new Idempotency-Key." });
+        }
+        const reservationId = randomUUID();
+        const r = await reserveStepUp({ agent_token: token, principal_id: principalId, capability, proposal, reservation_id: reservationId });
+        if (!r.reserved) {
+          throw new StepUpRefused(r.reason, { message: r.message, ...(r.state ? { step_up_state: r.state } : {}), ...(r.retryAfterSeconds ? { retry_after_seconds: r.retryAfterSeconds } : {}) });
+        }
+        held.reservationId = reservationId;
+      }
+      return handler({ taxpayer, actor, body, admitted, db });
+    }, { idempotencyKey });
+  } catch (e) {
+    // Rolled back: no change was made. Hand the approval back (Delegate's lease is the backstop if this call is lost).
+    if (held.reservationId && approval?.proposal_id) await giveBackStepUp({ proposal_id: approval.proposal_id, reservation_id: held.reservationId });
+    if (e instanceof StepUpRefused) {
+      await reportOutcome({ check_id: check.check_id, status: "FAILED", reason: e.reason });
+      await log({ lane: "AUTHORISED_AGENT", outcome: "REFUSED", reason: e.reason, ...agent, ...chainLog, subject: check.subject, delegateCheckId: check.check_id });
+      return refusal(e.reason, "AUTHORISED_AGENT", { ...e.extra, delegate_check_id: check.check_id });
+    }
     await reportOutcome({ check_id: check.check_id, status: "FAILED", reason: "HANDLER_ERROR" });
     throw e;
-  });
+  }
   if (!run.ok) {
     const f = run.refusal;
     await reportOutcome({ check_id: check.check_id, status: "FAILED", reason: f.reason });
@@ -157,6 +203,12 @@ async function actAsAgentChecked(token: string, principalId: string, capability:
   const res = run.result as Record<string, unknown>;
   const reference = [res.claim_reference, res.change_reference].find((v) => typeof v === "string") as string | undefined;
   await reportOutcome({ check_id: check.check_id, status: "COMPLETED", reference: reference ?? null });
+  // The change exists: spend the approval. Also done when answering a retry from the stored result, which finishes
+  // what a crash between HMRC's own write and this call may have left. Failure here changes nothing for the caller:
+  // the approval is bound to this Idempotency-Key, and HMRC's stored result answers any further attempt with it.
+  if (approval?.proposal_id && (held.reservationId || (run.replayed && approval.state !== "REDEEMED"))) {
+    if (!(await recordStepUpDone({ proposal_id: approval.proposal_id, reference: reference ?? null }))) console.warn(`[step-up] could not record the use of ${approval.proposal_id}; a retry with the same Idempotency-Key will`);
+  }
   await log({
     lane: "AUTHORISED_AGENT", outcome: "ALLOWED", reason: run.replayed ? "IDEMPOTENT_REPLAY" : "VALID_AUTHORISATION", ...agent, ...chainLog, subject: check.subject, delegateCheckId: check.check_id,
     rule: run.admitted.rule, capacityUsed: run.admitted.used, capacityLimit: run.admitted.limit,
@@ -190,9 +242,10 @@ const replayJson = (replayed: boolean) => (replayed ? { idempotent_replay: true 
 const replayHeaders = (replayed: boolean): Record<string, string> => (replayed ? { "idempotent-replayed": "true" } : {});
 
 function refusal(reason: string, lane: string, extra: Record<string, unknown>) {
+  const wait: Record<string, string> = typeof extra.retry_after_seconds === "number" ? { "retry-after": String(extra.retry_after_seconds) } : {};
   return NextResponse.json(
     { decision: "DENY", reason, lane, ...extra },
-    { status: REFUSAL_STATUS[reason as keyof typeof REFUSAL_STATUS] ?? STATUS[reason] ?? 401, headers: { "x-trusted-lane": lane } },
+    { status: REFUSAL_STATUS[reason as keyof typeof REFUSAL_STATUS] ?? STATUS[reason] ?? 401, headers: { "x-trusted-lane": lane, ...wait } },
   );
 }
 
