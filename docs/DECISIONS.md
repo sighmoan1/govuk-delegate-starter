@@ -227,3 +227,21 @@ Not built: real email or SMS. The "notice" is an in-account banner, which depend
 **Decision:** Decision 18's `confirmed_by_person` is no longer required. HMRC accepts an answer from an approved agent with the permission, records whether the agent said the person agreed, and Delegate's receipt shows the person which it was ("told HMRC you agreed" or "sent this and did not say whether you had agreed"). The browser form's checkbox is gone.
 
 Why: HMRC can't see the chat, so the flag was the agent's own word and stopped nothing, while it refused honest, authorised, identified agents on a technicality. Friction belongs on traffic that won't identify itself. The controls that do work are the permission the person grants, the Delegate check, per-person limits, the log, and the receipt with its dispute button. This supersedes the "428 CONFIRMATION_REQUIRED" behaviour in Decision 18.
+
+## Decision 21 — Delegate governs authority; Orchestrate, if needed, governs work
+
+**Decision (target architecture):** Keep **GOV.UK Delegate** a generic, cross-government authority and consent platform. Do **not** expand it into a central AI planner or task-orchestration service. `GOV.UK Orchestrate` is a **hypothetical complementary product**, not a new subsystem in this repo.
+
+- **One Login** establishes the principal's identity.
+- **Government services** own and publish their delegable capabilities, policy/assurance requirements and permitted constraint types; they enforce eligibility, domain rules, legally required confirmation, idempotency and technical throughput.
+- **Delegate** registers representative identities and service capability catalogues, records citizen-approved mandates and enforceable bounds, verifies current authority, manages revocation and consent evidence, and makes relevant outcomes inspectable.
+- **A citizen's chosen assistant or representative** interprets private goals, plans, uses tools and follows up. Delegate does not receive or interpret complete task conversations or decide what the agent should attempt.
+- **Orchestrate**, if ever built, may offer provider-neutral task continuity, cross-department status coordination, assisted-digital handoffs or durable civic task tracking. Today AI providers already supply many such functions. Orchestrate must consume the same scoped grants as every other delegate and has no special power to self-authorise or direct departments.
+
+**A mandate is not a prompt.** A plain-language purpose can help a citizen recognise a grant, but authority exists only in registered service-defined capabilities and enforceable constraints. One consent journey may group several grants, but each government service remains independently scoped. Switching representatives may reuse a grant *template*; it requires fresh explicit citizen consent for the new representative.
+
+**Why:** a central authority system can be small, neutral, reusable and auditable. A central government AI orchestrator would require private task data, model/provider integrations and detailed business-workflow knowledge, expanding privacy, security and accountability risks. We can support multiple competing orchestration solutions without building one.
+
+**Current gap:** `apps/delegate/src/lib/demo-seed.ts` and `apps/delegate/src/lib/capabilities.ts` still hard-code HMRC capabilities and display metadata. These are **prototype limitations**, not the intended ownership model. Service-published versioned catalogues, rich mandates, consent snapshots and multi-service grouping require follow-up implementation; this decision does not claim they already exist.
+
+**Related:** [Delegate and Orchestrate architecture](ARCHITECTURE.md), [product case](PRODUCT_CASE.md). Decisions 4 and 5 remain the original guiding pattern; this decision clarifies the service integration contract and product boundary. Decisions 16–20 describe historical demo states and must not be mistaken for a production specification.
