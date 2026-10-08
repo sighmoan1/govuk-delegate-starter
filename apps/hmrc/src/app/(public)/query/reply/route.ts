@@ -1,35 +1,71 @@
 import { NextResponse } from "next/server";
 import { config } from "@/lib/config";
 import { taxpayerFromRequest } from "@/lib/session";
-import { answerQuery } from "@/lib/taxpayers";
+import { answerQuery, findOrCreateTaxpayer } from "@/lib/taxpayers";
 import { logEvent } from "@/lib/events";
 import { withPrincipalCapacity } from "@/lib/capacity";
 import { verifyAgentSignature } from "@/lib/agent-identity";
+import { agentSessionFromRequest } from "@/lib/agent-session";
+import { askDelegate } from "@/lib/delegate-client";
+import type { Actor } from "@/lib/delegated-authority";
 
 const CAPABILITY = "respond_to_query";
 
 /**
- * A signed-in person answering HMRC's question on the website. Sending the
- * form is the person's agreement to the wording. Agents use /api/claims/respond.
+ * Answering HMRC's question from the website: the same business function and
+ * rules as the agent API. A signed-in person sending the form is agreeing to
+ * the wording. An agent the person approved must say the person agreed, and
+ * GOV.UK Delegate is asked first, as for every agent action.
  */
 export async function POST(req: Request) {
   const started = Date.now();
   const go = (path: string) => NextResponse.redirect(new URL(path, config.appUrl), 303);
   const sig = await verifyAgentSignature(req);
   const evidence = { path: "/query/reply", capability: CAPABILITY, userAgent: req.headers.get("user-agent")?.slice(0, 300) ?? null, signatureAgent: sig.verified ? sig.agent : sig.agent ?? null, signatureResult: sig.verified ? "verified" : sig.reason };
-  const person = await taxpayerFromRequest(req);
-  if (!person) return go("/sign-in?returnTo=/your-tax");
-  if (sig.verified) {
-    await logEvent({ ...evidence, lane: "DECLARED_AGENT", outcome: "REFUSED", reason: "AGENT_NOT_AUTHORISED", agentName: sig.name, subject: person.oneLoginSubject, latencyMs: Date.now() - started });
-    return go("/act-for-someone?from=/your-tax");
-  }
   const form = await req.formData().catch(() => new FormData());
-  const body = { query_id: String(form.get("query_id") ?? ""), answer: String(form.get("answer") ?? ""), confirmed_by_person: true };
-  const run = await withPrincipalCapacity(person, CAPABILITY, body, () => answerQuery(person, { kind: "SELF" }, body));
-  if (!run.ok) {
-    await logEvent({ ...evidence, lane: "AUTHENTICATED_HUMAN", outcome: "REFUSED", reason: run.refusal.reason, subject: person.oneLoginSubject, rule: run.refusal.rule, latencyMs: Date.now() - started });
-    return go("/your-tax?replyError=1");
+  const fields = { query_id: String(form.get("query_id") ?? ""), answer: String(form.get("answer") ?? "") };
+
+  let taxpayer;
+  let actor: Actor;
+  let lane: "AUTHENTICATED_HUMAN" | "AUTHORISED_AGENT";
+  let who: Record<string, unknown>;
+  let body: Record<string, unknown>;
+
+  const session = await agentSessionFromRequest(req);
+  if (session) {
+    if (session.signatureAgent && !(sig.verified && sig.agent === session.signatureAgent)) return go("/act-for-someone?ended=session");
+    const check = await askDelegate({ agent_token: session.delegationToken, principal_id: session.principalId, capability: CAPABILITY });
+    if (!check.authorised) {
+      await logEvent({ ...evidence, lane: "AUTHORISED_AGENT", outcome: "REFUSED", reason: check.reason, agentName: session.agentName, subject: session.subject, delegateCheckId: check.check_id, latencyMs: Date.now() - started });
+      return go(`/your-tax?replyError=${check.reason}`);
+    }
+    taxpayer = await findOrCreateTaxpayer(check.subject);
+    actor = { kind: "AGENT", name: check.delegate.name, id: check.delegate.id, chain: check.chain };
+    lane = "AUTHORISED_AGENT";
+    body = { ...fields, confirmed_by_person: form.get("confirmed_by_person") === "yes" };
+    who = { agentName: actor.name, subject: taxpayer.oneLoginSubject, delegateCheckId: check.check_id, delegationId: check.chain.delegation_id, mandateId: check.chain.mandate_id, assurance: check.chain.assurance };
+  } else {
+    const person = await taxpayerFromRequest(req);
+    if (!person) {
+      await logEvent({ ...evidence, lane: "UNTRUSTED", outcome: "REFUSED", reason: "NOT_IDENTIFIED", latencyMs: Date.now() - started });
+      return go("/sign-in?returnTo=/your-tax");
+    }
+    if (sig.verified) {
+      await logEvent({ ...evidence, lane: "DECLARED_AGENT", outcome: "REFUSED", reason: "AGENT_NOT_AUTHORISED", agentName: sig.name, subject: person.oneLoginSubject, latencyMs: Date.now() - started });
+      return go("/act-for-someone?from=/your-tax");
+    }
+    taxpayer = person;
+    actor = { kind: "SELF" };
+    lane = "AUTHENTICATED_HUMAN";
+    body = { ...fields, confirmed_by_person: true };
+    who = { subject: person.oneLoginSubject };
   }
-  await logEvent({ ...evidence, lane: "AUTHENTICATED_HUMAN", outcome: "ALLOWED", subject: person.oneLoginSubject, rule: run.admitted.rule, latencyMs: Date.now() - started });
+
+  const run = await withPrincipalCapacity(taxpayer, CAPABILITY, body, () => answerQuery(taxpayer, actor, body));
+  if (!run.ok) {
+    await logEvent({ ...evidence, ...who, lane, outcome: "REFUSED", reason: run.refusal.reason, rule: run.refusal.rule, latencyMs: Date.now() - started });
+    return go(`/your-tax?replyError=${run.refusal.reason}`);
+  }
+  await logEvent({ ...evidence, ...who, lane, outcome: "ALLOWED", reason: lane === "AUTHORISED_AGENT" ? "VALID_AUTHORISATION" : undefined, rule: run.admitted.rule, latencyMs: Date.now() - started });
   return go("/your-tax?replied=1");
 }

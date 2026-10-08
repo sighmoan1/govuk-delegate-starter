@@ -166,6 +166,43 @@ test("a declared agent (unsigned, in a browser) can be given permission, but not
   await ctx.close();
 });
 
+test("a browser agent answers HMRC's question for Sam, only once it says she agreed; Sam then sees it on GOV.UK", async ({ browser, page }) => {
+  test.setTimeout(120_000);
+  await reset(page);
+  const ctx = await browser.newContext();
+  const agent = await ctx.newPage();
+  await agent.goto(`${HMRC}/act-for-someone`);
+  await agent.getByLabel("Name of the assistant or app").fill("Claude");
+  await agent.getByLabel("Who provides it").fill("Anthropic");
+  await agent.getByLabel("Claim tax relief for working from home").check();
+  await agent.getByLabel(/Answer HMRC’s questions about a claim/).check();
+  await agent.getByLabel("See how their claims are going").check();
+  await agent.getByRole("button", { name: "Get a code" }).click();
+  const code = (await agent.locator(".code-panel--big").innerText()).trim();
+  const { ctx: samCtx, sam } = await samApproves(browser, code);
+  await expect(agent.locator(".acting-banner")).toBeVisible({ timeout: 20_000 });
+
+  expect((await agent.request.post(`${HMRC}/api/job-expenses`, { data: {} })).status()).toBe(200);
+  await agent.goto(`${HMRC}/your-tax`);
+  await expect(agent.getByRole("heading", { name: "HMRC has asked you a question" })).toBeVisible();
+
+  await agent.getByLabel("Your answer").fill("My employer required it, from about 2022.");
+  await agent.getByRole("button", { name: "Send answer" }).click();
+  await expect(agent.locator(".error-summary")).toContainText("get their agreement first");
+
+  await agent.getByLabel("Your answer").fill("My employer required it, from about 2022.");
+  await agent.getByLabel(/I have shown this exact answer to the person/).check();
+  await agent.getByRole("button", { name: "Send answer" }).click();
+  await expect(agent.getByRole("heading", { name: "Reply sent" })).toBeVisible();
+
+  await sam.goto(`${DELEGATE}/account/delegates`);
+  await expect(sam.getByText("Something was done in your name.")).toBeVisible();
+  await sam.getByRole("link", { name: /Answer HMRC question/ }).first().click();
+  await expect(sam.locator("blockquote")).toContainText("My employer required it, from about 2022.");
+  await samCtx.close();
+  await ctx.close();
+});
+
 test("removing access ends the agent's session, and a copied session doesn't work for another agent", async ({ browser, page }) => {
   test.setTimeout(120_000);
   await reset(page);
