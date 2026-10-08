@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { config } from "@/lib/config";
-import { requireViewer } from "@/lib/guard";
+import { requireViewer, viewerCan } from "@/lib/guard";
 import { claimsFor, reopenDisputedAnswers } from "@/lib/taxpayers";
 import { prisma } from "@/lib/db";
 import { withPrincipalCapacity } from "@/lib/capacity";
@@ -11,13 +11,19 @@ export const metadata: Metadata = { title: "Your tax" };
 
 export default async function YourTax({ searchParams }: { searchParams: Promise<{ claimed?: string; refused?: string; replied?: string; replyError?: string }> }) {
   const { claimed, refused, replied, replyError } = await searchParams;
-  const viewer = await requireViewer("/your-tax", "view_tax_code");
+  // This page mixes several kinds of data. An agent gets in with any one
+  // permission, and sees only the sections its permissions cover.
+  const viewer = await requireViewer("/your-tax", ["view_tax_code", "view_claim_status", "respond_to_query", "claim_job_expenses"]);
   const { taxpayer } = viewer;
+  const canTaxCode = viewerCan(viewer, "view_tax_code");
+  const canClaims = viewerCan(viewer, "view_claim_status");
+  const canQueries = viewerCan(viewer, "respond_to_query");
+  const canClaim = viewerCan(viewer, "claim_job_expenses");
   // Looking up the tax code counts against the person, however it's done.
-  const view = await withPrincipalCapacity(taxpayer, "view_tax_code", {}, async () => null);
-  const claims = await claimsFor(taxpayer.id);
-  await reopenDisputedAnswers(taxpayer.id);
-  const openQueries = await prisma.claimQuery.findMany({ where: { status: "OPEN", claim: { taxpayerId: taxpayer.id } }, include: { claim: true }, orderBy: { askedAt: "asc" } });
+  const view = canTaxCode ? await withPrincipalCapacity(taxpayer, "view_tax_code", {}, async () => null) : null;
+  const claims = canClaims ? await claimsFor(taxpayer.id) : [];
+  if (canQueries) await reopenDisputedAnswers(taxpayer.id);
+  const openQueries = canQueries ? await prisma.claimQuery.findMany({ where: { status: "OPEN", claim: { taxpayerId: taxpayer.id } }, include: { claim: true }, orderBy: { askedAt: "asc" } }) : [];
   const hasWfh = claims.some((c) => c.kind === "job_expenses");
 
   return (
@@ -46,15 +52,17 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
           <p>{refused === "DUPLICATE_SUBMISSION" ? "This claim has already been made." : refused === "NEW_EVIDENCE_REQUIRED" ? "You’ve already claimed for this tax year. You can only claim again with new evidence." : refused === "PERMISSION_MISSING" ? "You haven’t been given permission to do that." : refused === "CAPACITY_EXCEEDED" ? "You have too many open claims and changes. Wait for one to be decided." : "This couldn’t be done."}</p>
         </div>
       )}
-      <span className="caption">{taxpayer.name}</span>
+      {canTaxCode && <span className="caption">{taxpayer.name}</span>}
       <h1>Your tax</h1>
       <p>Tax year {taxpayer.taxYear}</p>
-      <dl className="summary-list">
-        <div><dt>Tax code</dt><dd>{view.ok ? <strong>{taxpayer.taxCode}</strong> : "Your tax code has been looked up too many times in the last hour. Try again later."}</dd><dd /></div>
-        <div><dt>Employer</dt><dd>{taxpayer.employer}</dd><dd /></div>
-      </dl>
+      {canTaxCode && view && (
+        <dl className="summary-list">
+          <div><dt>Tax code</dt><dd>{view.ok ? <strong>{taxpayer.taxCode}</strong> : "Your tax code has been looked up too many times in the last hour. Try again later."}</dd><dd /></div>
+          <div><dt>Employer</dt><dd>{taxpayer.employer}</dd><dd /></div>
+        </dl>
+      )}
 
-      {!hasWfh ? (
+      {!canClaim ? null : !hasWfh ? (
         <>
           <h2>Working from home</h2>
           <p>You have not claimed tax relief for working from home this year. If your employer required you to work from home, you can claim now. It takes about a minute.</p>
@@ -80,8 +88,8 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
         </>
       )}
 
-      <h2>Claims and changes</h2>
-      {claims.length === 0 ? <p>None yet.</p> : (
+      {canClaims && <h2>Claims and changes</h2>}
+      {!canClaims ? null : claims.length === 0 ? <p>None yet.</p> : (
         <ul className="claims">
           {claims.map((c) => (
             <li key={c.id}>

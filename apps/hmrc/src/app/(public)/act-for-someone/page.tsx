@@ -21,16 +21,25 @@ const ENDED: Record<string, string> = {
   NO_AUTHORISATION: "You don’t have permission from this person.",
 };
 
+// Safe, fixed wording only: the redirect carries a reason code, never tax data.
+const DENIED: Record<string, string> = {
+  PERMISSION_MISSING: "The person hasn’t given you permission to see that page.",
+  ASSURANCE_TOO_LOW: "Your level of identity assurance isn’t high enough for that page.",
+  STEP_UP_REQUIRED: "The person needs to confirm this on GOV.UK before you can continue.",
+  DELEGATE_UNAVAILABLE: "We couldn’t check your permission just now, so we haven’t shown that page. Try again later.",
+};
+
 /**
  * For AI assistants, apps and other agents acting for someone. The person stays
  * in control: they approve on GOV.UK, in their own browser.
  */
-export default async function ActForSomeone({ searchParams }: { searchParams: Promise<{ from?: string; ended?: string; error?: string }> }) {
-  const { from, ended, error } = await searchParams;
+export default async function ActForSomeone({ searchParams }: { searchParams: Promise<{ from?: string; ended?: string; denied?: string; error?: string }> }) {
+  const { from, ended, denied, error } = await searchParams;
   const sig = await verifyAgentSignatureFromHeaders(await headers(), "GET", "/act-for-someone");
   return (
     <div className="two-thirds">
       {ended && <div className="inset-text"><p>{ENDED[ended] ?? "Your access has ended."}</p></div>}
+      {denied && <div className="inset-text"><p>{DENIED[denied] ?? "You don’t have permission to see that page."}</p></div>}
       {from && (
         <div className="inset-text">
           <p>
