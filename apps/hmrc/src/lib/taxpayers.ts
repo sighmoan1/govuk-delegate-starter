@@ -110,13 +110,13 @@ export async function claimProgress(taxpayer: Taxpayer, body: Record<string, unk
   return { ...status, checked_at: new Date().toISOString(), changed_since: changed === null ? null : changed > 0 };
 }
 
-/** The capacity rules have already checked the query is this person's, open, and confirmed by them. */
+/** The capacity rules have already checked the query is this person's, open. */
 export async function answerQuery(taxpayer: Taxpayer, actor: Actor, body: Record<string, unknown>) {
   const answer = String(body.answer).trim().slice(0, 1000);
   const q = await prisma.claimQuery.update({
     where: { id: String(body.query_id) },
     data: {
-      status: "ANSWERED", answer, answeredAt: new Date(), confirmedByPerson: true,
+      status: "ANSWERED", answer, answeredAt: new Date(), confirmedByPerson: actor.kind === "SELF" || body.confirmed_by_person === true,
       answeredBy: actor.kind === "AGENT" ? "AGENT" : "SELF",
       answeredByName: actor.kind === "AGENT" ? actor.name : null,
       mandateId: actor.kind === "AGENT" ? actor.chain.mandate_id : null,
@@ -126,7 +126,7 @@ export async function answerQuery(taxpayer: Taxpayer, actor: Actor, body: Record
   });
   // An agent's answer goes on the person's GOV.UK record, in its own words, for them to check.
   if (actor.kind === "AGENT") {
-    const receiptId = await recordReceipt({ mandate_id: actor.chain.mandate_id, delegation_id: actor.chain.delegation_id, capability: "respond_to_query", reference: q.id, text: `To HMRC’s question “${q.question}” on claim ${q.claim.reference}: ${answer}`, agent_confirmed: body.confirmed_by_person === true });
+    const receiptId = await recordReceipt({ mandate_id: actor.chain.mandate_id, delegation_id: actor.chain.delegation_id, capability: "respond_to_query", reference: q.id, text: `To HMRC’s question “${q.question}” on claim ${q.claim.reference}: ${answer}`, agent_confirmed: q.confirmedByPerson });
     if (receiptId) await prisma.claimQuery.update({ where: { id: q.id }, data: { receiptId } });
   }
   return { query_id: q.id, claim_reference: q.claim.reference, answered: true, status: "BEING_REVIEWED", synthetic: true };

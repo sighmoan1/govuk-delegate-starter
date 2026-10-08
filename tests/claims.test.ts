@@ -45,25 +45,30 @@ describe("retrieve: claim status", () => {
 });
 
 describe("respond to HMRC's question", () => {
-  it("is refused until the person has agreed the answer, then succeeds once", async () => {
+  it("is not blocked when the agent doesn't declare agreement: it's recorded for the person, and succeeds once", async () => {
     const { p, token, status } = await claimed();
     const query_id = status.body.result.claims[0].open_queries[0].query_id;
     const answer = "Northwind requires everyone in my team to work from home, from 1 April 2026.";
 
-    const unconfirmed = await api("POST", "/api/claims/respond", token, p.id, { query_id, answer });
-    expect(unconfirmed.status).toBe(428);
-    expect(unconfirmed.body).toMatchObject({ decision: "DENY", reason: "CONFIRMATION_REQUIRED" });
-
-    const ok = await api("POST", "/api/claims/respond", token, p.id, { query_id, answer, confirmed_by_person: true });
+    const ok = await api("POST", "/api/claims/respond", token, p.id, { query_id, answer });
     expect(ok.status).toBe(200);
     expect(ok.body.result).toMatchObject({ answered: true, status: "BEING_REVIEWED" });
+    expect((await prisma.receipt.findMany({ where: { principalId: p.id } }))[0]).toMatchObject({ agentConfirmed: false });
 
-    const again = await api("POST", "/api/claims/respond", token, p.id, { query_id, answer, confirmed_by_person: true });
+    const again = await api("POST", "/api/claims/respond", token, p.id, { query_id, answer });
     expect(again.status).toBe(409);
     expect(again.body.reason).toBe("DUPLICATE_SUBMISSION");
 
     const after = await api("GET", "/api/claims", token, p.id);
     expect(after.body.result.claims[0]).toMatchObject({ status: "BEING_REVIEWED", open_queries: [] });
+  });
+
+  it("records that the agent said the person agreed, when it says so", async () => {
+    const { p, token, status } = await claimed();
+    const query_id = status.body.result.claims[0].open_queries[0].query_id;
+    const r = await api("POST", "/api/claims/respond", token, p.id, { query_id, answer: "Agreed wording.", confirmed_by_person: true });
+    expect(r.status).toBe(200);
+    expect((await prisma.receipt.findMany({ where: { principalId: p.id } }))[0]).toMatchObject({ agentConfirmed: true });
   });
 
   it("cannot answer a question HMRC asked someone else", async () => {

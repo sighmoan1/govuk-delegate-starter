@@ -16,12 +16,11 @@ export const RULES = {
   one_claim_per_tax_year: { limit: 1, label: "Working-from-home claims per tax year (more only with new evidence)" },
   claim_progress_checks_per_day: { limit: 4, windowMs: DAY, label: "Scheduled claim progress checks per day" },
   one_answer_per_query: { limit: 1, label: "Answers per HMRC question" },
-  answer_confirmed_by_person: { limit: 1, label: "Answers the person has agreed before they are sent" },
 } as const;
 export type RuleName = keyof typeof RULES;
 
 export type Refusal = {
-  reason: "CAPACITY_EXCEEDED" | "DUPLICATE_SUBMISSION" | "NEW_EVIDENCE_REQUIRED" | "CONFIRMATION_REQUIRED" | "QUERY_NOT_FOUND" | "INVALID_REQUEST";
+  reason: "CAPACITY_EXCEEDED" | "DUPLICATE_SUBMISSION" | "NEW_EVIDENCE_REQUIRED" | "QUERY_NOT_FOUND" | "INVALID_REQUEST";
   rule: RuleName;
   limit: number;
   used: number;
@@ -124,11 +123,10 @@ export async function withPrincipalCapacity<T>(
         const fail = (reason: Refusal["reason"], rule: RuleName, message: string) =>
           ({ ok: false as const, refusal: { reason, rule, limit: RULES[rule].limit, used: 0, resetsAt: null, message } });
         const answer = typeof body.answer === "string" ? body.answer.trim() : "";
-        if (!answer || answer.length > 1000 || typeof body.query_id !== "string") return fail("INVALID_REQUEST", "answer_confirmed_by_person", "Send query_id and an answer of up to 1000 characters.");
+        if (!answer || answer.length > 1000 || typeof body.query_id !== "string") return fail("INVALID_REQUEST", "one_answer_per_query", "Send query_id and an answer of up to 1000 characters.");
         const query = await tx.claimQuery.findFirst({ where: { id: body.query_id, claim: { taxpayerId: taxpayer.id } } });
         if (!query) return fail("QUERY_NOT_FOUND", "one_answer_per_query", "HMRC has not asked this person that question.");
         if (query.status === "ANSWERED") return fail("DUPLICATE_SUBMISSION", "one_answer_per_query", "This question has already been answered.");
-        if (body.confirmed_by_person !== true) return fail("CONFIRMATION_REQUIRED", "answer_confirmed_by_person", "Show the person the answer and get their agreement first, then send confirmed_by_person: true.");
         admitted = { rule: "one_answer_per_query", limit: 1, used: 1, evidence: null };
       }
 
@@ -148,7 +146,6 @@ export const REFUSAL_STATUS: Record<Refusal["reason"], number> = {
   CAPACITY_EXCEEDED: 429,
   DUPLICATE_SUBMISSION: 409,
   NEW_EVIDENCE_REQUIRED: 409,
-  CONFIRMATION_REQUIRED: 428,
   QUERY_NOT_FOUND: 404,
   INVALID_REQUEST: 400,
 };

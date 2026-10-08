@@ -55,8 +55,9 @@ x-service-key: <HMRC's own key>
 
         <h2>Two things an agent can do that need more care</h2>
         <p>
-          <strong>Answering HMRC.</strong> When HMRC asks about a claim, an agent can suggest an answer, but HMRC only accepts it if the
-          request says the person agreed the wording. HMRC records that, and refuses the answer without it.
+          <strong>Answering HMRC.</strong> When HMRC asks about a claim, an agent can suggest an answer, but HMRC doesn’t block the agent, because it can’t
+          see the chat. It records what was sent and whether the agent said the person agreed, and GOV.UK shows the person both. They can say
+          they didn’t agree, which reopens the question and removes that permission.
         </p>
         <p>
           <strong>Checking in later.</strong> An agent can check a claim on a schedule while the person isn’t there. The permission ends on

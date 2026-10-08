@@ -14,8 +14,8 @@ const CAPABILITY = "respond_to_query";
 /**
  * Answering HMRC's question from the website: the same business function and
  * rules as the agent API. A signed-in person sending the form is agreeing to
- * the wording. An agent the person approved must say the person agreed, and
- * GOV.UK Delegate is asked first, as for every agent action.
+ * the wording. An approved agent is not blocked: GOV.UK Delegate is asked first,
+ * and the person sees what it sent on GOV.UK, and can say they did not agree.
  */
 export async function POST(req: Request) {
   const started = Date.now();
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     taxpayer = await findOrCreateTaxpayer(check.subject);
     actor = { kind: "AGENT", name: check.delegate.name, id: check.delegate.id, chain: check.chain };
     lane = "AUTHORISED_AGENT";
-    body = { ...fields, confirmed_by_person: form.get("confirmed_by_person") === "yes" };
+    body = { ...fields, confirmed_by_person: form.get("confirmed_by_person") === "yes" } // optional: recorded, not required;
     who = { agentName: actor.name, subject: taxpayer.oneLoginSubject, delegateCheckId: check.check_id, delegationId: check.chain.delegation_id, mandateId: check.chain.mandate_id, assurance: check.chain.assurance };
   } else {
     const person = await taxpayerFromRequest(req);

@@ -221,3 +221,9 @@ Consequences: limits are illustrative, chosen to make the demo legible, not poli
 - **The nudge.** HMRC's responses to an authorised agent carry `tell_the_person`, and `llms.txt` and the OpenAPI text say the same. It is a prompt, not a control. The control is that the record is shown to the person whether or not the agent mentions it.
 
 Not built: real email or SMS. The "notice" is an in-account banner, which depends on the person opening their account.
+
+## Decision 20 — Agreement is a recorded declaration, not a gate
+
+**Decision:** Decision 18's `confirmed_by_person` is no longer required. HMRC accepts an answer from an approved agent with the permission, records whether the agent said the person agreed, and Delegate's receipt shows the person which it was ("told HMRC you agreed" or "sent this and did not say whether you had agreed"). The browser form's checkbox is gone.
+
+Why: HMRC can't see the chat, so the flag was the agent's own word and stopped nothing, while it refused honest, authorised, identified agents on a technicality. Friction belongs on traffic that won't identify itself. The controls that do work are the permission the person grants, the Delegate check, per-person limits, the log, and the receipt with its dispute button. This supersedes the "428 CONFIRMATION_REQUIRED" behaviour in Decision 18.

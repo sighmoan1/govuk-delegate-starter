@@ -17,7 +17,7 @@ const TASKS = [
   {
     title: "Answer HMRC’s question, with me",
     prompt: "HMRC may have asked a question about my claim at {HMRC}. Read it, suggest an answer, and check with me before you send anything.",
-    expect: "The agent shows you HMRC’s question and a suggested answer. Say yes and it sends it, and HMRC records that you agreed. An agent that sends without asking you is refused.",
+    expect: "The agent shows you HMRC’s question and a suggested answer. Say yes and it sends it. GOV.UK then shows you exactly what was sent and whether the agent said you agreed, and you can say you didn’t.",
   },
   {
     title: "Keep me posted",

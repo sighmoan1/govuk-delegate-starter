@@ -13,7 +13,6 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
   const { claimed, refused, replied, replyError } = await searchParams;
   const viewer = await requireViewer("/your-tax", "view_tax_code");
   const { taxpayer } = viewer;
-  const byAgent = viewer.kind === "agent";
   // Looking up the tax code counts against the person, however it's done.
   const view = await withPrincipalCapacity(taxpayer, "view_tax_code", {}, async () => null);
   const claims = await claimsFor(taxpayer.id);
@@ -38,7 +37,7 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
       {replyError && (
         <div className="error-summary" role="alert">
           <h2>Your reply was not sent</h2>
-          <p>{replyError === "CONFIRMATION_REQUIRED" ? "Show the person your answer and get their agreement first, then tick the box." : ["PERMISSION_MISSING", "NO_AUTHORISATION", "AUTHORISATION_REVOKED", "AUTHORISATION_EXPIRED"].includes(replyError) ? "You haven’t been given permission to answer HMRC’s questions." : "Write your answer in the box. It can be up to 1000 characters."}</p>
+          <p>{["PERMISSION_MISSING", "NO_AUTHORISATION", "AUTHORISATION_REVOKED", "AUTHORISATION_EXPIRED"].includes(replyError) ? "You haven’t been given permission to answer HMRC’s questions." : "Write your answer in the box. It can be up to 1000 characters."}</p>
         </div>
       )}
       {refused && (
@@ -75,12 +74,6 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
               {q.answerWithdrawn && <p className="inset-text">You told GOV.UK you did not agree to the answer sent for you before, so HMRC has not accepted it. Please answer again.</p>}
               <label className="label" htmlFor={`answer-${q.id}`}>Your answer</label>
               <textarea className="textarea" id={`answer-${q.id}`} name="answer" rows={4} maxLength={1000} required />
-              {byAgent && (
-                <div className="choice-item">
-                  <input id={`agreed-${q.id}`} type="checkbox" name="confirmed_by_person" value="yes" />
-                  <label htmlFor={`agreed-${q.id}`}>I have shown this exact answer to the person and they agreed to it being sent.</label>
-                </div>
-              )}
               <button className="button" type="submit">Send answer</button>
             </form>
           ))}

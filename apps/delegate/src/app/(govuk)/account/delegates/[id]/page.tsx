@@ -79,7 +79,7 @@ export default async function AuthorisationDetail({
             <div key={r.id} className={`delegate-card${r.status === "DISPUTED" ? " delegate-card--ended" : ""}`}>
               <p><strong>{capabilityLabel(r.capability)}</strong>, {fmtTime(r.createdAt)}</p>
               <blockquote>{r.text}</blockquote>
-              <p>{r.agentConfirmed ? `${a.delegate.name} told ${a.service.name} that you agreed.` : `${a.delegate.name} did not say you agreed.`}</p>
+              <p>{r.agentConfirmed ? `${a.delegate.name} told ${a.service.name} that you agreed.` : <strong>{a.delegate.name} sent this and did not say whether you had agreed.</strong>}</p>
               {r.status === "DISPUTED" ? <p><strong>You said you did not agree to this.</strong></p> : (
                 <form action={disputeAction}>
                   <input type="hidden" name="receipt" value={r.id} />

@@ -166,7 +166,7 @@ test("a declared agent (unsigned, in a browser) can be given permission, but not
   await ctx.close();
 });
 
-test("a browser agent answers HMRC's question for Sam, only once it says she agreed; Sam then sees it on GOV.UK", async ({ browser, page }) => {
+test("a browser agent answers HMRC's question for Sam without being blocked; Sam then sees what it sent on GOV.UK", async ({ browser, page }) => {
   test.setTimeout(120_000);
   await reset(page);
   const ctx = await browser.newContext();
@@ -188,17 +188,13 @@ test("a browser agent answers HMRC's question for Sam, only once it says she agr
 
   await agent.getByLabel("Your answer").fill("My employer required it, from about 2022.");
   await agent.getByRole("button", { name: "Send answer" }).click();
-  await expect(agent.locator(".error-summary")).toContainText("get their agreement first");
-
-  await agent.getByLabel("Your answer").fill("My employer required it, from about 2022.");
-  await agent.getByLabel(/I have shown this exact answer to the person/).check();
-  await agent.getByRole("button", { name: "Send answer" }).click();
   await expect(agent.getByRole("heading", { name: "Reply sent" })).toBeVisible();
 
   await sam.goto(`${DELEGATE}/account/delegates`);
   await expect(sam.getByText("Something was done in your name.")).toBeVisible();
   await sam.getByRole("link", { name: /Answer HMRC question/ }).first().click();
   await expect(sam.locator("blockquote")).toContainText("My employer required it, from about 2022.");
+  await expect(sam.getByText("did not say whether you had agreed")).toBeVisible();
   await samCtx.close();
   await ctx.close();
 });
