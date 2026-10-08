@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { opsSummary } from "@/lib/events";
+import { opsSummary, capacityByPerson } from "@/lib/events";
 import { LANE_LIMITS, UNTRUSTED_DELAY_MS } from "@/lib/config";
 import { fmtTime } from "@/lib/format";
 
@@ -45,7 +45,7 @@ function LaneTable({ rows, caption }: { rows: Rows; caption: string }) {
 
 export default async function Ops({ searchParams }: { searchParams: Promise<{ live?: string }> }) {
   const { live } = await searchParams;
-  const s = await opsSummary();
+  const [s, people] = await Promise.all([opsSummary(), capacityByPerson()]);
   return (
     <div>
       {live && <meta httpEquiv="refresh" content="3" />}
@@ -68,6 +68,33 @@ export default async function Ops({ searchParams }: { searchParams: Promise<{ li
             <tr><th scope="row">Signed-in person</th><td>GOV.UK One Login session</td><td>{LANE_LIMITS.AUTHENTICATED_HUMAN}/min</td><td>Full service</td></tr>
             <tr><th scope="row">Authorised agent</th><td>Agent token, checked with GOV.UK Delegate per request</td><td>{LANE_LIMITS.AUTHORISED_AGENT}/min</td><td>Full API, JSON errors</td></tr>
             <tr><th scope="row">Not identified</th><td>None</td><td>{LANE_LIMITS.UNTRUSTED}/min</td><td>{UNTRUSTED_DELAY_MS / 1000}s delay, plain-text refusal, web challenge</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Capacity by person</h2>
+      <p>
+        Limits belong to the person whose authority is used, not to each agent or session. This is whose authority was spent in the last
+        24 hours, and how many agents and delegations HMRC could tell apart doing it. A hidden session shows as no agent at all, and still
+        spends its person’s limits.
+      </p>
+      <div className="table-container">
+        <table>
+          <caption className="visually-hidden">Requests by person, last 24 hours</caption>
+          <thead>
+            <tr>
+              <th scope="col">Person</th><th scope="col">Requests</th><th scope="col">Allowed</th><th scope="col">Stopped by the person’s limits</th>
+              <th scope="col">Refused for other reasons</th><th scope="col">Agents told apart</th><th scope="col">Delegations told apart</th>
+            </tr>
+          </thead>
+          <tbody>
+            {people.length === 0 && <tr><td colSpan={7}>None in the last 24 hours.</td></tr>}
+            {people.map((p) => (
+              <tr key={p.subject}>
+                <th scope="row" className="mono">…{p.subject.slice(-8)}</th><td>{p.requests}</td><td>{p.allowed}</td><td>{p.atLimit}</td>
+                <td>{p.refusedOther}</td><td>{p.agents}</td><td>{p.delegations}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

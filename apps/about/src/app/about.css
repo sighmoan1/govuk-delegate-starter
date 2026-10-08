@@ -54,3 +54,27 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .about-facts dd { margin: 0; }
 .code-panel { display: inline-block; margin: 0 0 1.25rem; padding: .5rem 1rem; border: 2px solid currentColor; }
 .code-panel--big { font-size: 2.25rem; font-weight: 700; letter-spacing: .15em; }
+
+/* Charts: validated categorical slots 1–4 (light surface), thin marks, 2px gaps */
+.viz-root {
+  --surface-1: #fcfcfb; --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
+  --ink-on-fill: #0b0b0b; --grid: #dcdad5;
+  margin: 1.5rem 0 2rem; padding: 1rem 1.25rem 1.25rem; background: var(--surface-1); border: 1px solid var(--border-soft);
+}
+.viz-root figcaption { display: grid; gap: .25rem; margin-bottom: .75rem; }
+.viz-sub { color: var(--muted); font-size: .9rem; }
+.viz-legend { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; margin: 0 0 .75rem; padding: 0; list-style: none; font-size: .9rem; }
+.viz-swatch { display: inline-block; width: 12px; height: 12px; margin-right: .4rem; border-radius: 2px; vertical-align: -1px; }
+.viz-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.viz-axis { fill: var(--muted); font-size: 12px; }
+.viz-axis--strong { fill: var(--ink); font-size: 14px; font-weight: 700; }
+.viz-value { font-size: 12px; font-weight: 700; }
+.viz-baseline { stroke: var(--grid); stroke-width: 1; }
+.viz-table { margin-top: .75rem; font-size: .9rem; }
+.viz-table table { width: 100%; border-collapse: collapse; margin-top: .5rem; }
+.viz-table th, .viz-table td { padding: .35rem .5rem; border-bottom: 1px solid var(--border-soft); text-align: left; }
+.swarm-form { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem 1.5rem; margin: 1.5rem 0 .75rem; }
+.swarm-form .form-group { margin: 0; }
+.viz-scroll { overflow-x: auto; }
+.viz-scroll .viz-svg { min-width: 560px; }
+.viz-scroll:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }

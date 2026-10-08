@@ -3,9 +3,10 @@ import { demoAllowed } from "@/lib/demo-gate";
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { AUTHORISATION_DAYS } from "@/lib/config";
+import { signAgentToken } from "@/lib/agent-auth";
 
 // Demo tooling, not part of the service: N separate people, each of whom has
-// given one agent permission. Used by the "100 people" swarm arm. Not reachable
+// given one agent permission, and that agent's token. Used by the swarm runner (Scenario 5). Not reachable
 // through the public tunnel.
 export async function POST(req: Request) {
   if (!demoAllowed(req)) {
@@ -30,5 +31,6 @@ export async function POST(req: Request) {
     await prisma.delegation.create({ data: { mandateId: auth.id, delegateId: delegate.id, depth: 0, capabilities: caps.map((c) => c.code), assurance: "REGISTERED" } });
     people.push({ principal_id: p.id, subject: p.oneLoginSubjectId });
   }
-  return NextResponse.json({ people });
+  // The agent's own token, so the swarm runner can act as that agent without holding its secret.
+  return NextResponse.json({ people, agent_token: await signAgentToken(delegate.id, delegate.clientId) });
 }

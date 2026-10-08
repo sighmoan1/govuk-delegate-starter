@@ -91,3 +91,31 @@ export async function opsSummary(now = new Date()) {
     recent: day.slice(0, 25),
   };
 }
+
+/**
+ * Whose authority is being spent: the last 24 hours, one row per person
+ * (One Login subject), however many agents, delegations or sessions drew on it.
+ * "Told apart" counts only what HMRC can see: a hidden session isn't an agent.
+ */
+export async function capacityByPerson(limit = 10) {
+  const rows = await prisma.$queryRaw<
+    { subject: string; requests: bigint; allowed: bigint; at_limit: bigint; refused_other: bigint; agents: bigint; delegations: bigint; last_at: Date }[]
+  >`
+    select subject,
+           count(*) as requests,
+           count(*) filter (where outcome = 'ALLOWED') as allowed,
+           count(*) filter (where reason in ('CAPACITY_EXCEEDED', 'NEW_EVIDENCE_REQUIRED', 'DUPLICATE_SUBMISSION')) as at_limit,
+           count(*) filter (where outcome <> 'ALLOWED' and reason not in ('CAPACITY_EXCEEDED', 'NEW_EVIDENCE_REQUIRED', 'DUPLICATE_SUBMISSION')) as refused_other,
+           count(distinct agent_id) as agents,
+           count(distinct delegation_id) as delegations,
+           max(timestamp) as last_at
+    from service_event
+    where subject is not null and timestamp > now() - interval '24 hours'
+    group by subject
+    order by count(*) desc
+    limit ${limit}`;
+  return rows.map((r) => ({
+    subject: r.subject, requests: Number(r.requests), allowed: Number(r.allowed), atLimit: Number(r.at_limit),
+    refusedOther: Number(r.refused_other), agents: Number(r.agents), delegations: Number(r.delegations), lastAt: r.last_at,
+  }));
+}
