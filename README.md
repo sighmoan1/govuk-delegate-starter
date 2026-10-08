@@ -45,7 +45,7 @@ npm run test:public   # optional: check the public URLs from outside
 npm run public:stop   # tunnels down, simulator back to localhost, dev secrets reseeded
 ```
 
-`npm run public` prints the public URLs (they change every time) and a prompt to give the agent. Public mode uses fresh random secrets, doesn't trust the local test agent (its private key is in this repository), and refuses demo tooling (reset, swarm set-up) through the tunnel. The about site and Example AI stay on localhost, and their reset buttons still work. Anyone with the URLs can use the demo while it's up. The data is synthetic, but stop it when you're done.
+`npm run public` prints the public URLs and a prompt to give the agent. By default these are Cloudflare quick tunnels with random URLs, and Cloudflare blocks OpenAI's crawler on that domain, so ChatGPT's own page fetcher gets a 403. For stable URLs where you control the bot settings, create a named tunnel on a domain you own and describe it in `public.config.json` (gitignored; the format is in the header of `scripts/public.mjs`). Public mode uses fresh random secrets, doesn't trust the local test agent (its private key is in this repository), and refuses demo tooling (reset, swarm set-up) through the tunnel. The about site and Example AI stay on localhost, and their reset buttons still work. Anyone with the URLs can use the demo while it's up. The data is synthetic, but stop it when you're done.
 
 ## The demo: three scenarios
 

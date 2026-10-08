@@ -11,3 +11,4 @@ apps/*/public/design.css
 apps/*/src/generated
 .env.public
 .public
+public.config.json

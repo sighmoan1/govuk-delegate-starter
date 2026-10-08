@@ -2,8 +2,17 @@
 // Put One Login, GOV.UK Delegate and HMRC on temporary public URLs, so agents
 // that browse from the cloud (ChatGPT agent, Google's agent) can reach them.
 //
-//   npm run public        start Cloudflare quick tunnels, then the compose stack in public mode
+//   npm run public        start the tunnels, then the compose stack in public mode
 //   npm run public:stop   stop the tunnels and the stack, and put local development back
+//
+// Two kinds of tunnel:
+//   - Quick tunnels (default): random trycloudflare.com URLs, no account needed. Cloudflare
+//     blocks OpenAI's crawler on that domain, so ChatGPT's own fetcher gets a 403.
+//   - A named tunnel on a domain you own: stable URLs, and you control the bot settings.
+//     Create public.config.json (gitignored):
+//       { "tunnel": "govuk-delegate", "tunnelId": "<uuid>", "hosts": { "onelogin": "login-demo.example.org",
+//         "delegate": "delegate-demo.example.org", "hmrc": "hmrc-demo.example.org" } }
+//     with `cloudflared tunnel create` and `cloudflared tunnel route dns --overwrite-dns <uuid> <host>`.
 //
 // Public mode:
 //   - fresh random secrets (the dev ones are in this repository, so anyone could forge sessions);
@@ -11,12 +20,14 @@
 //   - demo endpoints (reset, swarm set-up) refuse anything that came through the tunnel.
 // The about site and Example AI stay on localhost. All data is synthetic.
 import { spawn, execFileSync } from "node:child_process";
+import { homedir } from "node:os";
 import { randomBytes } from "node:crypto";
 import { mkdirSync, openSync, readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { setTimeout as sleep } from "node:timers/promises";
 
 const STATE = ".public";
 const ENV_FILE = ".env.public";
+const NAMED_CONFIG = "public.config.json";
 const TUNNELS = [
   { name: "onelogin", port: 3301, env: "ONELOGIN_PUBLIC_URL" },
   { name: "delegate", port: 3300, env: "DELEGATE_PUBLIC_URL" },
@@ -33,23 +44,37 @@ async function start() {
   if (busy.length) fail(`Ports ${busy.join(", ")} are in use (probably \`npm run dev\`). Stop the dev servers first.`);
 
   mkdirSync(STATE, { recursive: true });
-  console.log("Starting Cloudflare quick tunnels…");
+  const named = existsSync(NAMED_CONFIG) ? JSON.parse(readFileSync(NAMED_CONFIG, "utf8")) : null;
   const pids = {};
   const urls = {};
-  // An empty config of our own: otherwise cloudflared reads ~/.cloudflared/config.yml,
-  // whose ingress rules (for any named tunnel you have) would answer instead of these apps.
-  writeFileSync(`${STATE}/cloudflared.yml`, "# Intentionally empty: quick tunnels only.\n");
-  for (const t of TUNNELS) {
-    const log = `${STATE}/${t.name}.log`;
-    const child = spawn("cloudflared", ["--config", `${STATE}/cloudflared.yml`, "tunnel", "--no-autoupdate", "--url", `http://localhost:${t.port}`], {
-      detached: true,
-      stdio: ["ignore", openSync(log, "w"), openSync(log, "a")],
-    });
+  if (named) {
+    console.log(`Starting the named tunnel ${named.tunnel}…`);
+    // Our own config, so ~/.cloudflared/config.yml (another tunnel's ingress) can't answer instead.
+    const ingress = TUNNELS.map((t) => `  - hostname: ${named.hosts[t.name]}\n    service: http://localhost:${t.port}`).join("\n");
+    writeFileSync(`${STATE}/cloudflared.yml`, `tunnel: ${named.tunnelId}\ncredentials-file: ${homedir()}/.cloudflared/${named.tunnelId}.json\ningress:\n${ingress}\n  - service: http_status:404\n`);
+    const log = `${STATE}/tunnel.log`;
+    const child = spawn("cloudflared", ["--config", `${STATE}/cloudflared.yml`, "tunnel", "--no-autoupdate", "run"], { detached: true, stdio: ["ignore", openSync(log, "w"), openSync(log, "a")] });
     child.unref();
-    pids[t.name] = child.pid;
+    pids.tunnel = child.pid;
+    writeFileSync(`${STATE}/pids.json`, JSON.stringify(pids, null, 2));
+    for (const t of TUNNELS) urls[t.env] = `https://${named.hosts[t.name]}`;
+  } else {
+    console.log("Starting Cloudflare quick tunnels…");
+    // An empty config of our own: otherwise cloudflared reads ~/.cloudflared/config.yml,
+    // whose ingress rules (for any named tunnel you have) would answer instead of these apps.
+    writeFileSync(`${STATE}/cloudflared.yml`, "no-autoupdate: true\n");
+    for (const t of TUNNELS) {
+      const log = `${STATE}/${t.name}.log`;
+      const child = spawn("cloudflared", ["--config", `${STATE}/cloudflared.yml`, "tunnel", "--no-autoupdate", "--url", `http://localhost:${t.port}`], {
+        detached: true,
+        stdio: ["ignore", openSync(log, "w"), openSync(log, "a")],
+      });
+      child.unref();
+      pids[t.name] = child.pid;
+    }
+    writeFileSync(`${STATE}/pids.json`, JSON.stringify(pids, null, 2));
+    for (const t of TUNNELS) urls[t.env] = await tunnelUrl(`${STATE}/${t.name}.log`);
   }
-  writeFileSync(`${STATE}/pids.json`, JSON.stringify(pids, null, 2));
-  for (const t of TUNNELS) urls[t.env] = await tunnelUrl(`${STATE}/${t.name}.log`);
 
   const env = {
     PUBLIC_MODE: "true",
@@ -86,7 +111,7 @@ async function start() {
   await reset(3303, {});
 
   console.log(`
-Public URLs (temporary; they change every time):
+Public URLs${named ? "" : " (temporary; they change every time)"}:
 
   HMRC               ${urls.HMRC_PUBLIC_URL}
   GOV.UK Delegate    ${urls.DELEGATE_PUBLIC_URL}/account/delegates
