@@ -54,9 +54,9 @@ Open http://localhost:3304. Each scenario has its own page, and each page resets
 2. **Government prioritises people and authorised agents.** HMRC treats signed-in people, authorised agents and unidentified traffic differently. The page sends bursts of traffic as a bot and as an anonymous visitor, and shows who got through.
 
 3. **Which route do agents choose?** Findings from live runs with real agents (ChatGPT with TinyFish so far), from HMRC's own logs: what HMRC could see, and which route each took.
-4. **Can a swarm beat the system?** The same workload run four ways: one person with one agent, with 100 sub-agents, with 100 hidden sessions, and 100 people with one agent each. Limits belong to the person, so the first three match.
+4. **Can a swarm beat the system?** The same workload run four ways: one person with one agent, with 100 sub-agents, with 100 hidden sessions, and 100 people with one agent each. Business limits belong to the person and are applied by the service (HMRC), so the first three match. Delegate's check never spends them.
 
-The core idea, in one line: **identify the agent, authorise the mandate, limit the principal** (Decision 16 in `docs/DECISIONS.md`).
+The core idea, in one line: **identify the agent, authorise the mandate, limit the principal at the service** (Decision 16 in `docs/DECISIONS.md`).
 
 **Reset everything** is on the overview page. From the command line, `npm run db:reset` does the same.
 

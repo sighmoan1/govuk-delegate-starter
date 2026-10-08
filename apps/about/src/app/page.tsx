@@ -59,7 +59,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
           <tbody>
             <tr><th scope="row">Identity</th><td>Who or what is making the request?</td><td>A signature, registered credentials, or self-declaration</td><td>Yes. An agent in Sam’s own browser looks like Sam.</td></tr>
             <tr><th scope="row">Authority</th><td>What has the person allowed it to do?</td><td>GOV.UK Delegate, checked on every request</td><td>No</td></tr>
-            <tr><th scope="row">Capacity</th><td>How much may everyone using this person’s authority do, together?</td><td>Limits on the person, at Delegate and the service</td><td>No. It follows the person, however many actors there are.</td></tr>
+            <tr><th scope="row">Business limits</th><td>How much may everyone using this person’s authority do, together?</td><td>Limits on the person, applied by the service doing the work</td><td>No. They follow the person, however many actors there are.</td></tr>
           </tbody>
         </table>
       </div>

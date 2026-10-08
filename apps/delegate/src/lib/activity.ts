@@ -17,8 +17,6 @@ export async function recordActivity(e: {
   parentDelegationId?: string | null;
   depth?: number | null;
   assurance?: Assurance | null;
-  capacityUsed?: number | null;
-  capacityLimit?: number | null;
 }) {
   return prisma.activityEvent.create({
     data: {
@@ -36,8 +34,6 @@ export async function recordActivity(e: {
       parentDelegationId: e.parentDelegationId ?? null,
       depth: e.depth ?? null,
       assurance: e.assurance ?? null,
-      capacityUsed: e.capacityUsed ?? null,
-      capacityLimit: e.capacityLimit ?? null,
     },
   });
 }
