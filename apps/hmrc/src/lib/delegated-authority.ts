@@ -10,7 +10,7 @@
 // Detection (the agent's signature) is evidence, not the boundary: capacity
 // is keyed to the person, so it holds even when HMRC can't see the agent.
 import { NextResponse } from "next/server";
-import { askDelegate, type DelegateChain } from "./delegate-client";
+import { askDelegate, reportOutcome, type DelegateChain } from "./delegate-client";
 import { takeToken, clientKey, sleep } from "./friction";
 import { logEvent } from "./events";
 import { taxpayerFromRequest } from "./session";
@@ -125,17 +125,25 @@ async function actAsAgent(token: string, principalId: string, capability: string
   const rl = takeToken(`agent:${check.delegate.id}`, "AUTHORISED_AGENT");
   if (!rl.allowed) {
     await log({ lane: "AUTHORISED_AGENT", outcome: "THROTTLED", ...agent, ...chainLog, subject: check.subject });
+    await reportOutcome({ check_id: check.check_id, status: "FAILED", reason: "RATE_LIMITED" });
     return NextResponse.json({ decision: "DENY", reason: "RATE_LIMITED" }, { status: 429, headers: { "retry-after": String(rl.resetSeconds) } });
   }
   // The One Login subject Delegate returned is the same one HMRC saw when the person signed in.
   const taxpayer = await findOrCreateTaxpayer(check.subject);
   const actor: Actor = { kind: "AGENT", name: check.delegate.name, id: check.delegate.id, chain: check.chain };
-  const run = await withPrincipalCapacity(taxpayer, capability, body, (admitted) => handler({ taxpayer, actor, body, admitted }));
+  const run = await withPrincipalCapacity(taxpayer, capability, body, (admitted) => handler({ taxpayer, actor, body, admitted })).catch(async (e) => {
+    await reportOutcome({ check_id: check.check_id, status: "FAILED", reason: "HANDLER_ERROR" });
+    throw e;
+  });
   if (!run.ok) {
     const f = run.refusal;
+    await reportOutcome({ check_id: check.check_id, status: "FAILED", reason: f.reason });
     await log({ lane: "AUTHORISED_AGENT", outcome: "REFUSED", reason: f.reason, ...agent, ...chainLog, subject: check.subject, delegateCheckId: check.check_id, rule: f.rule, capacityUsed: f.used, capacityLimit: f.limit });
     return refusal(f.reason, "AUTHORISED_AGENT", { rule: f.rule, limit: f.limit, used: f.used, resets_at: f.resetsAt, message: f.message, delegate_check_id: check.check_id });
   }
+  const res = run.result as Record<string, unknown>;
+  const reference = [res.claim_reference, res.change_reference].find((v) => typeof v === "string") as string | undefined;
+  await reportOutcome({ check_id: check.check_id, status: "COMPLETED", reference: reference ?? null });
   await log({
     lane: "AUTHORISED_AGENT", outcome: "ALLOWED", reason: "VALID_AUTHORISATION", ...agent, ...chainLog, subject: check.subject, delegateCheckId: check.check_id,
     rule: run.admitted.rule, capacityUsed: run.admitted.used, capacityLimit: run.admitted.limit,

@@ -239,6 +239,15 @@ model AuthorisationPermission {
   @@map("authorisation_permission")
 }
 
+// What actually happened after an authority check said yes. A check is not an
+// outcome: the service reports these back, tied to the check by checkId.
+enum OutcomeStatus {
+  SUBMITTED
+  ACCEPTED
+  FAILED
+  COMPLETED
+}
+
 model ActivityEvent {
   id              String    @id @default(uuid())
   timestamp       DateTime  @default(now())
@@ -353,4 +362,28 @@ model Receipt {
   @@index([principalId, createdAt])
   @@index([mandateId])
   @@map("receipt")
+}
+
+// Append-only history of outcomes a service reports for an ALLOW check.
+// (serviceId, idempotencyKey) is unique, so repeat delivery adds nothing.
+model TransactionOutcome {
+  id             String        @id @default(uuid())
+  idempotencyKey String        @map("idempotency_key")
+  checkId        String        @map("check_id")
+  principalId    String        @map("principal_id")
+  mandateId      String        @map("mandate_id")
+  delegationId   String?       @map("delegation_id")
+  delegateId     String        @map("delegate_id")
+  serviceId      String        @map("service_id")
+  capability     String
+  status         OutcomeStatus
+  reference      String?
+  reason         String?
+  occurredAt     DateTime      @map("occurred_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  @@unique([serviceId, idempotencyKey])
+  @@index([checkId])
+  @@index([mandateId, occurredAt])
+  @@map("transaction_outcome")
 }

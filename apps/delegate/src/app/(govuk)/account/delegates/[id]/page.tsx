@@ -6,6 +6,7 @@ import { currentPrincipal } from "@/lib/session";
 import { expireDueAuthorisations } from "@/lib/authority";
 import { capabilityLabel } from "@/lib/capabilities";
 import { fmt, fmtTime } from "@/lib/format";
+import { outcomeLabel, reasonLabel } from "@/lib/outcomes";
 import { narrowAction, disputeAction } from "../../../actions";
 
 export const metadata: Metadata = { title: "Access details" };
@@ -35,6 +36,9 @@ export default async function AuthorisationDetail({
     orderBy: { timestamp: "desc" },
     take: 10,
   });
+  const outcomes = await prisma.transactionOutcome.findMany({ where: { mandateId: a.id, principalId: principal.id }, orderBy: { occurredAt: "desc" }, take: 20 });
+  const latestByCheck = new Map<string, (typeof outcomes)[number]>();
+  for (const o of [...outcomes].reverse()) latestByCheck.set(o.checkId, o);
   const receipts = await prisma.receipt.findMany({ where: { mandateId: a.id }, orderBy: { createdAt: "desc" } });
   await prisma.receipt.updateMany({ where: { mandateId: a.id, seenAt: null }, data: { seenAt: new Date() } });
   const label = a.status === "ACTIVE" ? "Active" : a.status === "REVOKED" ? "Removed" : "Expired";
@@ -92,20 +96,43 @@ export default async function AuthorisationDetail({
       )}
 
       <h2>What it has done for you</h2>
-      <p>Everything it has tried with {a.service.name}, including what was refused.</p>
+      <p>What {a.service.name} told us happened. This is separate from what {a.delegate.name} said you agreed to.</p>
+      {outcomes.length === 0 ? <p>{a.service.name} has not reported anything done yet.</p> : (
+        <div className="table-container">
+          <table>
+            <thead><tr><th scope="col">Time</th><th scope="col">Action</th><th scope="col">What happened</th><th scope="col">Reference</th></tr></thead>
+            <tbody>
+              {outcomes.map((o) => (
+                <tr key={o.id}>
+                  <td>{fmtTime(o.occurredAt)}</td>
+                  <td>{capabilityLabel(o.capability)}</td>
+                  <td><span className={`decision decision--${o.status === "FAILED" ? "deny" : "allow"}`}>{outcomeLabel[o.status]}</span>{reasonLabel(o.reason) && <><br />{reasonLabel(o.reason)}</>}</td>
+                  <td className="mono">{o.reference ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <h2>What it asked permission for</h2>
+      <p>Each time {a.delegate.name} asked to act with {a.service.name}, including what was refused. Being allowed to act does not mean it was done.</p>
       {events.length === 0 ? <p>No attempts yet.</p> : (
         <div className="table-container">
           <table>
-            <thead><tr><th scope="col">Time</th><th scope="col">Action</th><th scope="col">Decision</th><th scope="col">Reason</th></tr></thead>
+            <thead><tr><th scope="col">Time</th><th scope="col">Action</th><th scope="col">Permission check</th><th scope="col">Result reported</th></tr></thead>
             <tbody>
-              {events.map((e) => (
-                <tr key={e.id}>
-                  <td>{fmtTime(e.timestamp)}</td>
-                  <td>{e.capability ? capabilityLabel(e.capability) : "—"}</td>
-                  <td><span className={`decision decision--${e.decision.toLowerCase()}`}>{e.decision === "ALLOW" ? "Allowed" : "Denied"}</span></td>
-                  <td className="mono">{e.reason}</td>
-                </tr>
-              ))}
+              {events.map((e) => {
+                const o = latestByCheck.get(e.id);
+                return (
+                  <tr key={e.id}>
+                    <td>{fmtTime(e.timestamp)}</td>
+                    <td>{e.capability ? capabilityLabel(e.capability) : "—"}</td>
+                    <td><span className={`decision decision--${e.decision.toLowerCase()}`}>{e.decision === "ALLOW" ? "Allowed" : "Refused"}</span>{e.decision === "DENY" && <> <span className="mono">{e.reason}</span></>}</td>
+                    <td>{e.decision === "DENY" ? "Nothing done" : o ? outcomeLabel[o.status] : "Not reported yet"}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
