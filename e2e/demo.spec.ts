@@ -8,6 +8,8 @@ const AGENT = process.env.AGENT_URL ?? "http://localhost:3303";
 const ABOUT = process.env.ABOUT_URL ?? "http://localhost:3304";
 
 async function signInIfAsked(page: Page, email?: string) {
+  // HMRC asks who you are first: sign in as yourself.
+  if (/localhost:3302\/sign-in/.test(page.url())) await page.getByRole("button", { name: "Sign in with GOV.UK One Login" }).click();
   if (!/localhost:3301/.test(page.url())) return;
   if (email) await page.getByLabel("Email address").fill(email);
   await page.getByRole("button", { name: "Continue" }).click(); // email

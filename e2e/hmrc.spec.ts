@@ -61,6 +61,8 @@ test("anonymous hammering of a signed-in page meets the challenge page; a person
   await page.getByLabel("I am a person using this service for myself").check();
   await page.getByRole("button", { name: "Continue" }).click();
   // Passed the challenge: now just asked to sign in, like anyone else.
+  await expect(page.getByRole("heading", { name: "Sign in to continue" })).toBeVisible();
+  await page.getByRole("button", { name: "Sign in with GOV.UK One Login" }).click();
   await expect(page).toHaveURL(/localhost:3301\/sign-in/);
 });
 

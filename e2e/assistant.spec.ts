@@ -6,6 +6,8 @@ const AGENT = process.env.AGENT_URL ?? "http://localhost:3303";
 const ABOUT = process.env.ABOUT_URL ?? "http://localhost:3304";
 
 async function signInIfAsked(page: Page) {
+  // HMRC asks who you are first: sign in as yourself.
+  if (/localhost:3302\/sign-in/.test(page.url())) await page.getByRole("button", { name: "Sign in with GOV.UK One Login" }).click();
   if (!/localhost:3301/.test(page.url())) return;
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("heading", { name: "Enter your password" })).toBeVisible();
