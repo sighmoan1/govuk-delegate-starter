@@ -19,6 +19,10 @@ export default async function Waiting() {
       <p>and enter this code:</p>
       <p className="code-panel code-panel--big" aria-label={`Code ${pending.userCode.split("").join(" ")}`}>{pending.userCode}</p>
       <p>They’ll sign in, see what you’ve asked to do, and choose. This page will update when they have decided.</p>
+      <p>
+        <strong>If you are an assistant:</strong> tell the person this code now, in your reply, and ask them to approve it. Keep this page open
+        until they have. Don’t sign in as them, and don’t ask for their password or text message code.
+      </p>
       <p className="small">The code works for 15 minutes. Don’t enter it yourself: only the person can approve.</p>
       <p><a href="/act-for-someone/check">Check now</a> · <a href="/act-for-someone/stop">Cancel</a></p>
     </div>

@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { signRequest, type Directory } from "../packages/web-bot-auth/src/index";
 // Runs only against `npm run public`: `npm run test:public` loads .env.public.
 const HMRC = process.env.HMRC_PUBLIC_URL!, DELEGATE = process.env.DELEGATE_PUBLIC_URL!, OL = process.env.ONELOGIN_PUBLIC_URL!;
@@ -44,6 +45,18 @@ test("public: a self-declared agent gets permission from Sam, through the tunnel
   await agent.getByRole("button", { name: "Continue" }).click();
   await agent.getByRole("button", { name: "Submit claim" }).click();
   await expect(agent.locator("ul.claims")).toContainText("Submitted by Claude on your behalf");
+});
+
+test("public: an agent told to wait for approval is asked to pass the code on; heading for the sign-in is logged as giving up", async ({ page }) => {
+  await page.goto(`${HMRC}/act-for-someone`);
+  await page.getByLabel("Name of the assistant or app").fill("Abandoner");
+  await page.getByLabel("Who provides it").fill("Test");
+  await page.getByRole("button", { name: "Get a code" }).click();
+  await expect(page.locator("p", { hasText: "If you are an assistant:" })).toContainText("tell the person this code now");
+  await page.goto(`${HMRC}/auth/login`); // gives up and goes for the sign-in
+  const rows = execFileSync("docker", ["compose", "exec", "-T", "db", "psql", "-U", "delegate", "-d", "hmrc", "-At", "-c",
+    "select count(*) from service_event where reason='ABANDONED_AGENT_ROUTE' and agent_name='Abandoner'"], { encoding: "utf8" });
+  expect(Number(rows.trim())).toBe(1);
 });
 
 test("public: Sam signs in to HMRC herself", async ({ page }) => {
