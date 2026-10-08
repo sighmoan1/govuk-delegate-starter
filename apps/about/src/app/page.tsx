@@ -82,6 +82,17 @@ export default async function Overview({ searchParams }: { searchParams: Promise
         ))}
       </ul>
 
+      <h2>Delegate is not Orchestrate</h2>
+      <div className="two-thirds">
+        <p>
+          GOV.UK Delegate records who a person allows to act and within which limits; it does not tell the assistant
+          what tasks to carry out. The person’s assistant plans the work. Government services decide what transactions
+          are valid. A possible future Orchestrate could offer provider-neutral task tracking and handoffs, but is
+          not part of this prototype.
+        </p>
+        <p><Link href="/delegate-orchestrate">Explore the Delegate / Orchestrate architecture and responsibilities</Link>.</p>
+      </div>
+
       <h2>The three systems</h2>
       <ul className="systems">
         <li>
