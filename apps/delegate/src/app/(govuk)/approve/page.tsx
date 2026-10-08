@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { currentPrincipal } from "@/lib/session";
 import { CAPABILITY_COPY } from "@/lib/capabilities";
+import { stepUpMaxAgeMs } from "@/lib/config";
 import { decideStepUp } from "./actions";
 
 export const metadata: Metadata = { title: "Approve an action" };
@@ -59,7 +60,7 @@ export default async function Approve({ searchParams }: { searchParams: Promise<
     <div className="two-thirds">
       <span className="caption">{stepUp.mandate.service.name}</span>
       <h1>{stepUp.mandate.delegate.name} wants to {label.charAt(0).toLowerCase() + label.slice(1)}</h1>
-      <p>This is a sensitive action, so it needs your approval each time. Only approve it if you asked {stepUp.mandate.delegate.name} to do this.</p>
+      <p>This is a sensitive action, so it needs your approval each time. Your approval covers its next attempt to do this and lasts {Math.round(stepUpMaxAgeMs() / 60_000)} minutes. It does not name the exact details, such as a new bank account, so only approve it if you have just asked {stepUp.mandate.delegate.name} to do this.</p>
       <div className="button-row">
         <form action={decideStepUp}>
           <input type="hidden" name="code" value={stepUp.userCode} />

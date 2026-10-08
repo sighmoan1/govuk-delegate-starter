@@ -22,3 +22,17 @@ export const config = {
 
 export const AUTHORISATION_DAYS = 30;
 export const REQUEST_DAYS = 7;
+
+/**
+ * How long a person's step-up approval stays usable after they give it (issue #38).
+ * Approval covers the NEXT positive check for that mandate + capability (it is not
+ * bound to transaction details; see docs/DECISIONS.md). Ten minutes is long enough
+ * to switch from the GOV.UK approval page back to the agent and let it retry, and
+ * short enough that an abandoned approval cannot be picked up later.
+ * Override with STEP_UP_MAX_AGE_MINUTES (a positive number; invalid values use the default).
+ */
+export const DEFAULT_STEP_UP_MAX_AGE_MINUTES = 10;
+export function stepUpMaxAgeMs(): number {
+  const n = Number(process.env.STEP_UP_MAX_AGE_MINUTES);
+  return (Number.isFinite(n) && n > 0 ? n : DEFAULT_STEP_UP_MAX_AGE_MINUTES) * 60_000;
+}

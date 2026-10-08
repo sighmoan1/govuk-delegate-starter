@@ -77,6 +77,6 @@ npm run test:e2e    # Playwright: the scenarios (each started from its UI reset)
 - **The simulator supports one client.** Delegate and HMRC share its client id and test key. In production they would be separate relying parties.
 - **Pairwise subjects.** Real One Login gives each relying party its own subject for the same person. Here both see the same one; production would need a shared sector or a mapping held by Delegate (Decision 12).
 - **The friction is a stand-in:** an in-memory limiter, a 1.5 second delay, plain-text refusals and a checkbox challenge page. It shows the incentive, not real abuse controls.
-- **Step-up:** high-risk permissions are flagged in the data and on the consent screen only.
+- **Step-up:** high-risk permissions need a fresh approval (`STEP_UP_REQUIRED`, then the approval page). An approval covers the next positive check for that mandate and capability, and expires `STEP_UP_MAX_AGE_MINUTES` after it was given (default 10). It is not bound to transaction details such as the new bank account; that is tracked in #19. Single use under concurrency is tracked in #37.
 - **Dev keys:** `dev/oidc-client-private.pem` is the simulator's published test key. All secrets in compose and `.env.example` files are for local use only.
 - **Fonts:** Lexend Deca, under the SIL Open Font License.

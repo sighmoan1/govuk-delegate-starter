@@ -240,3 +240,11 @@ Why: HMRC can't see the chat, so the flag was the agent's own word and stopped n
 - **Website forms.** The claim and answer forms carry a hidden `submission_id`, created when the page is rendered and used as the key (`form:<id>`). Pressing the button twice or resending the form is one submission. A form without one still works and is covered by the business rules.
 
 Not done: other mutating routes ignore the header; the claim-status read path still reopens disputed answers with the global client; records are kept indefinitely (a retention window would be added with a real store).
+
+## Decision 22 — Step-up approval is time-limited and covers the next use, not a transaction
+
+**Decision (issue #38):** A step-up approval authorises the next positive check for one mandate and capability, and only within `STEP_UP_MAX_AGE_MINUTES` (default 10) of `approvedAt`. An older approval is ignored and the agent gets the normal `STEP_UP_REQUIRED` with a new approval code. The boundary is inclusive: an approval exactly at the maximum age still works.
+
+**Not guaranteed:** the approval is not bound to a transaction payload or digest. Anything the agent asks for under that capability within the window can use it, and Delegate does not see the details (for example the new bank account). The approval page says so. Binding to one proposed transaction, with reservation and retry handling across the two services, is the larger design in #19. Atomic single use under concurrent requests is #37.
+
+Why ten minutes: long enough to go from the agent to the approval page and back, short enough that an abandoned approval cannot be used later while the mandate is still active.
