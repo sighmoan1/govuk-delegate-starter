@@ -47,3 +47,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .start-from__options .small { margin: 0; color: var(--muted); }
 .start-from__done { padding: .5rem .75rem; background: var(--soft-green); font-weight: 700; }
 .lanes-table th[scope="row"] { white-space: nowrap; }
+
+/* Sam's phone */
+.about-facts { display: grid; grid-template-columns: max-content 1fr; gap: .25rem 1.5rem; margin: 0 0 1.5rem; }
+.about-facts dt { font-weight: 700; }
+.about-facts dd { margin: 0; }
+.code-panel { display: inline-block; margin: 0 0 1.25rem; padding: .5rem 1rem; border: 2px solid currentColor; }
+.code-panel--big { font-size: 2.25rem; font-weight: 700; letter-spacing: .15em; }

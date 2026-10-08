@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { demoEmail, readFlow } from "@/lib/flow";
+import { demoEmail, readFlow, strict } from "@/lib/flow";
 import { AgentNotice } from "../agent-notice";
 import { submitEmail } from "../actions";
 
@@ -16,15 +16,15 @@ export default async function SignIn({ searchParams }: { searchParams: Promise<{
       {error && (
         <div className="ol-error-summary" role="alert" aria-labelledby="err-h">
           <h2 id="err-h">There is a problem</h2>
-          <ul><li><a href="#email">Enter an email address in the correct format, like name@example.com</a></li></ul>
+          <ul><li><a href="#email">{error === "unknown" ? "We could not find a GOV.UK One Login with that email address" : "Enter an email address in the correct format, like name@example.com"}</a></li></ul>
         </div>
       )}
       <form action={submitEmail} noValidate>
         <h1>Enter your email address to sign in to your GOV.UK One Login</h1>
         <div className={`ol-form-group${error ? " ol-form-group--error" : ""}`}>
           <label className="ol-label" htmlFor="email">Email address</label>
-          {error && <p className="ol-error-message"><span className="visually-hidden">Error: </span>Enter an email address in the correct format, like name@example.com</p>}
-          <input className="ol-input" id="email" name="email" type="email" autoComplete="email" spellCheck={false} defaultValue={value ?? demoEmail()} />
+          {error && <p className="ol-error-message"><span className="visually-hidden">Error: </span>{error === "unknown" ? "We could not find a GOV.UK One Login with that email address" : "Enter an email address in the correct format, like name@example.com"}</p>}
+          <input className="ol-input" id="email" name="email" type="email" autoComplete="email" spellCheck={false} defaultValue={value ?? (strict() ? "" : demoEmail())} />
         </div>
         <button className="ol-button" type="submit">Continue</button>
       </form>

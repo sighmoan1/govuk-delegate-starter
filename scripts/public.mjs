@@ -60,6 +60,8 @@ async function start() {
     HMRC_SERVICE_KEY: secret(),
     AGENT_CLIENT_SECRET: secret(),
     DEMO_CONSOLE_KEY: secret(),
+    // Sam's password. The code texted to her phone shows on the about site's "Sam's phone" page.
+    ONELOGIN_DEMO_PASSWORD: randomBytes(9).toString("base64url"),
   };
   writeFileSync(ENV_FILE, `# Written by scripts/public.mjs. Temporary; deleted by \`npm run public:stop\`.\n${Object.entries(env).map(([k, v]) => `${k}=${v}`).join("\n")}\n`);
 
@@ -91,6 +93,9 @@ Public URLs (temporary; they change every time):
   GOV.UK One Login   ${urls.ONELOGIN_PUBLIC_URL}
 
 Local only:  about site http://localhost:3304 (reset buttons work) · Example AI http://localhost:3303
+
+Sign-in to One Login is strict in public mode: nothing is pre-filled, and it needs a password and a texted code.
+Sam's email, password and codes: http://localhost:3304/sams-phone (open it in your own browser, not the agent's).
 
 A prompt to try with an agent:
 

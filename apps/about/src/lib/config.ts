@@ -10,6 +10,7 @@ export const urls = {
   get agent() { return env("AGENT_URL", "http://localhost:3303"); },
   get agentInternal() { return env("AGENT_INTERNAL_URL", this.agent); },
   get oneLogin() { return env("ONE_LOGIN_URL", "http://localhost:3301"); },
+  get oneLoginInternal() { return env("ONE_LOGIN_INTERNAL_URL", this.oneLogin); },
 };
 
 export const demoConsoleKey = () => env("DEMO_CONSOLE_KEY", "dev-demo-console-key");

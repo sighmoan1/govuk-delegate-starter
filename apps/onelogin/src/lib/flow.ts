@@ -7,9 +7,40 @@ export const simulator = () => env("SIMULATOR_INTERNAL_URL", "http://localhost:3
 export const aboutUrl = () => env("ABOUT_URL", "http://localhost:3304");
 export const demoEmail = () => env("DEMO_EMAIL", "sam.taylor@example.com");
 
+/**
+ * Strict sign-in, used when the demo is on public URLs: the real One Login's
+ * checks stand in properly. Nothing is pre-filled, the email must be Sam's, the
+ * password must be right, and a code is "sent to Sam's phone". Locally it stays
+ * easy, so a person playing Sam can click through.
+ */
+export const strict = () => process.env.PUBLIC_MODE === "true" || process.env.ONELOGIN_STRICT === "true";
+export const demoPassword = () => env("ONELOGIN_DEMO_PASSWORD", "password");
+export const PHONE_ENDING = "7890";
+
+// The text message. In real life it goes to a phone no agent can see; here it
+// goes to the "Sam's phone" page on the local-only about site.
+type Sms = { code: string; sentAt: number; attempts: number };
+const g = globalThis as unknown as { __olSms?: Sms };
+export function sendCode(): string {
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  g.__olSms = { code, sentAt: Date.now(), attempts: 0 };
+  return code;
+}
+export function latestCode() {
+  return g.__olSms && Date.now() - g.__olSms.sentAt < 15 * 60_000 ? g.__olSms : null;
+}
+/** Right code, in time, and not guessed at: five wrong tries use it up. */
+export function checkCode(entered: string): boolean {
+  const sms = latestCode();
+  if (!sms || sms.attempts >= 5) return false;
+  if (entered.replace(/\s/g, "") === sms.code) { g.__olSms = undefined; return true; }
+  sms.attempts++;
+  return false;
+}
+
 // The sign-in in progress: the relying party's original /authorize query, and the email typed so far.
 const COOKIE = "ol_signin";
-type Flow = { authorize: string; email?: string };
+type Flow = { authorize: string; email?: string; passwordOk?: boolean };
 
 export async function readFlow(): Promise<Flow | null> {
   const raw = (await cookies()).get(COOKIE)?.value;

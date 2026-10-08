@@ -16,6 +16,7 @@ const LINKS = [
   { href: "/how-it-works", label: "How it works" },
   { href: "/why", label: "Why" },
   { href: "/precedents", label: "Precedents" },
+  { href: "/sams-phone", label: "Sam’s phone" },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
