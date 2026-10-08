@@ -20,6 +20,8 @@ The pattern copies HMRC's agent authorisation: an agent asks, the person approve
 | **Citizen's assistant / model provider** | Understand goals, plan and execute tasks within granted authority |
 | **GOV.UK Orchestrate (hypothetical)** | Potential future provider-neutral task continuity and cross-service coordination, **not built** |
 
+**Open architecture question:** [Where should authority records live?](docs/FEDERATED_AUTHORITY.md) compares a central national registry with federated and hybrid recognition of existing departmental authority. It proposes one narrow experiment; federation is **not yet decided or implemented**.
+
 **Current limitation:** Delegate's demo seed and UI still hard-code some HMRC capability definitions. The target is that each service publishes a versioned catalogue and Delegate renders/checks it generically. This is tracked as follow-up engineering work; the documentation is not a claim that the feature exists.
 
 ## Four apps
