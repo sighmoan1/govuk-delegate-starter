@@ -16,7 +16,7 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
   // Looking up the tax code counts against the person, however it's done.
   const view = await withPrincipalCapacity(taxpayer, "view_tax_code", {}, async () => null);
   const claims = await claimsFor(taxpayer.id);
-  await reopenDisputedAnswers(taxpayer.id);
+  const { checked: disputesChecked } = await reopenDisputedAnswers(taxpayer.id);
   const openQueries = await prisma.claimQuery.findMany({ where: { status: "OPEN", claim: { taxpayerId: taxpayer.id } }, include: { claim: true }, orderBy: { askedAt: "asc" } });
   const hasWfh = claims.some((c) => c.kind === "job_expenses");
 
@@ -37,13 +37,18 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
       {replyError && (
         <div className="error-summary" role="alert">
           <h2>Your reply was not sent</h2>
-          <p>{["PERMISSION_MISSING", "NO_AUTHORISATION", "AUTHORISATION_REVOKED", "AUTHORISATION_EXPIRED"].includes(replyError) ? "You haven’t been given permission to answer HMRC’s questions." : "Write your answer in the box. It can be up to 1000 characters."}</p>
+          <p>{replyError === "DELEGATE_UNAVAILABLE" ? "GOV.UK could not record the answer, so HMRC has not accepted it. The question is still open. Try again shortly." : ["PERMISSION_MISSING", "NO_AUTHORISATION", "AUTHORISATION_REVOKED", "AUTHORISATION_EXPIRED"].includes(replyError) ? "You haven’t been given permission to answer HMRC’s questions." : "Write your answer in the box. It can be up to 1000 characters."}</p>
         </div>
       )}
       {refused && (
         <div className="error-summary" role="alert">
           <h2>Your claim was not sent</h2>
           <p>{refused === "DUPLICATE_SUBMISSION" ? "This claim has already been made." : refused === "NEW_EVIDENCE_REQUIRED" ? "You’ve already claimed for this tax year. You can only claim again with new evidence." : refused === "PERMISSION_MISSING" ? "You haven’t been given permission to do that." : refused === "CAPACITY_EXCEEDED" ? "You have too many open claims and changes. Wait for one to be decided." : "This couldn’t be done."}</p>
+        </div>
+      )}
+      {!disputesChecked && (
+        <div className="inset-text" role="status">
+          We could not check GOV.UK just now for answers you have told us you did not agree to. Answers sent for you are shown as received until we can check. Refresh in a few minutes.
         </div>
       )}
       <span className="caption">{taxpayer.name}</span>
