@@ -72,6 +72,52 @@ describe("root principal → mandate → delegation chain", () => {
   });
 });
 
+describe("ancestors are checked on every use", () => {
+  async function threeLevels() {
+    const sam = await newPrincipal();
+    const { token } = await authorise(sam.id, ["view_tax_code", "claim_job_expenses"]);
+    const a = await subDelegate(token, sam.id, ["view_tax_code", "claim_job_expenses"], "a");
+    const b = await subDelegate(a.body.token, sam.id, ["view_tax_code", "claim_job_expenses"], "b");
+    const side = await subDelegate(token, sam.id, ["view_tax_code"], "side");
+    return { sam, token, a, b, side };
+  }
+
+  it("all valid: the whole chain is usable", async () => {
+    const { sam, a, b } = await threeLevels();
+    expect((await check({ agent_token: a.body.token, principal_id: sam.id })).body.authorised).toBe(true);
+    expect((await check({ agent_token: b.body.token, principal_id: sam.id })).body.authorised).toBe(true);
+  });
+
+  it("revoking an intermediate delegation denies its descendants at once, not its siblings", async () => {
+    const { sam, a, b, side } = await threeLevels();
+    expect((await check({ agent_token: b.body.token, principal_id: sam.id })).body.authorised).toBe(true);
+    await prisma.delegation.update({ where: { id: a.body.delegation_id }, data: { status: "REVOKED" } });
+    expect((await check({ agent_token: a.body.token, principal_id: sam.id })).body.authorised).toBe(false);
+    const r = await check({ agent_token: b.body.token, principal_id: sam.id });
+    expect(r.body.authorised).toBe(false);
+    expect(r.body.reason).toBe("AUTHORISATION_REVOKED");
+    expect((await check({ agent_token: side.body.token, principal_id: sam.id })).body.authorised).toBe(true);
+  });
+
+  it("narrowing a parent removes that permission from existing descendants", async () => {
+    const { sam, a, b } = await threeLevels();
+    await prisma.delegation.update({ where: { id: a.body.delegation_id }, data: { capabilities: ["view_tax_code"] } });
+    const gone = await check({ agent_token: b.body.token, principal_id: sam.id, capability: "claim_job_expenses" });
+    expect(gone.body.authorised).toBe(false);
+    expect(gone.body.reason).toBe("PERMISSION_MISSING");
+    expect((await check({ agent_token: b.body.token, principal_id: sam.id, capability: "view_tax_code" })).body.authorised).toBe(true);
+  });
+
+  it("cycles and malformed depth never authorise", async () => {
+    const { sam, a, b } = await threeLevels();
+    await prisma.delegation.update({ where: { id: a.body.delegation_id }, data: { parentDelegationId: b.body.delegation_id } });
+    expect((await check({ agent_token: b.body.token, principal_id: sam.id })).body.authorised).toBe(false);
+    const t = await threeLevels();
+    await prisma.delegation.update({ where: { id: t.b.body.delegation_id }, data: { depth: 5 } });
+    expect((await check({ agent_token: t.b.body.token, principal_id: t.sam.id })).body.authorised).toBe(false);
+  });
+});
+
 describe("capacity belongs to the principal, not to each agent", () => {
   const LIMIT = 6;
   let original = 300;
