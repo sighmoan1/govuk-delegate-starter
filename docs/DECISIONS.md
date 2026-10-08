@@ -228,3 +228,11 @@ Not built: real email or SMS. The "notice" is an in-account banner, which depend
 **Decision:** Decision 18's `confirmed_by_person` is no longer required. HMRC accepts an answer from an approved agent with the permission, records whether the agent said the person agreed, and Delegate's receipt shows the person which it was ("told HMRC you agreed" or "sent this and did not say whether you had agreed"). The browser form's checkbox is gone.
 
 Why: HMRC can't see the chat, so the flag was the agent's own word and stopped nothing, while it refused honest, authorised, identified agents on a technicality. Friction belongs on traffic that won't identify itself. The controls that do work are the permission the person grants, the Delegate check, per-person limits, the log, and the receipt with its dispute button. This supersedes the "428 CONFIRMATION_REQUIRED" behaviour in Decision 18.
+
+## Decision 21 — Step-up approval is time-limited and covers the next use, not a transaction
+
+**Decision (issue #38):** A step-up approval authorises the next positive check for one mandate and capability, and only within `STEP_UP_MAX_AGE_MINUTES` (default 10) of `approvedAt`. An older approval is ignored and the agent gets the normal `STEP_UP_REQUIRED` with a new approval code. The boundary is inclusive: an approval exactly at the maximum age still works.
+
+**Not guaranteed:** the approval is not bound to a transaction payload or digest. Anything the agent asks for under that capability within the window can use it, and Delegate does not see the details (for example the new bank account). The approval page says so. Binding to one proposed transaction, with reservation and retry handling across the two services, is the larger design in #19. Atomic single use under concurrent requests is #37.
+
+Why ten minutes: long enough to go from the agent to the approval page and back, short enough that an abandoned approval cannot be used later while the mandate is still active.
