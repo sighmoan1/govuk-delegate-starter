@@ -84,6 +84,8 @@ model ClaimQuery {
   answerWithdrawn   Boolean     @default(false) @map("answer_withdrawn")
   // Which submission of the answer this is; goes up when the person disputes one, so each gets its own receipt.
   answerVersion     Int         @default(0) @map("answer_version")
+  // Set on every state change (asked, answered, withdrawn and reopened); progress polling compares it with `since`.
+  stateChangedAt    DateTime    @default(now()) @map("state_changed_at")
 
   claim Claim @relation(fields: [claimId], references: [id], onDelete: Cascade)
 

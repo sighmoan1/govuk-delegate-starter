@@ -37,7 +37,7 @@ const DAY = 86_400_000;
  * in flight" and "can't keep changing where refunds go". The numbers are
  * illustrative, not a statement of what the law or HMRC operations require.
  * Changing or removing them is a product and legal decision for a separate
- * discussion (Decision 22 in docs/DECISIONS.md); this module only keeps them
+ * discussion (Decision 23 in docs/DECISIONS.md); this module only keeps them
  * apart from throughput.
  */
 export const DOMAIN_RULES = {

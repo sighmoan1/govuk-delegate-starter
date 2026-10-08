@@ -1,6 +1,7 @@
 import { randomInt } from "node:crypto";
 import type { Assurance, AuthorisationStatus, Reason } from "@/generated/prisma";
 import { prisma } from "./db";
+import { stepUpMaxAgeMs } from "./config";
 
 /** Who is presenting: an agent signed in with its own credentials, or a sub-agent holding a delegation token. */
 export type Presenter = { kind: "agent"; delegateId: string } | { kind: "delegation"; delegationId: string };
@@ -189,21 +190,28 @@ export async function checkAuthority(input: CheckInput, now = new Date()): Promi
   }
 
   // ── Consequential actions need the person's fresh approval, whoever asks.
-  let stepUpId: string | null = null;
+  // One approval admits one positive check, and only while it is fresh (see
+  // stepUpFreshSince). Consumption is a compare-and-set
+  // (APPROVED -> USED in one UPDATE), so of any number of concurrent checks only
+  // one can win a given approval. A loser tries any other approved step-up, and
+  // otherwise gets the normal STEP_UP_REQUIRED refusal. This is not end-to-end
+  // exactly-once: if the service then fails the action, the approval stays spent.
   if (capability.requiresStepUp) {
-    const approved = await prisma.stepUp.findFirst({ where: { mandateId: mandate.id, capability: input.capability, status: "APPROVED" }, orderBy: { approvedAt: "asc" } });
-    if (!approved) return stepUpRequired(mandate.id, input.capability, base);
-    stepUpId = approved.id;
-  }
-
-  // Today's step-up gate: one approval covers one positive check. Consume it
-  // atomically so two concurrent checks can't both ride on the same approval.
-  // (Issue #19 moves this consumption to the transaction itself.)
-  if (stepUpId) {
-    const used = await prisma.stepUp.updateMany({ where: { id: stepUpId, status: "APPROVED" }, data: { status: "USED", usedAt: now } });
-    if (used.count === 0) return stepUpRequired(mandate.id, input.capability, base);
+    let consumed = false;
+    for (let attempt = 0; attempt < 5 && !consumed; attempt++) {
+      const approved = await prisma.stepUp.findFirst({ where: { mandateId: mandate.id, capability: input.capability, status: "APPROVED", approvedAt: { gte: stepUpFreshSince(now) } }, orderBy: { approvedAt: "asc" } });
+      if (!approved) break;
+      const used = await prisma.stepUp.updateMany({ where: { id: approved.id, status: "APPROVED" }, data: { status: "USED", usedAt: now } });
+      consumed = used.count === 1;
+    }
+    if (!consumed) return stepUpRequired(mandate.id, input.capability, base);
   }
   return { authorised: true, serviceId: service.id, chain };
+}
+
+/** Oldest `approvedAt` still usable at `now`. An approval exactly at the maximum age is still valid; older ones are refused as STEP_UP_REQUIRED. */
+export function stepUpFreshSince(now: Date, maxAgeMs = stepUpMaxAgeMs()) {
+  return new Date(now.getTime() - maxAgeMs);
 }
 
 async function stepUpRequired(mandateId: string, capability: string, base: { status: "ACTIVE"; authorisationId: string; serviceId: string; chain: Chain }): Promise<CheckResult> {
