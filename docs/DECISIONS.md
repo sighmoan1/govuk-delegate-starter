@@ -174,3 +174,24 @@ Consequences: any password works. `sam.taylor@example.com` (pre-filled) is the s
 Each scenario page resets all three services from the UI, to either "clean" or "Example AI already connected". The services expose `POST /api/demo/reset`, protected by the demo key, which runs the same seed function as `npm run db:reset`. The flood console is part of scenario 3.
 
 Also: Delegate's check API now remembers service keys that have already verified, keyed on their SHA-256. Running scrypt on every request serialised 40 concurrent checks into about 1.5 seconds, which made the authorised agent look slower than the throttled bot.
+
+## Decision 16 — Identify the agent. Authorise the mandate. Limit the principal.
+
+**Decision:** three questions are kept apart, in the code and in the story.
+
+| | Question | Decided by | Can it be faked or hidden? |
+|---|---|---|---|
+| Identity | Who or what is making the request? | A Web Bot Auth signature, registered credentials, or self-declaration | Yes: an agent in the person's own browser looks like the person |
+| Authority | What has the person allowed it to do? | A GOV.UK Delegate mandate, checked per request | No |
+| Capacity | How much may everyone using this person's authority do, together? | Limits on the person, at Delegate and at the service | No: keyed to the person |
+
+- **Detection is evidence, not the security boundary.** Identity decides what an agent may do and whether it is shown the proper route (a known agent with no permission is redirected to "Act for someone", not blocked). It never confers extra capacity. Capacity controls work when detection fails.
+- **Root principal → mandate → delegation chain → transaction.** Every check and every HMRC transaction records the person, mandate, delegation, parent, depth and agent. Sub-delegation can't widen capabilities and is limited in depth.
+- **Capacity follows the person.** HMRC keys its rules by One Login subject: tax-code views per hour, one working-from-home claim per tax year (more only with materially new evidence), open cases, refund-account changes. Delegate keeps a shared budget per person per service. A person with 100 agents, or 100 hidden sessions, gets what a person with one agent gets. Scenario 5 shows it, and `tests/swarm.test.ts` proves it.
+- **Assurance limits actions, not volume.** Sensitive actions need a verified or registered agent, plus the person's fresh approval each time. Declared (self-asserted) agents can't make them.
+- **Access policy by surface.** Public information and agent discovery stay open to everyone. Transactions need a person or an authorised agent. An honest, signed agent is never worse off than a disguised one: it gets a structured API and clear errors, where a disguised one gets none of that and no attribution.
+- **Agents can't approve themselves.** The device-code approval is refused for requests that carry an agent signature.
+
+Why: the first live runs (Scenario 4) showed an agent that sends no identity looks exactly like a person, so a design that depends on detecting agents can't hold. What does hold is who the capacity belongs to.
+
+Consequences: limits are illustrative, chosen to make the demo legible, not policy. Page text alone didn't steer an unidentified agent to the proper route in the runs so far; verifiable identity (a signature) is the stronger lever, which is why the route is offered to every agent but only signed ones can be held to it.

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { hmrcMiddlewareSource, urls } from "@/lib/config";
 
@@ -60,6 +61,23 @@ x-service-key: <HMRC's own key>
         </dl>
         <p>“Not identified” is not “malicious”. It includes people who haven’t signed in, assistive technology and agents that haven’t integrated yet. The friction is an incentive to identify yourself, not a verdict.</p>
 
+        <h2>Limits belong to the person</h2>
+        <p>
+          Three things are kept apart. <strong>Identity</strong> is who is asking, and it can be faked or hidden. <strong>Authority</strong> is
+          what the person allowed, checked with GOV.UK Delegate on every request. <strong>Capacity</strong> is how much everyone using that
+          person’s authority may do together: tax-code checks per hour, one claim per tax year unless there’s new evidence, a cap on open
+          claims, and one change to the refund bank account a month.
+        </p>
+        <p>
+          Capacity is counted against the person’s One Login identifier, never against an agent or session. A person with a hundred agents,
+          or a hundred hidden sessions, gets the same as a person with one. An agent’s identity decides what it may do: sensitive changes
+          need an agent whose identity is verified or registered, plus the person’s fresh approval. It never adds capacity.
+        </p>
+        <p>
+          Agents can pass part of their authority to sub-agents. Each one stays inside what its parent was given, down to a maximum depth,
+          and everything traces back to the person. <Link href="/swarm">Scenario 5</Link> runs it.
+        </p>
+
         <h2>What HMRC added</h2>
         <p>
           A registration with GOV.UK Delegate, done once: a name, the five actions it offers, and a key. Then one file, which wraps every API
@@ -74,7 +92,7 @@ x-service-key: <HMRC's own key>
       <div className="two-thirds">
         <h2>What this prototype simplifies</h2>
         <ul>
-          <li><strong>A stand-in for One Login.</strong> The sign-in screens are a lookalike. Behind them, the official GOV.UK One Login simulator does the real OpenID Connect work: codes, signed tokens, keys and userinfo. Any password is accepted.</li>
+          <li><strong>A stand-in for One Login.</strong> The sign-in screens are a lookalike. Behind them, the official GOV.UK One Login simulator does the real OpenID Connect work: codes, signed tokens, keys and userinfo. On public URLs it’s strict, with a real password and a code “sent to Sam’s phone”. Locally, any password is accepted.</li>
           <li><strong>One sign-in client.</strong> The One Login simulator supports one client, so GOV.UK Delegate and HMRC share it. In production they would be separate.</li>
           <li><strong>The same person ID in both places.</strong> Real One Login gives each service a different identifier for the same person. Production would need GOV.UK Delegate and services to share one, or Delegate to hold a mapping.</li>
           <li><strong>Friction stand-ins.</strong> The rate limit, delay and checkbox challenge only show the incentive. A real service would choose its own proportionate controls.</li>

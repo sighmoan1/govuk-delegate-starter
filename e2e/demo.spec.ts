@@ -116,7 +116,7 @@ test("the four services carry no demo explanation; the about site does", async (
 
 test("reflow at 320px on the assistant and the about site", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 });
-  for (const url of [AGENT, `${AGENT}/settings`, ABOUT, `${ABOUT}/use-an-agent`, `${ABOUT}/manage-who-can-act`, `${ABOUT}/prioritise-trusted-traffic`, `${ABOUT}/how-it-works`]) {
+  for (const url of [AGENT, `${AGENT}/settings`, ABOUT, `${ABOUT}/use-an-agent`, `${ABOUT}/manage-who-can-act`, `${ABOUT}/prioritise-trusted-traffic`, `${ABOUT}/which-route`, `${ABOUT}/swarm`, `${ABOUT}/sams-phone`, `${ABOUT}/how-it-works`]) {
     await page.goto(url);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, `${url} overflows horizontally`).toBeLessThanOrEqual(0);

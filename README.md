@@ -47,13 +47,18 @@ npm run public:stop   # tunnels down, simulator back to localhost, dev secrets r
 
 `npm run public` prints the public URLs and a prompt to give the agent. By default these are Cloudflare quick tunnels with random URLs, and Cloudflare blocks OpenAI's crawler on that domain, so ChatGPT's own page fetcher gets a 403. For stable URLs where you control the bot settings, create a named tunnel on a domain you own and describe it in `public.config.json` (gitignored; the format is in the header of `scripts/public.mjs`). Public mode uses fresh random secrets, doesn't trust the local test agent (its private key is in this repository), and refuses demo tooling (reset, swarm set-up) through the tunnel. The about site and Example AI stay on localhost, and their reset buttons still work. Anyone with the URLs can use the demo while it's up. The data is synthetic, but stop it when you're done.
 
-## The demo: three scenarios
+## The demo: five scenarios
 
 Open http://localhost:3304. Each scenario has its own page, and each page resets everything to the right starting point with one button: clean, or with Example AI already connected.
 
 1. **Sam asks her assistant to claim tax relief.** Example AI gets Sam's permission through GOV.UK, then claims working-from-home relief with HMRC. It's refused when it tries something she didn't allow.
 2. **Sam manages who can act for her.** In her GOV.UK account she sees Example AI, what it can do and what it has done, and removes access. Its next request is refused.
 3. **Government prioritises people and authorised agents.** HMRC treats signed-in people, authorised agents and unidentified traffic differently. The page sends bursts of traffic as a bot, as Example AI and as an anonymous visitor, and shows who got through.
+
+4. **Which route do agents choose?** Findings from live runs with real agents (ChatGPT with TinyFish so far), from HMRC's own logs: what HMRC could see, and which route each took.
+5. **Can a swarm beat the system?** The same workload run four ways: one person with one agent, with 100 sub-agents, with 100 hidden sessions, and 100 people with one agent each. Limits belong to the person, so the first three match.
+
+The core idea, in one line: **identify the agent, authorise the mandate, limit the principal** (Decision 16 in `docs/DECISIONS.md`).
 
 **Reset everything** is on the overview page. From the command line, `npm run db:reset` does the same.
 

@@ -13,6 +13,7 @@ const LINKS = [
   { href: "/use-an-agent", label: "1. Use an agent" },
   { href: "/manage-who-can-act", label: "2. Manage who can act" },
   { href: "/prioritise-trusted-traffic", label: "3. Prioritise trusted traffic" },
+  { href: "/which-route", label: "4. Which route?" },
   { href: "/swarm", label: "5. Can a swarm win?" },
   { href: "/how-it-works", label: "How it works" },
   { href: "/why", label: "Why" },

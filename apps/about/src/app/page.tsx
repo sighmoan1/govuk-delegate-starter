@@ -21,6 +21,18 @@ const SCENARIOS = [
     title: "Government prioritises people and authorised agents",
     text: "HMRC gives signed-in people and authorised agents a fast route, and slows down automation that won’t identify itself.",
   },
+  {
+    href: "/which-route",
+    n: 4,
+    title: "Which route do agents choose?",
+    text: "Real agents, given a simple job, with a proper route and an improper one. What HMRC could see, and what they did.",
+  },
+  {
+    href: "/swarm",
+    n: 5,
+    title: "Can a swarm beat the system?",
+    text: "One person authorising a hundred agents, or running a hundred hidden sessions, gets no more than one person with one agent.",
+  },
 ];
 
 export default async function Overview({ searchParams }: { searchParams: Promise<{ reset?: string }> }) {
@@ -39,7 +51,30 @@ export default async function Overview({ searchParams }: { searchParams: Promise
         </p>
       </div>
 
-      <h2>Three scenarios</h2>
+      <h2>Identify the agent. Authorise the mandate. Limit the principal.</h2>
+      <div className="two-thirds">
+        <p>
+          Government doesn’t need to detect every AI agent to control agentic flooding. Where it can, agents identify themselves and get
+          explicit permission from the person they act for. The scarce capacity, such as claims, checks and open cases, is then given to the
+          person whose authority is being used, not to each browser, session or agent.
+        </p>
+      </div>
+      <div className="table-container">
+        <table className="lanes-table">
+          <thead><tr><th scope="col"></th><th scope="col">The question</th><th scope="col">Decided by</th><th scope="col">Can it be faked or hidden?</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Identity</th><td>Who or what is making the request?</td><td>A signature, registered credentials, or self-declaration</td><td>Yes. An agent in Sam’s own browser looks like Sam.</td></tr>
+            <tr><th scope="row">Authority</th><td>What has the person allowed it to do?</td><td>GOV.UK Delegate, checked on every request</td><td>No</td></tr>
+            <tr><th scope="row">Capacity</th><td>How much may everyone using this person’s authority do, together?</td><td>Limits on the person, at Delegate and the service</td><td>No. It follows the person, however many actors there are.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Detection is evidence, not the security boundary. Identity decides what an agent may do and whether it’s shown the proper route. It
+        never gives more capacity, and the limits work when detection fails.
+      </p>
+
+      <h2>Five scenarios</h2>
       <p>Each one stands on its own and can reset everything to the right starting point.</p>
       <ul className="scenarios">
         {SCENARIOS.map((s) => (
