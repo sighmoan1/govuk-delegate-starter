@@ -5,7 +5,7 @@ import { config } from "@/lib/config";
 import { requireViewer, viewerCan } from "@/lib/guard";
 import { claimsFor, reopenDisputedAnswers } from "@/lib/taxpayers";
 import { prisma } from "@/lib/db";
-import { withPrincipalCapacity } from "@/lib/capacity";
+import { runOperation } from "@/lib/operation";
 import { fmt } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Your tax" };
@@ -20,8 +20,8 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
   const canClaims = viewerCan(viewer, "view_claim_status");
   const canQueries = viewerCan(viewer, "respond_to_query");
   const canClaim = viewerCan(viewer, "claim_job_expenses");
-  // Looking up the tax code counts against the person, however it's done.
-  const view = canTaxCode ? await withPrincipalCapacity(taxpayer, "view_tax_code", {}, async () => null) : null;
+  // Looking up the tax code draws on the person's lookup allowance, however it's done. That is a traffic limit, not an entitlement.
+  const view = canTaxCode ? await runOperation(taxpayer, "view_tax_code", {}, async () => null) : null;
   const claims = canClaims ? await claimsFor(taxpayer.id) : [];
   const { checked: disputesChecked } = canQueries ? await reopenDisputedAnswers(taxpayer.id) : { checked: true };
   const openQueries = canQueries ? await prisma.claimQuery.findMany({ where: { status: "OPEN", claim: { taxpayerId: taxpayer.id } }, include: { claim: true }, orderBy: { askedAt: "asc" } }) : [];
@@ -44,13 +44,13 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
       {replyError && (
         <div className="error-summary" role="alert">
           <h2>Your reply was not sent</h2>
-          <p>{replyError === "DELEGATE_UNAVAILABLE" ? "GOV.UK could not record the answer, so HMRC has not accepted it. The question is still open. Try again shortly." : ["PERMISSION_MISSING", "NO_AUTHORISATION", "AUTHORISATION_REVOKED", "AUTHORISATION_EXPIRED"].includes(replyError) ? "You haven’t been given permission to answer HMRC’s questions." : "Write your answer in the box. It can be up to 1000 characters."}</p>
+          <p>{replyError === "RATE_LIMITED" || replyError === "SERVICE_UNAVAILABLE" ? "There were too many requests just now, so nothing was sent. The question is still open. Try again in a minute." : replyError === "DELEGATE_UNAVAILABLE" ? "GOV.UK could not record the answer, so HMRC has not accepted it. The question is still open. Try again shortly." : ["PERMISSION_MISSING", "NO_AUTHORISATION", "AUTHORISATION_REVOKED", "AUTHORISATION_EXPIRED"].includes(replyError) ? "You haven’t been given permission to answer HMRC’s questions." : "Write your answer in the box. It can be up to 1000 characters."}</p>
         </div>
       )}
       {refused && (
         <div className="error-summary" role="alert">
           <h2>Your claim was not sent</h2>
-          <p>{refused === "DUPLICATE_SUBMISSION" ? "This claim has already been made." : refused === "NEW_EVIDENCE_REQUIRED" ? "You’ve already claimed for this tax year. You can only claim again with new evidence." : refused === "PERMISSION_MISSING" ? "You haven’t been given permission to do that." : refused === "CAPACITY_EXCEEDED" ? "You have too many open claims and changes. Wait for one to be decided." : "This couldn’t be done."}</p>
+          <p>{refused === "DUPLICATE_SUBMISSION" ? "This claim has already been made." : refused === "NEW_EVIDENCE_REQUIRED" ? "You’ve already claimed for this tax year. You can only claim again with new evidence." : refused === "PERMISSION_MISSING" ? "You haven’t been given permission to do that." : refused === "CAPACITY_EXCEEDED" ? "You have too many open claims and changes. Wait for one to be decided." : refused === "RATE_LIMITED" || refused === "SERVICE_UNAVAILABLE" ? "There were too many requests just now, so nothing was sent. Nothing has changed about your claim. Try again in a minute." : "This couldn’t be done."}</p>
         </div>
       )}
       {!disputesChecked && (
@@ -63,7 +63,7 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
       <p>Tax year {taxpayer.taxYear}</p>
       {canTaxCode && view && (
         <dl className="summary-list">
-          <div><dt>Tax code</dt><dd>{view.ok ? <strong>{taxpayer.taxCode}</strong> : "Your tax code has been looked up too many times in the last hour. Try again later."}</dd><dd /></div>
+          <div><dt>Tax code</dt><dd>{view.ok ? <strong>{taxpayer.taxCode}</strong> : view.refusal.kind === "UNAVAILABLE" ? "Your tax code can’t be shown just now. Try again in a minute." : "Your tax code has been looked up too many times in the last hour. This is a limit on lookups, not on your tax. Try again later."}</dd><dd /></div>
           <div><dt>Employer</dt><dd>{taxpayer.employer}</dd><dd /></div>
         </dl>
       )}

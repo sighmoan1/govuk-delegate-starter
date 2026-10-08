@@ -31,7 +31,7 @@ export const AUTHORISATION_DAYS = 30;
 export const REQUEST_DAYS = 7;
 
 /**
- * POLICY (owner to confirm; Decision 23): the one validity window for a step-up
+ * POLICY (owner to confirm; Decision 24): the one validity window for a step-up
  * approval (issues #38, #19). A proposed sensitive change is approvable and
  * redeemable until this long after the service proposed it. The deadline is fixed
  * when the proposal is made; approving or reserving does not extend it. A change

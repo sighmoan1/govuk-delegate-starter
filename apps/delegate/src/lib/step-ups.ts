@@ -1,5 +1,5 @@
 // A step-up approval is the person's yes to ONE proposed transaction (issue #19,
-// Decision 23). This file holds the model: what a proposal is, how it is bound,
+// Decision 24). This file holds the model: what a proposal is, how it is bound,
 // what state it is in, how the person decides it. Reserving and completing it
 // (what a service does when it admits and commits the operation) is in
 // step-up-redeem.ts.

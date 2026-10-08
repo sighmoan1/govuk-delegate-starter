@@ -2,6 +2,7 @@ import { describe, it, expect, afterAll, beforeEach, afterEach, vi } from "vites
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { findOrCreateTaxpayer } from "@/lib/taxpayers";
+import { configureThroughput, resetThroughput } from "@/lib/throughput";
 
 // A change HMRC makes on the strength of the person's approval of THAT change
 // (issue #19). GOV.UK Delegate is replaced by a fake that records every call and
@@ -71,7 +72,7 @@ beforeEach(() => {
     return json(404, {});
   });
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); resetThroughput(); });
 
 const DETAILS = { account_name: "Sam Taylor", sort_code: "20-00-00", account_number: "55779911" };
 const req = (path: string, key: string | null, body: unknown = DETAILS) =>
@@ -130,7 +131,7 @@ describe("the approval is used only when HMRC admits the change", () => {
     expect((await refund(randomUUID())).status).toBe(200); // uses the one refund-account change a person gets
     fake.calls.length = 0;
     const res = await refund(randomUUID(), { ...DETAILS, account_number: "11112222" });
-    expect(res.status).toBe(429);
+    expect(res.status).toBe(409);
     expect(callsTo("/reserve")).toHaveLength(0);
     expect(callsTo("/complete")).toHaveLength(0);
     expect(await changes()).toBe(1);
@@ -241,5 +242,38 @@ describe("changed content and concurrency", () => {
     expect(callsTo("/reserve")).toHaveLength(1);
     expect(await changes()).toBe(1);
     expect(await records()).toBe(1);
+  });
+});
+
+describe("classification: the step-up calls are not throttled, and traffic limits never reserve", () => {
+  it("a write throttled for traffic is a 429 RATE_LIMITED before any reservation, and the approval is untouched", async () => {
+    configureThroughput({ principal: { write: 1 } });
+    expect((await refund(randomUUID())).status).toBe(200);
+    fake.calls.length = 0;
+    const res = await refund(randomUUID(), { ...DETAILS, account_number: "11112222" });
+    expect(res.status).toBe(429);
+    expect(await res.json()).toMatchObject({ kind: "TECHNICAL_THROTTLE", reason: "RATE_LIMITED" });
+    expect(res.headers.get("retry-after")).toBeTruthy();
+    expect(callsTo("/reserve")).toHaveLength(0);
+    expect(callsTo("/complete")).toHaveLength(0);
+    expect(await changes()).toBe(1);
+  });
+
+  it("a replay under a tight write limit is admitted as a read: it is answered, and reserves nothing", async () => {
+    const key = randomUUID();
+    expect((await refund(key)).status).toBe(200);
+    configureThroughput({ principal: { write: 1 } });
+    fake.calls.length = 0;
+    for (let i = 0; i < 5; i++) expect((await refund(key)).status).toBe(200);
+    expect(callsTo("/reserve")).toHaveLength(0);
+  });
+
+  it("an approval held by another operation is an authority refusal (409, Retry-After), logged REFUSED with cost class write, never THROTTLED", async () => {
+    fake.reserve = "refuse-in-use";
+    const res = await refund(randomUUID());
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ kind: "AUTHORITY_REFUSAL", reason: "STEP_UP_IN_USE" });
+    const ev = await prisma.serviceEvent.findFirstOrThrow({ where: { subject: fake.subject, reason: "STEP_UP_IN_USE" } });
+    expect(ev).toMatchObject({ outcome: "REFUSED", costClass: "write" });
   });
 });

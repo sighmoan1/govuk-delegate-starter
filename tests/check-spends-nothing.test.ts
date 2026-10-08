@@ -139,7 +139,7 @@ describe("HMRC: Delegate checks no longer eat HMRC's person-level allowance", ()
     expect(first.body).not.toHaveProperty("delegate_capacity");
   });
 
-  it("HMRC's own business limit still refuses (CAPACITY_EXCEEDED from HMRC), while Delegate allowed every check", async () => {
+  it("HMRC's own tax-code lookup limit throttles (RATE_LIMITED, 429), while Delegate allowed every check", async () => {
     const since = new Date();
     const sam = await newPrincipal();
     const { token } = await authorise(sam.id, ["view_tax_code"]);
@@ -148,10 +148,10 @@ describe("HMRC: Delegate checks no longer eat HMRC's person-level allowance", ()
     expect(outcomes.filter((o) => o.status === 200).length).toBe(60);
     const refused = outcomes.filter((o) => o.status === 429);
     expect(refused.length).toBe(2);
-    expect(refused[0].body).toMatchObject({ reason: "CAPACITY_EXCEEDED", rule: "tax_code_views_per_hour", limit: 60 });
+    expect(refused[0].body).toMatchObject({ reason: "RATE_LIMITED", kind: "TECHNICAL_THROTTLE", rule: "tax_code_views_per_hour", limit: 60, entitlement_affected: false });
     expect(refused[0].body.rule).not.toMatch(/^delegate:/);
 
-    // Delegate allowed all 62 checks: the refusals were HMRC's business rule, not Delegate's.
+    // Delegate allowed all 62 checks: the refusals were HMRC's traffic limit, not Delegate's.
     expect(await prisma.activityEvent.count({ where: { principalId: sam.id, decision: "ALLOW" } })).toBe(62);
     expect(await prisma.activityEvent.count({ where: { principalId: sam.id, decision: "DENY" } })).toBe(0);
     const events = await hmrcEvents(since);

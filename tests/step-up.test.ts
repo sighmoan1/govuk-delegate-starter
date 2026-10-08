@@ -412,7 +412,7 @@ describe("HMRC: from request to committed change", () => {
     expect(c2.status).toBe(403);
     expect((await approve(c2.body.step_up.user_code, sam.id)).ok).toBe(true);
     const refused = await change("refund-account", { token, principalId: sam.id, key: k2, body: second });
-    expect(refused).toMatchObject({ status: 429, body: { decision: "DENY", reason: "CAPACITY_EXCEEDED", rule: "refund_account_changes_per_30_days" } });
+    expect(refused).toMatchObject({ status: 409, body: { decision: "DENY", kind: "BUSINESS_REFUSAL", reason: "CAPACITY_EXCEEDED", rule: "refund_account_changes_per_30_days" } });
     expect(await rowOf(c2.body.step_up.user_code)).toMatchObject({ status: "APPROVED", reservationId: null, usedAt: null });
     // The refusal was recorded against the check as a failure to go through.
     const outcome = await prisma.transactionOutcome.findFirst({ where: { checkId: refused.body.delegate_check_id } });

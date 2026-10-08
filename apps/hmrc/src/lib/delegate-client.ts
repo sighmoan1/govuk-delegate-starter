@@ -14,7 +14,7 @@ type DelegateInfo = { id: string; name: string; provider: string };
  * The state of the person's approval of the specific change HMRC asked about.
  * APPROVED: unspent, may be reserved. IN_PROGRESS: held by another operation.
  * REDEEMED: spent; only a stored result may be returned. The rest mean the
- * person has to act (or the request was malformed). See GOV.UK Delegate, Decision 23.
+ * person has to act (or the request was malformed). See GOV.UK Delegate, Decision 24.
  */
 export type StepUpState =
   | "AWAITING_APPROVAL" | "EXPIRED" | "DECLINED" | "PROPOSAL_REQUIRED" | "PROPOSAL_INVALID" | "KEY_USED_FOR_OTHER_TRANSACTION"

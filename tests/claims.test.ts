@@ -98,7 +98,8 @@ describe("scheduled progress checks", () => {
     for (let i = 0; i < 4; i++) expect((await api("GET", "/api/claims/progress", token, p.id)).status).toBe(200);
     const fifth = await api("GET", "/api/claims/progress", token, p.id);
     expect(fifth.status).toBe(429);
-    expect(fifth.body).toMatchObject({ reason: "CAPACITY_EXCEEDED", rule: "claim_progress_checks_per_day", limit: 4 });
+    expect(fifth.body).toMatchObject({ reason: "RATE_LIMITED", kind: "TECHNICAL_THROTTLE", scope: "principal", cost_class: "status_poll", rule: "claim_progress_checks_per_day", limit: 4, retryable: true, entitlement_affected: false });
+    expect(fifth.body.retry_after_seconds).toBeGreaterThan(0);
   });
 
   it("report whether anything changed since the last look", async () => {
