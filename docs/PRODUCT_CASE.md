@@ -153,6 +153,12 @@ It does not settle every question about legal liability for autonomous agent act
 
 It does something narrower and more immediately useful: **it gives legitimate delegation a common, explicit, machine-checkable route.**
 
+## How this proposition will be tested
+
+The claim that authorised access helps with increased automated demand remains a **hypothesis**. [VALIDATION.md](VALIDATION.md) defines seven falsifiable experiments and a key controlled comparison: a high-quality departmental agent API with service-local delegation **versus the same API with GOV.UK Delegate**. [EVIDENCE.md](EVIDENCE.md) records existing observations and future results, explicitly separating controlled evidence from source code and exploratory anecdotes. [DEMO_GUIDE.md](DEMO_GUIDE.md) sets out what we can responsibly claim to external audiences.
+
+Do not attribute benefits from idempotency, fair queueing or better API design to Delegate unless the comparison isolates Delegate's contribution. Increased *legitimate* claims are not inherently harmful agentic flooding.
+
 ## The product principle
 
 > Make legitimate automation easier than illegitimate automation.
