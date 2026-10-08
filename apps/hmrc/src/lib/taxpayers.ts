@@ -4,7 +4,7 @@ import type { Taxpayer as TaxpayerRow } from "@/generated/prisma";
 import { prisma } from "./db";
 import type { Actor } from "./delegated-authority";
 import { recordReceipt, disputedReceipts, receiptKey } from "./delegate-client";
-import type { Admitted, Tx } from "./capacity";
+import type { Admitted, Tx } from "./domain-policy";
 
 export type Taxpayer = TaxpayerRow;
 
@@ -49,7 +49,7 @@ export async function viewTaxCode(taxpayer: Taxpayer) {
   return { taxpayer: taxpayer.name, tax_year: taxpayer.taxYear, tax_code: taxpayer.taxCode, employer: taxpayer.employer, synthetic: true };
 }
 
-/** The capacity rules have already admitted this claim: a first claim, or a resubmission with new evidence. */
+/** The domain rules have already admitted this claim: a first claim, or a resubmission with new evidence. */
 export async function claimJobExpenses(taxpayer: Taxpayer, actor: Actor, admitted: Admitted | undefined, db: Tx) {
   const amendment = (admitted?.used ?? 1) > 1;
   const claim = await db.claim.create({
@@ -119,7 +119,7 @@ export async function claimProgress(taxpayer: Taxpayer, body: Record<string, unk
 }
 
 /**
- * The capacity rules have already checked the query is this person's, open.
+ * The domain rules have already checked the query is this person's, open.
  * An agent's answer is only accepted once its receipt is on the person's GOV.UK record:
  * if Delegate can't record it, this throws DelegateUnavailableError, the query stays open,
  * and the agent can retry. The receipt key is stable, so a retry never makes a second receipt.

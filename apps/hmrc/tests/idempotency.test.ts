@@ -1,7 +1,7 @@
 import { describe, it, expect, afterAll } from "vitest";
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db";
-import { withPrincipalCapacity } from "@/lib/capacity";
+import { runOperation } from "@/lib/operation";
 import { answerQuery, changeAddress, claimJobExpenses, findOrCreateTaxpayer, type Taxpayer } from "@/lib/taxpayers";
 import { signSession, SESSION_COOKIE } from "@/lib/session";
 import { POST as submitClaimForm } from "@/app/(public)/claim/submit/route";
@@ -18,9 +18,9 @@ const CLAIM = "claim_job_expenses";
 const RESPOND = "respond_to_query";
 
 const claim = (t: Taxpayer, key: string | null, evidence?: string) =>
-  withPrincipalCapacity(t, CLAIM, { evidence }, (admitted, tx) => claimJobExpenses(t, SELF, admitted, tx), { idempotencyKey: key });
+  runOperation(t, CLAIM, { evidence }, (admitted, tx) => claimJobExpenses(t, SELF, admitted, tx), { idempotencyKey: key });
 const answer = (t: Taxpayer, key: string | null, query_id: string, text: string) =>
-  withPrincipalCapacity(t, RESPOND, { query_id, answer: text, confirmed_by_person: true }, (_a, tx) => answerQuery(t, SELF, { query_id, answer: text, confirmed_by_person: true }, tx), { idempotencyKey: key });
+  runOperation(t, RESPOND, { query_id, answer: text, confirmed_by_person: true }, (_a, tx) => answerQuery(t, SELF, { query_id, answer: text, confirmed_by_person: true }, tx), { idempotencyKey: key });
 
 const claimsOf = (t: Taxpayer) => prisma.claim.count({ where: { taxpayerId: t.id, kind: "job_expenses" } });
 const recordsOf = (t: Taxpayer, operation?: string) => prisma.idempotencyRecord.count({ where: { subject: t.oneLoginSubject, ...(operation ? { operation } : {}) } });
@@ -60,7 +60,7 @@ describe("same attempt: Idempotency-Key", () => {
     const lost = await claim(t, key, "a.pdf"); // committed; the client never saw the reply
     expect(lost.ok && !lost.replayed).toBe(true);
     let ran = false;
-    const again = await withPrincipalCapacity(t, CLAIM, { evidence: "a.pdf" }, async () => { ran = true; return {}; }, { idempotencyKey: key });
+    const again = await runOperation(t, CLAIM, { evidence: "a.pdf" }, async () => { ran = true; return {}; }, { idempotencyKey: key });
     expect(ran).toBe(false);
     expect(again.ok && again.replayed).toBe(true);
     if (lost.ok && again.ok) expect(again.result).toEqual(lost.result);
@@ -99,7 +99,7 @@ describe("same attempt: Idempotency-Key", () => {
 
   it("ignores the key for operations that don't support it yet", async () => {
     const t = await person();
-    const run = () => withPrincipalCapacity(t, "change_address", {}, (_a, tx) => changeAddress(t, SELF, tx), { idempotencyKey: "same-key" });
+    const run = () => runOperation(t, "change_address", {}, (_a, tx) => changeAddress(t, SELF, tx), { idempotencyKey: "same-key" });
     expect((await run()).ok).toBe(true);
     expect((await run()).ok).toBe(true);
     expect(await recordsOf(t)).toBe(0);
@@ -163,7 +163,7 @@ describe("failure injection: no success without a durable record, no stuck PENDI
   it("a crash inside the handler rolls back the claim, the tax code change and the record; the retry is a clean first try", async () => {
     const t = await person();
     const key = randomUUID();
-    const boom = withPrincipalCapacity(t, CLAIM, { evidence: "e.pdf" }, async (admitted, tx) => {
+    const boom = runOperation(t, CLAIM, { evidence: "e.pdf" }, async (admitted, tx) => {
       await claimJobExpenses(t, SELF, admitted, tx); // claim, question and tax code written...
       throw new Error("injected: process dies before commit");
     }, { idempotencyKey: key });
@@ -183,7 +183,7 @@ describe("failure injection: no success without a durable record, no stuck PENDI
     const t = await person();
     const key = randomUUID();
     // Another writer's record appears after this attempt's lookup: only the unique index can stop us now.
-    const racing = withPrincipalCapacity(t, CLAIM, { evidence: "e.pdf" }, async (admitted, tx) => {
+    const racing = runOperation(t, CLAIM, { evidence: "e.pdf" }, async (admitted, tx) => {
       const result = await claimJobExpenses(t, SELF, admitted, tx);
       await prisma.idempotencyRecord.create({
         data: { subject: t.oneLoginSubject, operation: CLAIM, key, payloadDigest: "other", response: {}, admitted: {} },
@@ -198,7 +198,7 @@ describe("failure injection: no success without a durable record, no stuck PENDI
   it("a timed-out attempt leaves nothing behind: the lock and the transaction are released", async () => {
     const t = await person();
     const key = randomUUID();
-    const slow = withPrincipalCapacity(t, CLAIM, {}, async (admitted, tx) => {
+    const slow = runOperation(t, CLAIM, {}, async (admitted, tx) => {
       await claimJobExpenses(t, SELF, admitted, tx);
       await new Promise((r) => setTimeout(r, 300));
       throw new Error("injected: deadline exceeded");

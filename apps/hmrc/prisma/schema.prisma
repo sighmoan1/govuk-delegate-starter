@@ -130,6 +130,13 @@ model ServiceEvent {
   rule               String?
   capacityUsed       Int?     @map("capacity_used")
   capacityLimit      Int?     @map("capacity_limit")
+  // What kind of answer this was, so traffic and business are never conflated.
+  // outcome_class: UNIQUE_OPERATION | REPLAY | BUSINESS_REFUSAL | INVALID_REQUEST | TECHNICAL_THROTTLE | UNAVAILABLE | AUTHORITY_REFUSAL
+  outcomeClass       String?  @map("outcome_class")
+  costClass          String?  @map("cost_class")             // read | status_poll | write | expensive_query
+  throttleScope      String?  @map("throttle_scope")         // operator | principal | service (technical throttles only)
+  retryAfterSeconds  Int?     @map("retry_after_seconds")    // set on 429 and 503
+  authorisedCheck    Boolean  @default(false) @map("authorised_check") // GOV.UK Delegate's check authorised this request
   // Evidence about who or what was on the other end.
   userAgent          String?  @map("user_agent")
   signatureAgent     String?  @map("signature_agent")
