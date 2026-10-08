@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
+import { demoAllowed } from "@/lib/demo-gate";
 import { findOrCreateTaxpayer } from "@/lib/taxpayers";
 import { signSession, SESSION_COOKIE } from "@/lib/session";
 
 // Demo tooling, not part of the service: an ordinary signed-in session for a
 // person, as if an agent HMRC can't see were reusing their browser. Used by
-// the "undetected sessions" swarm arm. Disabled in public mode.
+// the "undetected sessions" swarm arm. Not reachable through the public tunnel.
 export async function POST(req: Request) {
-  if (process.env.PUBLIC_MODE === "true" || req.headers.get("x-demo-key") !== (process.env.DEMO_CONSOLE_KEY ?? "dev-demo-console-key")) {
+  if (!demoAllowed(req)) {
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   }
   const { subject } = (await req.json().catch(() => ({}))) as { subject?: string };

@@ -9,5 +9,6 @@ export async function GET(req: Request) {
     return new NextResponse("Invalid sign-in request.", { status: 400 });
   }
   await writeFlow({ authorize: url.searchParams.toString() });
-  return NextResponse.redirect(new URL("/sign-in", url), 303);
+  // Relative, so it stays on whatever address the person used (localhost or the public tunnel).
+  return new NextResponse(null, { status: 303, headers: { location: "/sign-in" } });
 }

@@ -35,6 +35,18 @@ Open **http://localhost:3304** and pick a scenario. Data is seeded on first star
 
 For development: `docker compose up -d db simulator`, copy each `apps/*/.env.example` to `.env` (the about app has no database), then `npm install && npm run db:migrate --workspaces && npm run db:reset && npm run dev`.
 
+### On public URLs, for agents that browse from the cloud
+
+ChatGPT agent and Google's agent browse from their own cloud machines, so they can't reach localhost. With the dev servers stopped:
+
+```bash
+npm run public        # Cloudflare quick tunnels for One Login, Delegate and HMRC, then the stack in public mode
+npm run test:public   # optional: check the public URLs from outside
+npm run public:stop   # tunnels down, simulator back to localhost, dev secrets reseeded
+```
+
+`npm run public` prints the public URLs (they change every time) and a prompt to give the agent. Public mode uses fresh random secrets, doesn't trust the local test agent (its private key is in this repository), and refuses demo tooling (reset, swarm set-up) through the tunnel. The about site and Example AI stay on localhost, and their reset buttons still work. Anyone with the URLs can use the demo while it's up. The data is synthetic, but stop it when you're done.
+
 ## The demo: three scenarios
 
 Open http://localhost:3304. Each scenario has its own page, and each page resets everything to the right starting point with one button: clean, or with Example AI already connected.

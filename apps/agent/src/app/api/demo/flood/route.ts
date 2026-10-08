@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
+import { demoAllowed } from "@/lib/demo-gate";
 import { prisma } from "@/lib/db";
 import { callHmrc, signInToDelegate } from "@/lib/gov";
 
 // Demo tooling, not part of the product: the prototype's console asks Example AI
 // to send a burst of requests to HMRC as itself, for Sam. Local use only.
 export async function POST(req: Request) {
-  if (req.headers.get("x-demo-key") !== (process.env.DEMO_CONSOLE_KEY ?? "dev-demo-console-key")) {
-    return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  if (!demoAllowed(req)) {
+    return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   }
   const { n = 40 } = (await req.json().catch(() => ({}))) as { n?: number };
   const count = Math.min(Math.max(Number(n) || 40, 1), 100);

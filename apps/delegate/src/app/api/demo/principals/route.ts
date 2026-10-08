@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
+import { demoAllowed } from "@/lib/demo-gate";
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { AUTHORISATION_DAYS } from "@/lib/config";
 
 // Demo tooling, not part of the service: N separate people, each of whom has
-// given one agent permission. Used by the "100 people" swarm arm. Disabled in
-// public mode.
+// given one agent permission. Used by the "100 people" swarm arm. Not reachable
+// through the public tunnel.
 export async function POST(req: Request) {
-  if (process.env.PUBLIC_MODE === "true" || req.headers.get("x-demo-key") !== (process.env.DEMO_CONSOLE_KEY ?? "dev-demo-console-key")) {
+  if (!demoAllowed(req)) {
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   }
   const b = (await req.json().catch(() => ({}))) as { n?: number; client_id?: string; capabilities?: string[] };

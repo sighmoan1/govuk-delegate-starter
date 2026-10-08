@@ -8,13 +8,16 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -n delegate,hmrc,agent -c blue,green,magenta \"npm:dev -w apps/delegate\" \"npm:dev -w apps/hmrc --if-present\" \"npm:dev -w apps/agent --if-present\"",
+    "dev": "concurrently -n onelogin,delegate,hmrc,agent,about -c gray,blue,green,magenta,cyan \"npm:dev -w apps/onelogin\" \"npm:dev -w apps/delegate\" \"npm:dev -w apps/hmrc\" \"npm:dev -w apps/agent\" \"npm:dev -w apps/about\"",
+    "public": "node scripts/public.mjs start",
+    "public:stop": "node scripts/public.mjs stop",
     "build": "npm run build --workspaces --if-present",
     "db:setup": "npm run db:migrate --workspaces --if-present && npm run db:seed --workspaces --if-present",
     "db:reset": "npm run db:reset --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:public": "node --env-file=.env.public ./node_modules/.bin/playwright test e2e/public.spec.ts --workers 1"
   },
   "devDependencies": {
     "@playwright/test": "^1.50.0",

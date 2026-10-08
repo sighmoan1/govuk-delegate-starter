@@ -1,6 +1,7 @@
 # GOV.UK Delegate prototype: four services, so the boundaries are real.
 #   docker compose up --build            everything
 #   docker compose up -d db simulator    just the dependencies, for `npm run dev`
+#   npm run public / npm run public:stop  the same stack on temporary public URLs (see scripts/public.mjs)
 # Ports: Delegate 3300 · One Login 3301 (simulator behind it on 3399) · HMRC 3302 · Example AI 3303 · About 3304 · Postgres 5433
 services:
   db:
@@ -28,7 +29,7 @@ services:
     ports:
       - "3399:3000"
     environment:
-      SIMULATOR_URL: http://localhost:3301
+      SIMULATOR_URL: ${ONELOGIN_PUBLIC_URL:-http://localhost:3301}
       INTERACTIVE_MODE: "false"
       CLIENT_ID: delegate-dev-client
       # Public half of the simulator's documented default test key pair.
@@ -37,8 +38,8 @@ services:
       SCOPES: openid,email
       # The simulator supports one client. Delegate and HMRC share it here; in
       # production they would be separate relying parties of One Login.
-      REDIRECT_URLS: http://localhost:3300/auth/callback,http://localhost:3302/auth/callback
-      POST_LOGOUT_REDIRECT_URLS: http://localhost:3300/
+      REDIRECT_URLS: ${DELEGATE_PUBLIC_URL:-http://localhost:3300}/auth/callback,${HMRC_PUBLIC_URL:-http://localhost:3302}/auth/callback
+      POST_LOGOUT_REDIRECT_URLS: ${DELEGATE_PUBLIC_URL:-http://localhost:3300}/
       IDENTITY_VERIFICATION_SUPPORTED: "false"
       CLAIMS: ""
 
@@ -56,6 +57,7 @@ services:
       SIMULATOR_INTERNAL_URL: http://simulator:3000
       ABOUT_URL: http://localhost:3304
       DEMO_EMAIL: sam.taylor@example.com
+      PUBLIC_MODE: ${PUBLIC_MODE:-false}
 
   delegate:
     build:
@@ -70,20 +72,21 @@ services:
       - "3300:3300"
     environment:
       DATABASE_URL: postgresql://delegate:delegate@db:5432/delegate
-      APP_URL: http://localhost:3300
+      PUBLIC_MODE: ${PUBLIC_MODE:-false}
+      APP_URL: ${DELEGATE_PUBLIC_URL:-http://localhost:3300}
       # Browser-facing issuer vs. the address the app container uses server-side.
-      OIDC_ISSUER: http://localhost:3301
+      OIDC_ISSUER: ${ONELOGIN_PUBLIC_URL:-http://localhost:3301}
       OIDC_INTERNAL_URL: http://simulator:3000
       OIDC_CLIENT_ID: delegate-dev-client
       OIDC_PRIVATE_KEY_FILE: ../../dev/oidc-client-private.pem
-      SESSION_SECRET: dev-only-session-secret-change-me-0123456789
-      AGENT_TOKEN_SECRET: dev-only-agent-token-secret-change-me-0123456789
+      SESSION_SECRET: ${DELEGATE_SESSION_SECRET:-dev-only-session-secret-change-me-0123456789}
+      AGENT_TOKEN_SECRET: ${AGENT_TOKEN_SECRET:-dev-only-agent-token-secret-change-me-0123456789}
       DEMO_AGENT_CLIENT_ID: demo-personal-agent
-      DEMO_AGENT_CLIENT_SECRET: dev-demo-agent-secret
-      HMRC_SERVICE_KEY: dev-hmrc-service-key
+      DEMO_AGENT_CLIENT_SECRET: ${AGENT_CLIENT_SECRET:-dev-demo-agent-secret}
+      HMRC_SERVICE_KEY: ${HMRC_SERVICE_KEY:-dev-hmrc-service-key}
       AGENT_URL: http://localhost:3303
       ABOUT_URL: http://localhost:3304
-      DEMO_CONSOLE_KEY: dev-demo-console-key
+      DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:-dev-demo-console-key}
 
   hmrc:
     build:
@@ -98,18 +101,19 @@ services:
       - "3302:3302"
     environment:
       DATABASE_URL: postgresql://delegate:delegate@db:5432/hmrc
-      APP_URL: http://localhost:3302
-      OIDC_ISSUER: http://localhost:3301
+      PUBLIC_MODE: ${PUBLIC_MODE:-false}
+      APP_URL: ${HMRC_PUBLIC_URL:-http://localhost:3302}
+      OIDC_ISSUER: ${ONELOGIN_PUBLIC_URL:-http://localhost:3301}
       OIDC_INTERNAL_URL: http://simulator:3000
       OIDC_CLIENT_ID: delegate-dev-client
       OIDC_PRIVATE_KEY_FILE: ../../dev/oidc-client-private.pem
-      SESSION_SECRET: dev-only-hmrc-session-secret-change-me-0123456789
-      DELEGATE_URL: http://localhost:3300
+      SESSION_SECRET: ${HMRC_SESSION_SECRET:-dev-only-hmrc-session-secret-change-me-0123456789}
+      DELEGATE_URL: ${DELEGATE_PUBLIC_URL:-http://localhost:3300}
       DELEGATE_INTERNAL_URL: http://delegate:3300
       DELEGATE_SERVICE_SLUG: hmrc-personal-tax
-      HMRC_SERVICE_KEY: dev-hmrc-service-key
+      HMRC_SERVICE_KEY: ${HMRC_SERVICE_KEY:-dev-hmrc-service-key}
       ABOUT_URL: http://localhost:3304
-      DEMO_CONSOLE_KEY: dev-demo-console-key
+      DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:-dev-demo-console-key}
 
   agent:
     build:
@@ -127,14 +131,14 @@ services:
     environment:
       DATABASE_URL: postgresql://delegate:delegate@db:5432/agent
       APP_URL: http://localhost:3303
-      DELEGATE_URL: http://localhost:3300
+      DELEGATE_URL: ${DELEGATE_PUBLIC_URL:-http://localhost:3300}
       DELEGATE_INTERNAL_URL: http://delegate:3300
       AGENT_CLIENT_ID: demo-personal-agent
-      AGENT_CLIENT_SECRET: dev-demo-agent-secret
-      HMRC_URL: http://localhost:3302
+      AGENT_CLIENT_SECRET: ${AGENT_CLIENT_SECRET:-dev-demo-agent-secret}
+      HMRC_URL: ${HMRC_PUBLIC_URL:-http://localhost:3302}
       HMRC_INTERNAL_URL: http://hmrc:3302
       ABOUT_URL: http://localhost:3304
-      DEMO_CONSOLE_KEY: dev-demo-console-key
+      DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:-dev-demo-console-key}
 
   # Not part of the scenario: the prototype's own notes and demo console.
   about:
@@ -148,14 +152,14 @@ services:
     ports:
       - "3304:3304"
     environment:
-      DELEGATE_URL: http://localhost:3300
+      DELEGATE_URL: ${DELEGATE_PUBLIC_URL:-http://localhost:3300}
       DELEGATE_INTERNAL_URL: http://delegate:3300
-      HMRC_URL: http://localhost:3302
+      HMRC_URL: ${HMRC_PUBLIC_URL:-http://localhost:3302}
       HMRC_INTERNAL_URL: http://hmrc:3302
       AGENT_URL: http://localhost:3303
       AGENT_INTERNAL_URL: http://agent:3303
-      ONE_LOGIN_URL: http://localhost:3301
-      DEMO_CONSOLE_KEY: dev-demo-console-key
+      ONE_LOGIN_URL: ${ONELOGIN_PUBLIC_URL:-http://localhost:3301}
+      DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:-dev-demo-console-key}
       HMRC_MIDDLEWARE_FILE: ../hmrc/src/lib/delegated-authority.ts
 
 volumes:
