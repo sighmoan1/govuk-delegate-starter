@@ -15,6 +15,32 @@ Maintain and extend the current four-app synthetic HMRC prototype. Read `docs/CU
 
 Verify request → consent → scoped authority → service action → outcome → revocation → refusal, preserving both API and browser-agent journeys. The service owns domain validation, idempotency, technical throughput and durable queue processing; Delegate owns consent and authority.
 
+## Work tracking — required
+
+Make your work visible in GitHub before editing files. An agent's private working context is not a project status.
+
+1. **Claim one issue before coding.** Find the existing issue that describes the work. Comment on it with:
+   - a unique agent or run ID (a GitHub username alone is not enough when several agents share an account);
+   - the issue number and concise scope;
+   - the branch name;
+   - likely files or components you expect to change;
+   - current status (`claimed`, `in progress`, or `blocked`);
+   - related active issues or possible overlap.
+   
+   Check recent issue comments and open pull requests for overlapping work before proceeding. If the work has no issue, create one before editing. If you cannot write the claim to GitHub, report that as blocked and do not start overlapping implementation work.
+
+2. **Use one branch and focused PR per issue.** Name the branch so it includes the issue number. Open a draft pull request as soon as there is a meaningful first checkpoint; link the issue and summarize the scope. Keep the PR focused on that issue.
+
+3. **Post checkpoints.** Update the issue or linked PR when the work materially changes status: when implementation starts, when blocked or paused, when the draft is ready for review, and when complete. Include what changed, what remains, blockers or dependencies, tests run and the next step. For long-running work, post a concise progress update at least once per working session.
+
+4. **Coordinate shared files.** If another active claim or PR touches the same files or behavior, agree how to split or sequence the work before editing those areas. Update the issue/PR if the scope changes. Do not silently take over another agent's claim.
+
+5. **Close issues accurately.**
+   - For code work, do not close the issue while its PR is still open or awaiting review. Put `Closes #<issue-number>` in the PR description; GitHub will close the issue when that PR is merged. Before requesting review, report the acceptance criteria met and the actual test commands/results. If the issue is complete but the PR is not merged, mark it ready for review and leave it open.
+   - For a non-code issue with no PR, close it only after its stated acceptance criteria are met. Post a completion comment summarizing the outcome and evidence, then close it.
+   - If a decision, approval or acceptance test still needs a human owner, leave the issue open, state exactly what is needed, and request that owner's review or closure. Do not present a proposed decision as approved.
+   - If work is abandoned or handed off, post the current state and remaining work, then release the claim so another agent can take it.
+
 ## Architectural rule
 
 **Copy HMRC's relationship-based agent-authorisation pattern before inventing new protocol machinery.**
