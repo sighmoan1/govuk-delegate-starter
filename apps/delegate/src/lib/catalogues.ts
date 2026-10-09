@@ -53,13 +53,23 @@ export async function publishCatalogue(serviceId:string,catalogue:Catalogue){
  return prisma.$transaction(async tx=>{
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`catalogue:${serviceId}`},0))`;
   const same=await tx.serviceCatalogue.findUnique({where:{serviceId_version:{serviceId,version:catalogue.version}}});
-  if(same){if(same.digest!==digest)throw new DomainError('VERSION_CONTENT_CONFLICT','Published versions cannot change',409);return {row:same,replayed:true};}
+  const hydrateLegacy = async () => {
+   for(const c of catalogue.capabilities) await tx.capability.updateMany({where:{serviceId,catalogueId:null,code:c.code,name:c.name,riskLevel:c.risk,requiresStepUp:c.requires_step_up,metadata:{equals:Prisma.DbNull}},data:{metadata:JSON.parse(JSON.stringify(c))}});
+  };
+  if(same){
+   if(same.digest!==digest)throw new DomainError('VERSION_CONTENT_CONFLICT','Published versions cannot change',409);
+   // An upgrade can materialise a publication created before this adapter existed.
+   // Replaying the first version must also supply equivalent legacy presentation.
+   const first=await tx.serviceCatalogue.findFirst({where:{serviceId},orderBy:{version:'asc'}});
+   if(first?.id===same.id) await hydrateLegacy();
+   return {row:same,replayed:true};
+  }
   const latest=await tx.serviceCatalogue.findFirst({where:{serviceId},orderBy:{version:'desc'}});
   if(latest && catalogue.version<=latest.version)throw new DomainError('VERSION_NOT_INCREASING','New versions must increase',409);
   const row=await tx.serviceCatalogue.create({data:{serviceId,version:catalogue.version,digest,document:JSON.parse(JSON.stringify(catalogue))}});
   // First registration can supply presentation metadata to equivalent legacy
   // permissions without changing their IDs, name, risk or step-up requirement.
-  if(!latest) for(const c of catalogue.capabilities) await tx.capability.updateMany({where:{serviceId,catalogueId:null,code:c.code,name:c.name,riskLevel:c.risk,requiresStepUp:c.requires_step_up,metadata:{equals:Prisma.DbNull}},data:{metadata:JSON.parse(JSON.stringify(c))}});
+  if(!latest) await hydrateLegacy();
   await tx.capability.createMany({data:catalogue.capabilities.map((c,i)=>({serviceId,catalogueId:row.id,code:c.code,name:c.name,riskLevel:c.risk,requiresStepUp:c.requires_step_up,sortOrder:i,metadata:JSON.parse(JSON.stringify(c))}))});
   return {row,replayed:false};
  });

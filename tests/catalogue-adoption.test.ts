@@ -1,7 +1,7 @@
 import { afterAll, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db";
-import { currentCapabilities, publishCatalogue, validateCatalogue, type Catalogue } from "@/lib/catalogues";
+import { catalogueDigest, currentCapabilities, publishCatalogue, validateCatalogue, type Catalogue } from "@/lib/catalogues";
 import { parseProposal } from "@/lib/step-ups";
 import { seedDemo } from "@/lib/demo-seed";
 import { createRequest, approveRequest } from "@/lib/requests";
@@ -61,4 +61,14 @@ it("citizen reset uses the latest registered HMRC text and preserves all publica
  } finally {
   await publishCatalogue(service.id,{...original,version:changed.version+1});
  }
+});
+
+it("bootstrap replay of a pre-adoption publication hydrates equivalent legacy presentation", async () => {
+ const service=await prisma.service.create({data:{slug:"pre-adoption-"+randomUUID(),name:"Synthetic upgrade",apiKeyHash:hashSecret("fixture-key")}});
+ const cap={code:"change_record",name:"Change record",description:"Synthetic",risk:"HIGH" as const,requires_step_up:true,minimum_assurance:"REGISTERED" as const,operation:{method:"POST" as const,path:"/api/record"},approval_fields:[{key:"value",label:"Value",required:true,max:8,normalisation:"text" as const}]};
+ const doc:Catalogue={schema_version:1,service:service.slug,version:1,capabilities:[cap]};
+ const legacy=await prisma.capability.create({data:{serviceId:service.id,code:cap.code,name:cap.name,riskLevel:"HIGH",requiresStepUp:true}});
+ await prisma.serviceCatalogue.create({data:{serviceId:service.id,version:1,digest:catalogueDigest(doc),document:JSON.parse(JSON.stringify(doc))}});
+ expect((await publishCatalogue(service.id,doc)).replayed).toBe(true);
+ expect(await prisma.capability.findUnique({where:{id:legacy.id}})).toMatchObject({id:legacy.id,riskLevel:"HIGH",requiresStepUp:true,metadata:cap});
 });
