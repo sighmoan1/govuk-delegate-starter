@@ -16,7 +16,9 @@ trap restore EXIT
 # Never recreate the other services, and restore HMRC before later integration.
 docker compose stop hmrc
 docker compose run -d --no-deps --service-ports --name "$sensor_container" \
-  -e FINGERPRINT_RESEARCH_ENABLED=true -e NEXT_PUBLIC_FINGERPRINT_API_KEY= hmrc
+  -e FINGERPRINT_RESEARCH_ENABLED=true -e NEXT_PUBLIC_FINGERPRINT_API_KEY= \
+  -e RESEARCH_FEED_ENABLED=true -e RESEARCH_FEED_KEY=ci-fingerprint-feed-key \
+  -e RESEARCH_PSEUDONYM_KEY=ci-fingerprint-project-hmac-key-at-least-32-characters hmrc
 bash scripts/ci-wait.sh
 FINGERPRINT_EXPECT_MISSING=true npx playwright test e2e/fingerprint.spec.ts \
   --reporter=list --output=test-results/fingerprint-missing
