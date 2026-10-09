@@ -37,7 +37,10 @@ test("consent: sign in with One Login, narrow the request, allow; then remove ac
   await signInIfAsked(page);
 
   await expect(page.getByRole("heading", { level: 1, name: "Personal assistant wants to act for you" })).toBeVisible();
-  await page.getByLabel(/Update your employment details/).uncheck();
+  for (const checkbox of await page.getByRole("checkbox").all()) await expect(checkbox).not.toBeChecked();
+  await page.getByLabel(/View your tax code/).check();
+  await page.getByLabel(/Claim tax relief for working from home/).check();
+  await expect(page.getByLabel(/Update your employment details/)).not.toBeChecked();
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("heading", { name: "Check what you are allowing" })).toBeVisible();
   await expect(page.getByText("Not allowed to")).toBeVisible();
@@ -55,6 +58,7 @@ test("the person sees what an agent said they agreed to, can say they didn't, an
   const req = await createRequest();
   await page.goto(req.consent_url);
   await signInIfAsked(page);
+  for (const checkbox of await page.getByRole("checkbox").all()) await checkbox.check();
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("button", { name: "Allow" }).click();
   await expect(page.getByRole("heading", { name: "Agent authorised" })).toBeVisible();

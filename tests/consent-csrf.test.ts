@@ -89,3 +89,24 @@ describe("consent decision CSRF defence", () => {
     expect(await prisma.authorisation.count({ where: { principalId: p.id } })).toBe(1);
   });
 });
+
+// Catalogue rendering must preserve the existing session boundary and must not
+// turn an injected checkbox into new authority.
+it("unknown scopes cannot widen an approval", async () => {
+  const { id, cookie } = await pending();
+  const r = await post(id, cookie, { decision: "approve", c: ["view_tax_code", "extra_scope"], csrf: decisionToken(cookie, id) });
+  expect(r.headers.get("location")).toContain("error=NOT_REQUESTED");
+  expect(await status(id)).toBe("PENDING");
+});
+it("a different signed-in principal cannot decide the request", async () => {
+  const a = await pending(); const b = await pending();
+  const r = await post(a.id, b.cookie, { decision: "reject", csrf: decisionToken(b.cookie, a.id) });
+  expect(r.headers.get("location")).toContain("error=NOT_FOUND");
+  expect(await status(a.id)).toBe("PENDING");
+});
+it("a missing session is redirected to login and cannot approve", async () => {
+  const { id } = await pending();
+  const r = await post(id, "", { decision: "approve", c: "view_tax_code", csrf: "fake" });
+  expect(r.headers.get("location")).toContain("/auth/login");
+  expect(await status(id)).toBe("PENDING");
+});
