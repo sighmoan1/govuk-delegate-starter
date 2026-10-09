@@ -1,8 +1,8 @@
-# GOV.UK Delegate prototype: five applications, so the boundaries are real.
+# GOV.UK Delegate prototype: six applications, so the boundaries are real.
 #   docker compose up --build            everything
 #   docker compose up -d db simulator    just the dependencies, for `npm run dev`
 #   npm run public / npm run public:stop  the same stack on temporary public URLs (see scripts/public.mjs)
-# Ports: Delegate 3300 · One Login 3301 (simulator behind it on 3399) · HMRC 3302 · Observatory 3303 · About 3304 · Postgres 5433
+# Ports: Delegate 3300 · One Login 3301 (simulator behind it on 3399) · HMRC 3302 · Observatory 3303 · About 3304 · Council 3305 · Postgres 5433
 services:
   db:
     image: postgres:16-alpine
@@ -186,6 +186,36 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+
+  # Registration is configuration; Delegate contains no council-specific code.
+  council-register:
+    build:
+      context: .
+      dockerfile: apps/delegate/Dockerfile
+    command: ["sh", "-c", "for attempt in 1 2 3 4 5 6 7 8 9 10; do npm run catalogue:register && exit 0; sleep 3; done; exit 1"]
+    volumes:
+      - ./apps/council/service-catalogue.json:/repo/apps/council/service-catalogue.json:ro
+    depends_on:
+      delegate:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://delegate:delegate@db:5432/delegate
+      SERVICE_CATALOGUE_FILE: ../council/service-catalogue.json
+      DEMO_SERVICE_NAME: Example council
+      HMRC_SERVICE_KEY: ${COUNCIL_SERVICE_KEY:-dev-council-service-key}
+
+  council:
+    build:
+      context: .
+      dockerfile: apps/council/Dockerfile
+    depends_on:
+      council-register:
+        condition: service_completed_successfully
+    ports:
+      - "3305:3305"
+    environment:
+      DELEGATE_INTERNAL_URL: http://delegate:3300
+      COUNCIL_SERVICE_KEY: ${COUNCIL_SERVICE_KEY:-dev-council-service-key}
 
 volumes:
   dbdata:

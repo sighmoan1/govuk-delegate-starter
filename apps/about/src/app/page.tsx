@@ -69,6 +69,9 @@ export default async function Overview({ searchParams }: { searchParams: Promise
         never gives more capacity, and the limits work when detection fails.
       </p>
 
+      <p>A tiny synthetic council service also uses the same consent and authority interfaces, with its own service key,
+        capability catalogue and case records. It checks case ownership itself. This demonstrates service integration;
+        production identity correlation remains <a href="https://github.com/sighmoan1/govuk-delegate-starter/issues/35">an open question</a>.</p>
       <p><a href="/ask-your-agent">Ask your own agent</a> to find out about a claim, submit one, answer HMRC’s question with you, or keep you posted.</p>
 
       <h2>What would count as evidence?</h2>
