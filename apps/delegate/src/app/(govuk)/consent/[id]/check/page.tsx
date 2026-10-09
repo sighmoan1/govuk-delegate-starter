@@ -29,7 +29,7 @@ export default async function Check({
   const requested = req.permissions.map((p) => p.capability);
   const allowed = requested.filter((c) => picked.includes(c.code));
   if (allowed.length === 0) redirect(`/consent/${id}?error=NO_PERMISSIONS`);
-  const all = await prisma.capability.findMany({ where: { serviceId: req.serviceId }, orderBy: { sortOrder: "asc" } });
+  const all = await prisma.capability.findMany({ where: { serviceId: req.serviceId, catalogueId: req.permissions[0]?.capability.catalogueId ?? null }, orderBy: { sortOrder: "asc" } });
   const notAllowed = all.filter((c) => !allowed.some((a) => a.id === c.id));
   const qs = allowed.map((c) => `c=${c.code}`).join("&");
 

@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "service": "hmrc-personal-tax",
+  "version": 1,
+  "capabilities": [
+    {
+      "code": "view_tax_code",
+      "name": "View your tax code",
+      "description": "View your tax code. Synthetic HMRC prototype data only.",
+      "risk": "LOW",
+      "requires_step_up": false,
+      "minimum_assurance": "DECLARED",
+      "operation": {
+        "method": "GET",
+        "path": "/api/tax-code"
+      }
+    },
+    {
+      "code": "claim_job_expenses",
+      "name": "Claim tax relief for working from home",
+      "description": "Claim tax relief for working from home. Synthetic HMRC prototype data only.",
+      "risk": "MEDIUM",
+      "requires_step_up": false,
+      "minimum_assurance": "DECLARED",
+      "operation": {
+        "method": "POST",
+        "path": "/api/job-expenses"
+      }
+    },
+    {
+      "code": "update_employment",
+      "name": "Update your employment details",
+      "description": "Update your employment details. Synthetic HMRC prototype data only.",
+      "risk": "MEDIUM",
+      "requires_step_up": false,
+      "minimum_assurance": "DECLARED",
+      "operation": {
+        "method": "POST",
+        "path": "/api/employment"
+      }
+    },
+    {
+      "code": "change_refund_account",
+      "name": "Change the bank account for refunds",
+      "description": "Change the bank account for refunds. Synthetic HMRC prototype data only.",
+      "risk": "HIGH",
+      "requires_step_up": true,
+      "minimum_assurance": "REGISTERED",
+      "operation": {
+        "method": "POST",
+        "path": "/api/refund-account"
+      },
+      "approval_fields": [
+        {
+          "key": "account_name",
+          "label": "Name on the account",
+          "required": true,
+          "max": 60,
+          "normalisation": "text"
+        },
+        {
+          "key": "sort_code",
+          "label": "Sort code",
+          "required": true,
+          "max": 8,
+          "normalisation": "digit_groups",
+          "group_size": 2,
+          "group_count": 3,
+          "pattern": "^[0-9]{2}-[0-9]{2}-[0-9]{2}$"
+        },
+        {
+          "key": "account_number",
+          "label": "Account number",
+          "required": true,
+          "max": 8,
+          "normalisation": "digits",
+          "pattern": "^[0-9]{8}$",
+          "display_last": 4
+        }
+      ]
+    },
+    {
+      "code": "change_address",
+      "name": "Change your address",
+      "description": "Change your address. Synthetic HMRC prototype data only.",
+      "risk": "HIGH",
+      "requires_step_up": true,
+      "minimum_assurance": "REGISTERED",
+      "operation": {
+        "method": "POST",
+        "path": "/api/address"
+      },
+      "approval_fields": [
+        {
+          "key": "address_line_1",
+          "label": "Address line 1",
+          "required": true,
+          "max": 80,
+          "normalisation": "text"
+        },
+        {
+          "key": "address_line_2",
+          "label": "Address line 2",
+          "required": false,
+          "max": 80,
+          "normalisation": "text"
+        },
+        {
+          "key": "town",
+          "label": "Town or city",
+          "required": true,
+          "max": 60,
+          "normalisation": "text"
+        },
+        {
+          "key": "postcode",
+          "label": "Postcode",
+          "required": true,
+          "max": 10,
+          "normalisation": "uppercase",
+          "pattern": "^[A-Z0-9][A-Z0-9 ]{2,8}[A-Z0-9]$"
+        }
+      ]
+    },
+    {
+      "code": "view_claim_status",
+      "name": "See how your claims are going",
+      "description": "See how your claims are going. Synthetic HMRC prototype data only.",
+      "risk": "LOW",
+      "requires_step_up": false,
+      "minimum_assurance": "DECLARED",
+      "operation": {
+        "method": "GET",
+        "path": "/api/claims"
+      }
+    },
+    {
+      "code": "respond_to_query",
+      "name": "Answer HMRC’s questions about your claim",
+      "description": "Answer HMRC’s questions about your claim. Synthetic HMRC prototype data only.",
+      "risk": "MEDIUM",
+      "requires_step_up": false,
+      "minimum_assurance": "DECLARED",
+      "operation": {
+        "method": "POST",
+        "path": "/api/claims/respond"
+      }
+    },
+    {
+      "code": "check_claim_progress",
+      "name": "Check your claim progress on a schedule (a few times a day)",
+      "description": "Check your claim progress on a schedule (a few times a day). Synthetic HMRC prototype data only.",
+      "risk": "LOW",
+      "requires_step_up": false,
+      "minimum_assurance": "DECLARED",
+      "operation": {
+        "method": "GET",
+        "path": "/api/claims/progress"
+      }
+    }
+  ]
+}

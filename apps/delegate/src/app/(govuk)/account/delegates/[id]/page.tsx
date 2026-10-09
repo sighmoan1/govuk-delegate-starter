@@ -28,7 +28,7 @@ export default async function AuthorisationDetail({
     include: { delegate: true, service: true, permissions: { include: { capability: true } } },
   });
   if (!a || a.principalId !== principal.id) notFound();
-  const all = await prisma.capability.findMany({ where: { serviceId: a.serviceId }, orderBy: { sortOrder: "asc" } });
+  const all = await prisma.capability.findMany({ where: { serviceId: a.serviceId, catalogueId: a.permissions[0]?.capability.catalogueId ?? null }, orderBy: { sortOrder: "asc" } });
   const allowed = all.filter((c) => a.permissions.some((p) => p.capabilityId === c.id));
   const notAllowed = all.filter((c) => !allowed.includes(c));
   const events = await prisma.activityEvent.findMany({

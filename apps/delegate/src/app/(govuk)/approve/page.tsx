@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { currentPrincipal } from "@/lib/session";
 import { fmt } from "@/lib/format";
-import { CHANGE_HEADLINE, viewOf, type DisplayRow } from "@/lib/step-ups";
+import { viewOf, type DisplayRow } from "@/lib/step-ups";
 import { decideStepUp } from "./actions";
 
 export const metadata: Metadata = { title: "Approve a change" };
@@ -29,7 +29,7 @@ export default async function Approve({ searchParams }: { searchParams: Promise<
 
   // A code for one proposed change. It only opens for the person it was issued to.
   const row = normalised
-    ? await prisma.stepUp.findUnique({ where: { userCode: normalised }, include: { mandate: { include: { delegate: true, service: true } } } })
+    ? await prisma.stepUp.findUnique({ where: { userCode: normalised }, include: { mandate: { include: { delegate: true, service: true, permissions: { include: { capability: true } } } } } })
     : null;
   const stepUp = row && row.mandate.principalId === principal.id ? row : null;
 
@@ -77,7 +77,7 @@ export default async function Approve({ searchParams }: { searchParams: Promise<
     <div className="two-thirds">
       <span className="caption">{service}</span>
       <h1>{agent} wants to make this change</h1>
-      <p><strong>{CHANGE_HEADLINE[stepUp.capability] ?? stepUp.capability}</strong></p>
+      <p><strong>{stepUp.mandate.permissions.find(p => p.capability.code === stepUp.capability)?.capability.name ?? stepUp.capability}</strong></p>
       <dl className="summary-list">
         {details.map((d) => (
           <div key={d.label}><dt>{d.label}</dt><dd>{d.value}</dd></div>

@@ -19,6 +19,17 @@ export type SeedOptions = { withAuthority?: boolean };
 export type SeedResult = { principalId: string; granted: string[] };
 
 export async function seedDemo(prisma: PrismaClient, opts: SeedOptions = {}): Promise<SeedResult> {
+  const registeredService = await prisma.service.findUniqueOrThrow({where:{slug:process.env.DEMO_SERVICE_SLUG ?? "hmrc-personal-tax"}});
+  const publication = await prisma.serviceCatalogue.findFirst({where:{serviceId:registeredService.id},orderBy:{version:"desc"}});
+  const definitions = await prisma.capability.findMany({where:{serviceId:registeredService.id,catalogueId:publication?.id??null},orderBy:{sortOrder:"asc"}});
+  if(!definitions.length) throw new Error("Register the service catalogue before seeding citizen fixtures.");
+  const granted = definitions.filter(c => !c.requiresStepUp).slice(0, 2).map(c => c.code);
+  const caps = Object.fromEntries(definitions.map(c => [c.code,c.id]));
+  const read = definitions[0].code;
+  const write = granted[1] ?? read;
+  const consequential = definitions.find(c => c.requiresStepUp)?.code ?? read;
+  const other = definitions.find(c => !granted.includes(c.code))?.code ?? read;
+
   // Idempotent: re-running restores the clean demo starting state.
   await prisma.receipt.deleteMany();
   await prisma.stepUp.deleteMany();
@@ -26,7 +37,6 @@ export async function seedDemo(prisma: PrismaClient, opts: SeedOptions = {}): Pr
   await prisma.activityEvent.deleteMany();
   await prisma.authorisationRequest.deleteMany();
   await prisma.authorisation.deleteMany();
-  await prisma.capability.deleteMany();
   // Service identities and immutable catalogue publications survive a citizen demo reset.
   await prisma.delegate.deleteMany();
   await prisma.principal.deleteMany();
@@ -46,33 +56,7 @@ export async function seedDemo(prisma: PrismaClient, opts: SeedOptions = {}): Pr
     },
   });
 
-  // HMRC registers once: a name, a slug and a key it will present to the check API.
-  const service = await prisma.service.upsert({
-    where: { slug: "hmrc-personal-tax" },
-    update: {},
-    create: {
-      name: "HMRC",
-      slug: "hmrc-personal-tax",
-      apiKeyHash: hash(process.env.HMRC_SERVICE_KEY ?? "dev-hmrc-service-key"),
-    },
-  });
-  const defs = [
-    ["view_tax_code", "View your tax code", "LOW", false],
-    ["claim_job_expenses", "Claim tax relief for working from home", "MEDIUM", false],
-    ["update_employment", "Update your employment details", "MEDIUM", false],
-    ["change_refund_account", "Change the bank account for refunds", "HIGH", true],
-    ["change_address", "Change your address", "HIGH", true],
-    ["view_claim_status", "See how your claims are going", "LOW", false],
-    ["respond_to_query", "Answer HMRC’s questions about your claim", "MEDIUM", false],
-    ["check_claim_progress", "Check your claim progress on a schedule (a few times a day)", "LOW", false],
-  ] as const;
-  const caps: Record<string, string> = {};
-  for (const [i, [code, name, risk, step]] of defs.entries()) {
-    const c = await prisma.capability.create({
-      data: { serviceId: service.id, code, name, riskLevel: risk, requiresStepUp: step, sortOrder: i },
-    });
-    caps[code] = c.id;
-  }
+  const service = registeredService;
 
   // History so the activity view is useful before the first demo transaction:
   // an earlier relationship, since removed, plus some traffic outside the trusted lane.
@@ -86,7 +70,7 @@ export async function seedDemo(prisma: PrismaClient, opts: SeedOptions = {}): Pr
       validFrom: new Date(now - 20 * 86_400_000),
       validUntil: new Date(now + 10 * 86_400_000),
       revokedAt: new Date(now - 90 * MIN),
-      permissions: { create: [caps.view_tax_code, caps.claim_job_expenses].map((capabilityId) => ({ capabilityId })) },
+      permissions: { create: granted.map(code => caps[code]).map((capabilityId) => ({ capabilityId })) },
     },
   });
 
@@ -114,28 +98,27 @@ export async function seedDemo(prisma: PrismaClient, opts: SeedOptions = {}): Pr
 
   await prisma.activityEvent.createMany({
     data: [
-      agent(300, "view_tax_code", true),
-      agent(298, "claim_job_expenses", true),
-      agent(240, "view_tax_code", true),
-      agent(235, "change_refund_account", false, "PERMISSION_MISSING"),
-      agent(180, "view_tax_code", true),
-      agent(176, "claim_job_expenses", true),
-      agent(170, "update_employment", false, "PERMISSION_MISSING"),
-      agent(120, "view_tax_code", true),
-      agent(95, "view_tax_code", true),
-      agent(80, "view_tax_code", false, "AUTHORISATION_REVOKED"),
-      agent(78, "claim_job_expenses", false, "AUTHORISATION_REVOKED"),
-      ev(260, { lane: "AUTHENTICATED_HUMAN", decision: "ALLOW", reason: "HUMAN_SESSION", capability: "view_tax_code" }),
-      ev(150, { lane: "AUTHENTICATED_HUMAN", decision: "ALLOW", reason: "HUMAN_SESSION", capability: "view_tax_code" }),
+      agent(300, read, true),
+      agent(298, write, true),
+      agent(240, read, true),
+      agent(235, consequential, false, "PERMISSION_MISSING"),
+      agent(180, read, true),
+      agent(176, write, true),
+      agent(170, other, false, "PERMISSION_MISSING"),
+      agent(120, read, true),
+      agent(95, read, true),
+      agent(80, read, false, "AUTHORISATION_REVOKED"),
+      agent(78, write, false, "AUTHORISATION_REVOKED"),
+      ev(260, { lane: "AUTHENTICATED_HUMAN", decision: "ALLOW", reason: "HUMAN_SESSION", capability: read }),
+      ev(150, { lane: "AUTHENTICATED_HUMAN", decision: "ALLOW", reason: "HUMAN_SESSION", capability: read }),
       ...[210, 209, 208, 207, 206, 205].map((m, i) =>
-        ev(m, { lane: "UNTRUSTED", decision: "DENY", reason: i === 5 ? "RATE_LIMITED" : "INVALID_AGENT_AUTHENTICATION", capability: "view_tax_code" })),
-      ev(130, { lane: "UNTRUSTED", decision: "DENY", reason: "UNKNOWN_DELEGATE", capability: "view_tax_code", presentedClientId: "unregistered-helper-bot" }),
+        ev(m, { lane: "UNTRUSTED", decision: "DENY", reason: i === 5 ? "RATE_LIMITED" : "INVALID_AGENT_AUTHENTICATION", capability: read })),
+      ev(130, { lane: "UNTRUSTED", decision: "DENY", reason: "UNKNOWN_DELEGATE", capability: read, presentedClientId: "unregistered-helper-bot" }),
     ],
   });
 
   // Optional starting point: Sam has already let the assistant view her tax code
   // and claim working-from-home relief, as if she had done it on the consent screen.
-  const granted = ["view_tax_code", "claim_job_expenses"];
   if (opts.withAuthority) {
     const now = Date.now();
     const auth = await prisma.authorisation.create({

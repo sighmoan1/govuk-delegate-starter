@@ -43,28 +43,17 @@ export type StepUpInfo = {
 
 // ── The content of a proposal ───────────────────────────────────────────────
 
-type Field = { key: string; label: string; required: boolean; max: number; normalise: (v: string) => string; valid: (v: string) => boolean; show?: (v: string) => string };
-const digits = (v: string) => v.replace(/\D/g, "");
-const text = (v: string) => v.trim().replace(/\s+/g, " ");
-
-/** Mocked bank and address details. Nothing here is validated against a real bank or the Royal Mail. */
-const CONTENT: Record<string, Field[]> = {
-  change_refund_account: [
-    { key: "account_name", label: "Name on the account", required: true, max: 60, normalise: text, valid: (v) => v.length > 0 },
-    { key: "sort_code", label: "Sort code", required: true, max: 8, normalise: (v) => digits(v).replace(/^(\d{2})(\d{2})(\d{2})$/, "$1-$2-$3"), valid: (v) => /^\d{2}-\d{2}-\d{2}$/.test(v) },
-    { key: "account_number", label: "Account number", required: true, max: 8, normalise: digits, valid: (v) => /^\d{8}$/.test(v), show: (v) => `ending ${v.slice(-4)}` },
-  ],
-  change_address: [
-    { key: "address_line_1", label: "Address line 1", required: true, max: 80, normalise: text, valid: (v) => v.length > 0 },
-    { key: "address_line_2", label: "Address line 2", required: false, max: 80, normalise: text, valid: () => true },
-    { key: "town", label: "Town or city", required: true, max: 60, normalise: text, valid: (v) => v.length > 0 },
-    { key: "postcode", label: "Postcode", required: true, max: 10, normalise: (v) => text(v).toUpperCase(), valid: (v) => /^[A-Z0-9][A-Z0-9 ]{2,8}[A-Z0-9]$/.test(v) },
-  ],
-};
-
-export const CHANGE_HEADLINE: Record<string, string> = {
-  change_refund_account: "Change the bank account your tax refunds are paid into",
-  change_address: "Change the address HMRC holds for you",
+// Presentation and shape declarations come from the mandate's immutable catalogue.
+import type { ApprovalField } from "./catalogues";
+const normalise = (f: ApprovalField, value: string) => {
+ const text = value.trim().replace(/\s+/g, " ");
+ if(f.normalisation === "uppercase") return text.toUpperCase();
+ if(f.normalisation === "digits" || f.normalisation === "digit_groups") {
+  const digits=value.replace(/\D/g, "");
+  if(f.normalisation === "digit_groups" && digits.length === f.group_size! * f.group_count!) return digits.match(new RegExp(`.{${f.group_size}}`, "g"))!.join("-");
+  return digits;
+ }
+ return text;
 };
 
 const KEY = /^[\x21-\x7e]{1,128}$/;
@@ -80,8 +69,7 @@ export type ParsedProposal =
   | { ok: false; message: string };
 
 /** Delegate normalises the content itself, so the digest and what the person sees come from the same values. */
-export function parseProposal(serviceSlug: string, capability: string, input: ProposalInput): ParsedProposal {
-  const fields = CONTENT[capability];
+export function parseProposal(serviceSlug: string, capability: string, input: ProposalInput, fields?: ApprovalField[]): ParsedProposal {
   if (!fields) return { ok: false, message: `There is no description for ${capability}, so Delegate cannot show the person what they would be approving.` };
   if (typeof input.idempotencyKey !== "string" || !KEY.test(input.idempotencyKey)) return { ok: false, message: "idempotency_key must be 1 to 128 visible characters with no spaces." };
   const raw = input.payload;
@@ -98,11 +86,11 @@ export function parseProposal(serviceSlug: string, capability: string, input: Pr
       continue;
     }
     if (typeof v !== "string" || v.length > 200) return { ok: false, message: `${f.key} must be text.` };
-    const n = f.normalise(v);
-    if (n.length > f.max || !f.valid(n)) return { ok: false, message: `${f.key} is not valid.` };
+    const n = normalise(f, v);
+    if (n.length > f.max || (f.required && !n) || (f.pattern !== undefined && !new RegExp(f.pattern).test(n))) return { ok: false, message: `${f.key} is not valid.` };
     if (n === "" && !f.required) continue;
     payload[f.key] = n;
-    display.push({ label: f.label, value: f.show ? f.show(n) : n });
+    display.push({ label: f.label, value: f.display_last ? `ending ${n.slice(-f.display_last)}` : n });
   }
   return { ok: true, idempotencyKey: input.idempotencyKey, payload, payloadDigest: sha256({ v: 1, service: serviceSlug, capability, payload }), display };
 }
@@ -151,6 +139,7 @@ export type GateContext = {
   serviceSlug: string;
   capability: string;
   proposal?: ProposalInput;
+  fields?: ApprovalField[];
 };
 export type Gate = { blocked: boolean; info: StepUpInfo };
 
@@ -165,7 +154,7 @@ export async function stepUpGate(ctx: GateContext, now: Date): Promise<Gate> {
   if (!ctx.proposal) {
     return blocked({ state: "PROPOSAL_REQUIRED", message: "This action needs the person's approval of one specific change. Send the details of the change with an Idempotency-Key." });
   }
-  const parsed = parseProposal(ctx.serviceSlug, ctx.capability, ctx.proposal);
+  const parsed = parseProposal(ctx.serviceSlug, ctx.capability, ctx.proposal, ctx.fields);
   if (!parsed.ok) return blocked({ state: "PROPOSAL_INVALID", message: parsed.message });
   const { mandate, capability } = ctx;
   await sweepStepUps(mandate.id, now);

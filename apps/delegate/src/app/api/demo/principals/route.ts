@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { demoAllowed } from "@/lib/demo-gate";
 import { randomUUID } from "node:crypto";
+import { currentCapabilities } from "@/lib/catalogues";
 import { prisma } from "@/lib/db";
 import { AUTHORISATION_DAYS } from "@/lib/config";
 import { signAgentToken } from "@/lib/agent-auth";
@@ -16,8 +17,10 @@ export async function POST(req: Request) {
   const n = Math.min(Math.max(Number(b.n) || 10, 1), 200);
   const delegate = await prisma.delegate.findUniqueOrThrow({ where: { clientId: b.client_id ?? "demo-personal-agent" } });
   const service = await prisma.service.findUniqueOrThrow({ where: { slug: "hmrc-personal-tax" }, include: { capabilities: true } });
-  const codes = b.capabilities ?? ["view_tax_code", "claim_job_expenses"];
-  const caps = service.capabilities.filter((c) => codes.includes(c.code));
+  const available = await currentCapabilities(service.id);
+  const codes = b.capabilities ?? available.filter(c => !c.requiresStepUp).slice(0, 2).map(c => c.code);
+  const caps = available.filter((c) => codes.includes(c.code));
+  if(!caps.length || caps.length !== new Set(codes).size) return NextResponse.json({error:"UNKNOWN_CAPABILITY"},{status:400});
   const now = Date.now();
   const people = [];
   for (let i = 0; i < n; i++) {
