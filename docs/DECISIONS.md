@@ -402,3 +402,13 @@ The prototype adopts **regulate processing demand, not citizens' rights** as a g
 ## National decision disposition — 9 October 2026
 
 DB-01–DB-12 are DEFERRED at national/production scope. Their [dated dispositions](DECISION_DISPOSITIONS.md) record reasons, responsible roles and reopening triggers. Existing synthetic ADRs remain scoped to the prototype; no legal authority, sign-off, liability, retention or national benefits conclusion is inferred. This disposition adds no conflicting numbered decision.
+
+## Decision 29 — services publish immutable, bounded catalogue versions
+
+**Date:** 9 October 2026. **Scope:** synthetic registration/discovery foundation (#28), not national catalogue governance (#56, DEFERRED).
+
+An already registered service publishes with its own credential. Publication cannot register a department, grant agent authority or mutate a prior version. Versions increase per service; equal version/content is replayed, conflicting content is refused. Plain-text metadata and bounded enumerated constraint declarations are validated. HIGH-risk declarations require step-up and at least registered assurance; services may require stronger controls.
+
+Publication history is immutable and version-addressable. Existing capability rows/grants are untouched. Changed meanings and enlarged scope require fresh consent, never silent migration. Catalogue-backed bootstrap, consent and evidence follow in #29–31; until then the current HMRC fixture remains operational. Citizen demo resets preserve service identities and publications.
+
+Evidence: authenticated isolation, concurrent publication, immutable database history, rejected malformed metadata, unchanged existing capability rows, and reset preservation are tested. Remaining dissent/governance questions concern semantic approval, emergency withdrawal and national security floors; reopening trigger and responsible roles remain in DB-09.
