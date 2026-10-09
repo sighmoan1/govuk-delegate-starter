@@ -1,3 +1,4 @@
+const ONELOGIN = process.env.ONELOGIN_URL ?? "http://localhost:3301";
 import { test, expect, type Page } from "@playwright/test";
 
 // The scenarios on the about site, each started from its own reset
@@ -9,7 +10,7 @@ const ABOUT = process.env.ABOUT_URL ?? "http://localhost:3304";
 async function signInIfAsked(page: Page, email?: string) {
   // HMRC asks who you are first: sign in as yourself.
   if (new URL(page.url()).pathname === "/sign-in") await page.getByRole("button", { name: "Sign in with GOV.UK One Login" }).click();
-  if (!/localhost:3301/.test(page.url())) return;
+  if (new URL(page.url()).origin !== new URL(ONELOGIN).origin) return;
   if (email) await page.getByLabel("Email address").fill(email);
   await page.getByRole("button", { name: "Continue" }).click(); // email
   await expect(page.getByRole("heading", { name: "Enter your password" })).toBeVisible();

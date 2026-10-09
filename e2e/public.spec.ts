@@ -9,7 +9,7 @@ test.setTimeout(120_000);
 
 // In public mode One Login is strict: the person needs a password and a code
 // sent to her phone. Read them as Sam would, from the local-only demo endpoint.
-const sam = async () => (await fetch("http://localhost:3301/api/demo/sam", { headers: { "x-demo-key": process.env.DEMO_CONSOLE_KEY! } })).json() as Promise<{ email: string; password: string; code: string | null }>;
+const sam = async () => (await fetch(`${process.env.ONELOGIN_URL ?? "http://localhost:3301"}/api/demo/sam`, { headers: { "x-demo-key": process.env.DEMO_CONSOLE_KEY! } })).json() as Promise<{ email: string; password: string; code: string | null }>;
 async function signInAsSam(page: import("@playwright/test").Page) {
   const s = await sam();
   await page.getByLabel("Email address").fill(s.email);
