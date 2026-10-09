@@ -10,7 +10,7 @@ const definition = { code: "reserve_book", name: "Reserve a library book", descr
 const document: Catalogue = { schema_version: 1, service: "libraries", version: 1, capabilities: [definition] };
 function fixture() {
   const catalogue = { id: "catalogue-1", serviceId: "service-1", version: 1, digest: catalogueDigest(document), document: structuredClone(document) };
-  return { serviceId: "service-1", service: { slug: "libraries", name: "Council libraries" }, delegate: { name: "Assistant & helper", provider: "Example provider" }, expiresAt: new Date("2026-10-16T18:00:00Z"), permissions: [{ capability: { id: "cap-1", serviceId: "service-1", catalogueId: catalogue.id, code: definition.code, name: definition.name, riskLevel: definition.risk, requiresStepUp: definition.requires_step_up, catalogue } }] };
+  return { serviceId: "service-1", service: { slug: "libraries", name: "Council libraries" }, delegate: { name: "Assistant & helper", provider: "Example provider" }, expiresAt: new Date("2026-10-16T18:00:00Z"), permissions: [{ capability: { id: "cap-1", serviceId: "service-1", catalogueId: catalogue.id, code: definition.code, name: definition.name, riskLevel: definition.risk, requiresStepUp: definition.requires_step_up, metadata: { ...definition }, catalogue } }] };
 }
 it("renders another service's pinned descriptions, risk and fresh-approval metadata as JSON evidence", () => {
   const presentation = consentPresentation(fixture());
@@ -30,8 +30,9 @@ it("missing catalogue, unknown code, changed row and incompatible catalogue vers
   const unknown = fixture(); unknown.permissions[0].capability.code = "unknown";
   const changed = fixture(); changed.permissions[0].capability.name = "Broader action";
   const version = fixture(); version.permissions[0].capability.catalogue.version = 2;
+  const assurance = fixture(); assurance.permissions[0].capability.metadata.minimum_assurance = "DECLARED" as "REGISTERED";
   const digest = fixture(); digest.permissions[0].capability.catalogue.digest = "tampered";
-  for (const req of [missing, unknown, changed, version, digest]) expect(() => consentPresentation(req)).toThrow("cannot verify");
+  for (const req of [missing, unknown, changed, version, digest, assurance]) expect(() => consentPresentation(req)).toThrow("cannot verify");
 });
 it("HTML or executable catalogue text is refused even when its digest matches", () => {
   const req = fixture();

@@ -11,7 +11,7 @@ type ConsentRequest = {
   service: { slug: string; name: string };
   delegate: { name: string; provider: string };
   expiresAt: Date;
-  permissions: { capability: { id: string; serviceId: string; catalogueId: string | null; code: string; name: string; riskLevel: string; requiresStepUp: boolean; catalogue: Publication | null } }[];
+  permissions: { capability: { id: string; serviceId: string; catalogueId: string | null; code: string; name: string; riskLevel: string; requiresStepUp: boolean; metadata: unknown; catalogue: Publication | null } }[];
 };
 export const riskExplanation = (risk: ConsentCapability["risk"]) => ({
   LOW: "The service classifies this as a lower-risk permission.",
@@ -34,7 +34,9 @@ export function consentPresentation(req: ConsentRequest) {
   const capabilities: ConsentCapability[] = req.permissions.map(({ capability: row }) => {
     const definition = catalogue.capabilities.find(c => c.code === row.code);
     if (!definition || seen.has(row.code) || row.serviceId !== req.serviceId || row.catalogueId !== publication.id ||
-        row.catalogue?.digest !== publication.digest || row.name !== definition.name || row.riskLevel !== definition.risk || row.requiresStepUp !== definition.requires_step_up) return unavailable();
+        row.catalogue?.digest !== publication.digest ||
+        !row.metadata || typeof row.metadata !== "object" ||
+        (row.metadata as Record<string, unknown>).minimum_assurance !== definition.minimum_assurance || row.name !== definition.name || row.riskLevel !== definition.risk || row.requiresStepUp !== definition.requires_step_up) return unavailable();
     seen.add(row.code);
     return { id: row.id, code: definition.code, name: definition.name, description: definition.description, risk: definition.risk,
       requires_step_up: definition.requires_step_up, minimum_assurance: definition.minimum_assurance };

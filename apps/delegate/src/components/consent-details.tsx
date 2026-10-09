@@ -5,6 +5,7 @@ export function PermissionDescription({ capability }: { capability: ConsentCapab
   return <>
     <span className="choice-hint">{capability.description}</span>
     <span className="choice-hint">{riskExplanation(capability.risk)}</span>
+    <span className="choice-hint">The assistant must have {capability.minimum_assurance === "VERIFIED" ? "a verified identity" : capability.minimum_assurance === "REGISTERED" ? "a registered identity" : "a declared identity"} to use this permission.</span>
     <span className="choice-hint">{freshApprovalExplanation(capability.requires_step_up)}</span>
   </>;
 }
