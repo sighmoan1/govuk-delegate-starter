@@ -117,8 +117,12 @@ test("an agent can't approve itself, even with Sam's sign-in", async ({ browser,
   await tab.goto(`${DELEGATE}/approve?code=${code}`);
   await expect(tab.locator(".ol-warning")).toContainText("This sign-in is for people");
   await signIn(tab);
+  // Wait for consent before enumerating scopes; an empty selection is refused.
+  await expect(tab.getByRole("heading", { level: 1 })).toContainText("wants to act for you");
+  await expect(tab.getByRole("checkbox").first()).toBeVisible();
   for (const checkbox of await tab.getByRole("checkbox").all()) await checkbox.check();
   await tab.getByRole("button", { name: "Continue" }).click();
+  await expect(tab.getByRole("heading", { name: "Check what you are allowing" })).toBeVisible();
   await tab.getByRole("button", { name: "Allow" }).click();
   await expect(tab.getByRole("heading", { name: "The person needs to do this themselves" })).toBeVisible();
   await agentCtx.close();
