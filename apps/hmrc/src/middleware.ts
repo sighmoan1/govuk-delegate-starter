@@ -15,7 +15,9 @@ export function middleware(req: NextRequest) {
     secFetch: h.get("sec-fetch-site") ? `${h.get("sec-fetch-site")}/${h.get("sec-fetch-mode")}` : null,
     referer: h.get("referer"),
   }));
-  return NextResponse.next();
+  const headers = new Headers(req.headers);
+  headers.set("x-prototype-request-target", req.nextUrl.pathname + req.nextUrl.search);
+  return NextResponse.next({ request: { headers } });
 }
 
 export const config = { matcher: ["/((?!_next/|favicon.ico).*)"] };

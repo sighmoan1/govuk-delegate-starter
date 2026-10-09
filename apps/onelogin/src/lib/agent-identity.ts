@@ -20,5 +20,5 @@ export const verifyAgentSignature = (req: Request) => verifyOncePerRequest(req, 
 export async function verifyAgentSignatureFromHeaders(h: Headers, method: string, path: string) {
   const headers: Record<string, string> = {};
   h.forEach((v, k) => { headers[k] = v; });
-  return verifyOncePerRequest(h, { method, authority: authorityFromHeaders(headers, trustProxy()), path, headers }, { trusted: trustedAgents() });
+  return verifyOncePerRequest(h, { method, authority: authorityFromHeaders(headers, trustProxy()), path: headers["x-prototype-request-target"] ?? path, headers }, { trusted: trustedAgents() });
 }
