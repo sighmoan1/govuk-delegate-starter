@@ -29,6 +29,8 @@ jobs:
       COMPOSE_PROJECT_NAME: delegate-ci-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare cached public Docker images
+        run: bash scripts/ci-images.sh
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
