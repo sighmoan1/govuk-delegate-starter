@@ -15,6 +15,7 @@ const LINKS = [
   { href: "/prioritise-trusted-traffic", label: "2. Prioritise trusted traffic" },
   { href: "/which-route", label: "3. Which route?" },
   { href: "/swarm", label: "4. Can a swarm win?" },
+  { href: "/evidence", label: "Evidence & experiments" },
   { href: "/how-it-works", label: "How it works" },
   { href: "/delegate-orchestrate", label: "Delegate or Orchestrate?" },
   { href: "/why", label: "Why" },

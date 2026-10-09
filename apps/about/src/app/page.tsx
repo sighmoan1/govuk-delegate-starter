@@ -70,6 +70,17 @@ export default async function Overview({ searchParams }: { searchParams: Promise
 
       <p><a href="/ask-your-agent">Ask your own agent</a> to find out about a claim, submit one, answer HMRC’s question with you, or keep you posted.</p>
 
+      <h2>What would count as evidence?</h2>
+      <div className="two-thirds">
+        <p>
+          This prototype demonstrates a possible authorised route. We have not yet demonstrated that it improves government
+          outcomes or costs. The key experiment compares a <strong>good agent API using service-local delegation</strong>
+          with <strong>the same API plus GOV.UK Delegate</strong>, measuring the extra value of independent citizen control
+          alongside additional effort and operating cost.
+        </p>
+        <p><Link href="/evidence">See our experiments, existing observations and evidence register</Link>.</p>
+      </div>
+
       <h2>Four scenarios</h2>
       <p>Each one stands on its own and can reset everything to the right starting point.</p>
       <ul className="scenarios">

@@ -78,6 +78,17 @@ The core idea, in one line: **identify the agent, authorise the mandate, limit t
 
 **Reset everything** is on the overview page. From the command line, `npm run db:reset` does the same.
 
+## Validation and evidence
+
+**The working experiment plan is [docs/VALIDATION.md](docs/VALIDATION.md).** It frames GOV.UK Delegate as a falsifiable proposition: can identified, authorised agents improve the management of legitimate automated demand **beyond what a good API and service-local authorisation already deliver**?
+
+- [Experimental protocol](docs/VALIDATION.md) — hypotheses, seven experiments (E1–E7), fair API-only comparator, metrics, controls and falsification criteria.
+- [Evidence register](docs/EVIDENCE.md) — what is exploratory, what exists only as technical test source, and links to independently recorded experimental runs when available.
+- [Demo and claims guide](docs/DEMO_GUIDE.md) — a seven-minute walkthrough and defensible language for stakeholders.
+- [About-site evidence page](apps/about/src/app/evidence/page.tsx) — readable explanation at `/evidence` when deployed.
+
+**No comparative or real-world economic result has yet been published in the register.** Existing route-choice observations and synthetic swarm tests are useful starting points, not proof of national-scale benefit. Keep further architecture debates in the relevant ADRs, not in experiment results.
+
 ## Tests
 
 With the stack running:
