@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { opsSummary, capacityByPerson } from "@/lib/events";
 import { LANE_LIMITS, UNTRUSTED_DELAY_MS } from "@/lib/config";
 import { PRINCIPAL_WINDOWS, currentLimits, type CostClass } from "@/lib/throughput";
@@ -91,7 +90,7 @@ export default async function Ops({ searchParams }: { searchParams: Promise<{ li
       <h1>Traffic by lane</h1>
       <p className="ops-toolbar">
         <span>API and web requests to this service.</span>
-        {live ? <Link href="/ops">Auto-refresh on (3s) · turn off</Link> : <Link href="/ops?live=1">Turn on auto-refresh</Link>}
+        {live ? <a href="/ops">Auto-refresh on (3s) · turn off</a> : <a href="/ops?live=1">Turn on auto-refresh</a>}
       </p>
 
       <h2>Last 60 seconds</h2>

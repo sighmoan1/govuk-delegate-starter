@@ -1,3 +1,4 @@
+const ONELOGIN = process.env.ONELOGIN_URL ?? "http://localhost:3301";
 import { test, expect, type Page } from "@playwright/test";
 
 // GOV.UK Delegate on its own: consent through the real One Login simulator,
@@ -7,7 +8,7 @@ const CLIENT_ID = process.env.DEMO_AGENT_CLIENT_ID ?? "demo-personal-agent";
 const CLIENT_SECRET = process.env.DEMO_AGENT_CLIENT_SECRET ?? "dev-demo-agent-secret";
 
 async function signInIfAsked(page: Page, email?: string) {
-  if (!/localhost:3301/.test(page.url())) return;
+  if (new URL(page.url()).origin !== new URL(ONELOGIN).origin) return;
   if (email) await page.getByLabel("Email address").fill(email);
   await page.getByRole("button", { name: "Continue" }).click(); // email
   await expect(page.getByRole("heading", { name: "Enter your password" })).toBeVisible();
@@ -32,7 +33,7 @@ test("consent: sign in with One Login, narrow the request, allow; then remove ac
   const req = await createRequest();
 
   await page.goto(req.consent_url);
-  await expect(page).toHaveURL(/localhost:3301\/sign-in/);
+  await expect(page).toHaveURL((url: URL) => url.origin === new URL(ONELOGIN).origin && url.pathname === "/sign-in");
   await signInIfAsked(page);
 
   await expect(page.getByRole("heading", { level: 1, name: "Personal assistant wants to act for you" })).toBeVisible();
@@ -83,7 +84,7 @@ test("the person sees what an agent said they agreed to, can say they didn't, an
 
 test("Delegate has no front page of its own: the root goes to the account", async ({ page }) => {
   await page.goto(`${DELEGATE}/`);
-  await expect(page).toHaveURL(/localhost:3301\/sign-in|\/account\/delegates/);
+  await expect(page).toHaveURL((url: URL) => url.origin === new URL(ONELOGIN).origin || url.pathname === "/account/delegates");
 });
 
 test("internal operations view lists agent checks", async ({ page }) => {

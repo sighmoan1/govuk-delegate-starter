@@ -9,7 +9,7 @@ async function main() {
     return;
   }
   await seedDemo(prisma, { withAuthority: process.argv.includes("--with-authority") });
-  console.log("Seeded: 1 principal, Personal assistant, HMRC, 5 capabilities, history events.");
+  console.log("Seeded: 1 principal, Personal assistant, HMRC, 8 capabilities, history events.");
 }
 
 main().finally(() => prisma.$disconnect());

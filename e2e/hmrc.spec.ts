@@ -1,3 +1,4 @@
+const ONELOGIN = process.env.ONELOGIN_URL ?? "http://localhost:3301";
 import { test, expect } from "@playwright/test";
 
 // The mock HMRC service on its own: a person's journey through the real One
@@ -18,7 +19,7 @@ test("a person signs in, claims relief herself, and the claim is attributed to h
   await expect(page.getByRole("heading", { name: "Claim tax relief for your job expenses" })).toBeVisible();
   await page.getByRole("button", { name: "Start now" }).click();
   await page.getByRole("button", { name: "Sign in with GOV.UK One Login" }).click();
-  await expect(page).toHaveURL(/localhost:3301\/sign-in/);
+  await expect(page).toHaveURL((url: URL) => url.origin === new URL(ONELOGIN).origin && url.pathname === "/sign-in");
   // A fresh person each run, so this test does not depend on what the demo test did to Sam.
   await page.getByLabel("Email address").fill(`e2e-${Date.now()}@example.com`);
   await page.getByRole("button", { name: "Continue" }).click();
@@ -71,7 +72,7 @@ test("anonymous hammering of a signed-in page meets the challenge page; a person
   // Passed the challenge: now just asked to sign in, like anyone else.
   await expect(page.getByRole("heading", { name: "Sign in to continue" })).toBeVisible();
   await page.getByRole("button", { name: "Sign in with GOV.UK One Login" }).click();
-  await expect(page).toHaveURL(/localhost:3301\/sign-in/);
+  await expect(page).toHaveURL((url: URL) => url.origin === new URL(ONELOGIN).origin && url.pathname === "/sign-in");
 });
 
 test("reflow at 320px on HMRC pages", async ({ page }) => {

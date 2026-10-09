@@ -1,5 +1,6 @@
 # Prototype content and information architecture
 
+> Preserved original brief. DWP and Example AI examples are historical, and later numbered decisions supersede these requirements. Use [CURRENT_BEHAVIOUR.md](CURRENT_BEHAVIOUR.md), [ARCHITECTURE.md](ARCHITECTURE.md) and the current code for implementation work.
 The prototype is not only a transaction demo. It should explain the proposition clearly enough that a non-technical policy, service or digital leader can understand what is being tested.
 
 Keep explanatory content short. Prefer one strong claim per section.

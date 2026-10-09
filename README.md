@@ -2,7 +2,7 @@
 
 > Independent prototype — not an official GOV.UK service. Synthetic data only.
 
-**The idea.** A person who has signed in with GOV.UK One Login can give an agent limited, revocable permission to act for them. A service like HMRC then needs to add very little to let that agent through on the same happy path as a signed-in person. Because a trusted route exists, government can put friction on traffic that will not identify itself, and steer automation into the approved route instead of being flooded.
+**The idea.** A person who has signed in with GOV.UK One Login can give an agent limited, revocable permission to act for them. The prototype gives HMRC an authority-check interface alongside a fuller integration for consent, agent sessions, discovery, receipts and outcomes. Because a trusted route exists, government can put friction on traffic that will not identify itself, and steer automation into the approved route instead of being flooded.
 
 The pattern copies HMRC's agent authorisation: an agent asks, the person approves, a relationship is recorded, the service checks it, the person can remove it. **Delegate verifies authority; it does not plan or orchestrate AI tasks.** Decision 28 records this boundary.
 
@@ -36,7 +36,7 @@ The three systems in the scenario are mock-ups of real services. They carry no e
 
 | App | Port | What it is |
 |---|---|---|
-| **About this prototype** (`apps/about`) | 3304 | The case, the three systems, the scenarios (each with its own reset), how it works (including HMRC's integration code), why, and precedents. **Start here.** |
+| **About this prototype** (`apps/about`) | 3304 | The case, the three systems, the scenarios and their setup controls, how it works (including HMRC's integration code), why, and precedents. **Start here.** |
 
 
 
@@ -44,7 +44,7 @@ The three systems in the scenario are mock-ups of real services. They carry no e
 |---|---|---|---|
 | GOV.UK One Login (`apps/onelogin` in front of the official simulator) | 3301 | Signs people in, for Delegate and for HMRC: "Enter your email address", "Enter your password". The official simulator (internal, :3399) does the OIDC work | Nothing |
 | **GOV.UK Delegate** (`apps/delegate`) | 3300 | Part of the GOV.UK account: consent screen, "Who can act for you", agent and service registry, one check API. Internal view at `/ops` | New |
-| **HMRC: Claim tax relief for your job expenses** (`apps/hmrc`) | 3302 | A One Login relying party with a human journey and an API for agents. Three lanes: signed-in person, authorised agent, not identified. Internal view at `/ops` | Registered once; one middleware, `src/lib/delegated-authority.ts` |
+| **HMRC: Claim tax relief for your job expenses** (`apps/hmrc`) | 3302 | A One Login relying party with a human journey and an API for agents. Three lanes: signed-in person, authorised agent, not identified. Internal view at `/ops` | Authority checks; request creation/polling; agent sessions and browser guards; discovery; domain/traffic controls; receipts, disputes and outcome reporting |
 
 Each service has its own database (one Postgres container, a database each) and they talk only over HTTP. The join key between HMRC and Delegate is the person's One Login subject.
 
@@ -56,7 +56,7 @@ docker compose up --build
 
 Open **http://localhost:3304** and pick a scenario. Data is seeded on first start. To start again, use **Reset everything** on the about site, or a scenario page’s starting-point buttons.
 
-For development: `docker compose up -d db simulator`, copy each `apps/*/.env.example` to `.env` (the about app has no database), then `npm install && npm run db:migrate --workspaces && npm run db:reset && npm run dev`.
+For development: `docker compose up -d db simulator`, copy each `apps/*/.env.example` to `.env` (the about app has no database), then `npm install && npm run db:migrate --workspaces --if-present && npm run db:reset && npm run dev`.
 
 ### On public URLs, for agents that browse from the cloud
 
@@ -68,11 +68,11 @@ npm run test:public   # optional: check the public URLs from outside
 npm run public:stop   # tunnels down, simulator back to localhost, dev secrets reseeded
 ```
 
-`npm run public` prints the public URLs and a prompt to give the agent. By default these are Cloudflare quick tunnels with random URLs, and Cloudflare blocks OpenAI's crawler on that domain, so ChatGPT's own page fetcher gets a 403. For stable URLs where you control the bot settings, create a named tunnel on a domain you own and describe it in `public.config.json` (gitignored; the format is in the header of `scripts/public.mjs`). Public mode uses fresh random secrets, doesn't trust the local test agent (its private key is in this repository), and refuses demo tooling (reset, swarm set-up) through the tunnel. The about site stays on localhost, and its reset buttons still work. Anyone with the URLs can use the demo while it's up. The data is synthetic, but stop it when you're done.
+`npm run public` prints the public URLs and a prompt to give the agent. By default these are Cloudflare quick tunnels with random URLs, and Cloudflare blocks OpenAI's crawler on that domain, so ChatGPT's own page fetcher gets a 403. For stable URLs where you control the bot settings, create a named tunnel on a domain you own and describe it in `public.config.json` (gitignored; the format is in the header of `scripts/public.mjs`). Public mode uses fresh random secrets, doesn't trust the local test agent (its private key is in this repository), and refuses demo tooling (reset, swarm set-up) through the tunnel. The about site stays on localhost, and its reset buttons still work. Public service “About this prototype” links default to localhost:3304, so remote visitors cannot follow them without a local stack. If a reachable explanatory site is provided, configure ABOUT_URL explicitly; do not expose the local demo console or Sam’s phone tooling. Anyone with the URLs can use the demo while it's up. The data is synthetic, but stop it when you're done.
 
 ## The demo: four scenarios
 
-Open http://localhost:3304. Each scenario has its own page, and each page resets everything to the right starting point with one button: clean, or with an agent already authorised.
+Open http://localhost:3304. Scenarios 1 and 2 have starting-point buttons. Scenario 3 displays existing observations and has no reset. Scenario 4 creates fresh synthetic people for each run.
 
 1. **Sam manages who can act for her.** In her GOV.UK account she sees the assistant, what it can do and what it has done, and removes access.
 2. **Government prioritises people and authorised agents.** HMRC treats signed-in people, authorised agents and unidentified traffic differently. The page sends bursts of traffic as a bot and as an anonymous visitor, and shows who got through.
@@ -97,10 +97,20 @@ The core idea, in one line: **identify the agent, authorise the mandate, limit t
 
 ## Tests
 
-With the stack running:
+With the stack running, test in two phases to avoid the background worker consuming queue fixtures:
 
 ```bash
-npm test            # Vitest: HMRC database-backed idempotency/atomicity/queue tests (apps/hmrc/tests), then over HTTP: scenarios A–F at Delegate's check API and again through HMRC;
+docker compose stop hmrc-worker
+npm test -w apps/hmrc
+docker compose start hmrc-worker
+npx vitest run
+```
+
+The tests use synthetic data and reset fixtures. Use an isolated test database, not a shared demonstration database.
+
+```bash
+npm test            # Pause hmrc-worker for HMRC database tests; restart it for root HTTP/swarm tests.
+                    # Vitest: HMRC database-backed idempotency/atomicity/queue tests (apps/hmrc/tests), then over HTTP: scenarios A–F at Delegate's check API and again through HMRC;
                     # the swarm experiments (tests/swarm.test.ts: seven scenarios measured, then a seeded simulation; needs the queue worker running);
                     # one event per attempt in both logs; untrusted-lane friction; lifecycle; return URLs
 npm run test:e2e    # Playwright: the scenarios (each started from its UI reset) across all apps, each system alone, a check
@@ -109,7 +119,8 @@ npm run test:e2e    # Playwright: the scenarios (each started from its UI reset)
 
 ## Notes
 
-- **Sign-in.** The One Login screens are a lookalike; any password works, and `sam.taylor@example.com` (pre-filled) is the seeded person. Any other email is a different person. Behind the screens, the official simulator issues the codes, signed tokens and userinfo.
+- **Local sign-in.** The One Login screens are a lookalike; any nonempty password works, and `sam.taylor@example.com` (pre-filled) is the seeded person. Any other email is a different person. Behind the screens, the official simulator issues the codes, signed tokens and userinfo.
+- **Public/strict sign-in.** Only Sam’s email is accepted; the configured password is validated, followed by a mock phone code. Local “Continue twice” instructions do not apply in this mode.
 - **The simulator supports one client.** Delegate and HMRC share its client id and test key. In production they would be separate relying parties.
 - **Pairwise subjects.** Real One Login gives each relying party its own subject for the same person. Here both see the same one; production would need a shared sector or a mapping held by Delegate (Decision 12).
 - **Receive now, record later.** `POST /api/job-expenses` with `Prefer: respond-async` and an `Idempotency-Key` stores the claim and answers `202 Accepted` with a `Location: /api/transactions/{id}`; a queue worker (`npm run worker -w apps/hmrc`, started by `npm run dev` and as the `hmrc-worker` compose service) records it shortly after. 202 is a receipt, never an approval, and the receipt time is not a legal filing date. Decision 25.
@@ -117,3 +128,7 @@ npm run test:e2e    # Playwright: the scenarios (each started from its UI reset)
 - **Step-up:** high-risk permissions need the person's approval of one proposed change (`STEP_UP_REQUIRED`, then the approval page showing the details). The approval is used up only when HMRC makes that change, not by being checked, and expires `STEP_UP_MAX_AGE_MINUTES` after the change is proposed (default 10). The details are made up. What the demo does and does not guarantee is in Decision 24.
 - **Dev keys:** `dev/oidc-client-private.pem` is the simulator's published test key. All secrets in compose and `.env.example` files are for local use only.
 - **Fonts:** Lexend Deca, under the SIL Open Font License.
+
+## Current behaviour and historical briefs
+
+[Current integration contract](docs/CURRENT_BEHAVIOUR.md) is the implemented-state entry point. [BUILD_SPEC.md](docs/BUILD_SPEC.md) and [PROTOTYPE_CONTENT.md](docs/PROTOTYPE_CONTENT.md) preserve the original DWP/Example AI brief; later decisions supersede those examples. The current HMRC seed has eight capabilities; the browser request form offers seven and omits `change_address`, which remains available through the API.
