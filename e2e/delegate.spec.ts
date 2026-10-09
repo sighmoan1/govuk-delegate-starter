@@ -62,8 +62,12 @@ test("the person sees what an agent said they agreed to, can say they didn't, an
   const req = await createRequest();
   await page.goto(req.consent_url);
   await signInIfAsked(page);
+  // Locator.all() does not wait for the redirect from the password screen.
+  await expect(page.getByRole("heading", { level: 1, name: "Personal assistant wants to act for you" })).toBeVisible();
+  await expect(page.getByRole("checkbox")).toHaveCount(3);
   for (const checkbox of await page.getByRole("checkbox").all()) await checkbox.check();
   await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Check what you are allowing" })).toBeVisible();
   await page.getByRole("button", { name: "Allow" }).click();
   await expect(page.getByRole("heading", { name: "Agent authorised" })).toBeVisible();
   await page.getByRole("link", { name: "View this authority" }).click();
