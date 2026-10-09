@@ -1,0 +1,38 @@
+
+ RUN  v3.2.7 <repo>
+
+ ✓ tests/step-up.test.ts (36 tests) 4455ms
+ ✓ tests/swarm.test.ts (30 tests) 24806ms
+   ✓ real: no cross-user state mixing > one person's traffic does not draw on another's: whatever a flood costs its person, a bystander's identical requests all succeed  479ms
+   ✓ real: no cross-user state mixing > an agent's identity assurance buys no extra capacity: the same traffic gets the same answers at any assurance level  627ms
+   ✓ real: the accounting is reproducible > running the same scenarios twice, with new people, gives the same claim and duplicate counts  6595ms
+ ✓ tests/delegation.test.ts (22 tests) 1616ms
+ ✓ tests/claims.test.ts (17 tests) 2425ms
+ ✓ tests/check-spends-nothing.test.ts (8 tests) 3768ms
+   ✓ Delegate: a positive check spends nothing > 100 repeated valid checks by one agent stay authorised, identical, logged, and create no quota records  824ms
+   ✓ Delegate: a positive check spends nothing > revoked, expired and undelegated still DENY after many allowed checks, each one logged  336ms
+   ✓ HMRC: Delegate checks no longer eat HMRC's person-level allowance > after 100 bare Delegate checks, HMRC still has its full allowance and counts only its own use  723ms
+   ✓ HMRC: Delegate checks no longer eat HMRC's person-level allowance > HMRC's own tax-code lookup limit throttles (RATE_LIMITED, 429), while Delegate allowed every check  1396ms
+ ✓ tests/idempotency.test.ts (11 tests) 2093ms
+   ✓ claim_job_expenses: Idempotency-Key > 100 concurrent identical retries create exactly one claim; every response references it  426ms
+   ✓ respond_to_query: Idempotency-Key > 50 concurrent identical answers record one answer and one receipt; a different answer under the key is 409  341ms
+ ✓ tests/web-bot-auth.test.ts (25 tests) 1113ms
+   ✓ Web Bot Auth verification > the real ChatGPT and Google key directories parse as Ed25519 JWKS  1087ms
+ ✓ tests/chain.test.ts (10 tests) 1008ms
+ ✓ tests/hmrc.test.ts (10 tests) 9964ms
+   ✓ the untrusted lane > no identity: slow plain-text refusal pointing at Delegate, no structured body, then 429s  7570ms
+   ✓ every attempt is logged by HMRC > one HMRC event per request across all lanes  1670ms
+ ✓ tests/delegate-failure.test.ts (15 tests) 139ms
+ ✓ tests/hmrc-guard.test.ts (16 tests) 6ms
+ ✓ tests/outcomes.test.ts (5 tests) 605ms
+ ✓ tests/consent-csrf.test.ts (8 tests) 586ms
+ ✓ tests/catalogues.test.ts (5 tests) 454ms
+ ✓ tests/progress-changes.test.ts (3 tests) 796ms
+   ✓ progress change detection > detects a withdrawn answer after the watermark, on every later poll with that watermark, and not after it  362ms
+ ✓ tests/swarm-recovery.test.ts (2 tests) 7ms
+
+ Test Files  16 passed (16)
+      Tests  223 passed (223)
+   Start at  17:24:54
+   Duration  57.88s (transform 241ms, setup 28ms, collect 829ms, tests 53.84s, environment 1ms, prepare 538ms)
+

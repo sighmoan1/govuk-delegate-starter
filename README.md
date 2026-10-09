@@ -22,13 +22,19 @@ The pattern copies HMRC's agent authorisation: an agent asks, the person approve
 
 **Open architecture question:** [Where should authority records live?](docs/FEDERATED_AUTHORITY.md) compares a central national registry with federated and hybrid recognition of existing departmental authority. It proposes one narrow experiment; federation is **not yet decided or implemented**.
 
-**Current limitation:** Delegate's demo seed and UI still hard-code some HMRC capability definitions. The target is that each service publishes a versioned catalogue and Delegate renders/checks it generically. This is tracked as follow-up engineering work; the documentation is not a claim that the feature exists.
+**Current catalogue status:** authenticated publication, immutable versions and public discovery are implemented (Decision 29). HMRC still uses the centrally seeded fixture for consent and checks. Moving those definitions into HMRC is under review in [PR #86](https://github.com/sighmoan1/govuk-delegate-starter/pull/86); generic catalogue-driven consent and immutable consent snapshots follow in #30–31. Publication alone changes no existing grant. See [Service catalogues](docs/SERVICE_CATALOGUES.md).
 
 ## What still needs deciding
 
 **[Decision backlog — `docs/DECISION_BACKLOG.md`](docs/DECISION_BACKLOG.md)** is the canonical index of unresolved product, legal, security and architecture choices. It links to twelve individual `[decision]` issues, with priorities, owner roles, alternative options, evidence needed and clear triggers for an actual decision. It distinguishes what this synthetic prototype **implements** from what participating government services would still have to **approve**.
 
-Start with **DB-01 (legal authority)** and **DB-02 (when the person must approve the precise action)**. Keep settled/historical decisions in [DECISIONS.md](docs/DECISIONS.md), and treat the evaluation protocol in [PR #46](https://github.com/sighmoan1/govuk-delegate-starter/pull/46) as a separate evidence programme.
+National decisions DB-01–DB-12 are explicitly deferred with responsible roles and reopening triggers in [DECISION_DISPOSITIONS.md](docs/DECISION_DISPOSITIONS.md).
+
+Start with **DB-01 (legal authority)** and **DB-02 (when the person must approve the precise action)**. Keep settled/historical decisions in [DECISIONS.md](docs/DECISIONS.md), and treat the merged [evaluation protocol](docs/VALIDATION.md) as a separate evidence programme.
+
+## Documentation
+
+[Documentation index](docs/README.md) links the current behaviour, target architecture, decision history, evidence and setup guidance. [Repository status](docs/REPOSITORY_STATUS.md) records the 9 October branch audit. The About site serves the plain-language current-state summary at `/project-status`.
 
 ## Four apps
 
@@ -42,11 +48,11 @@ The three systems in the scenario are mock-ups of real services. They carry no e
 
 | System | Port | What it does | What it had to add |
 |---|---|---|---|
-| GOV.UK One Login (`apps/onelogin` in front of the official simulator) | 3301 | Signs people in, for Delegate and for HMRC: "Enter your email address", "Enter your password". The official simulator (internal, :3399) does the OIDC work | Nothing |
+| GOV.UK One Login (`apps/onelogin` in front of the official simulator) | 3301 | Signs people in, for Delegate and for HMRC: "Enter your email address", "Enter your password". The official simulator (internal, :3399) does the OIDC work | Prototype sign-in screens and simulator proxy; no delegation logic in authentication |
 | **GOV.UK Delegate** (`apps/delegate`) | 3300 | Part of the GOV.UK account: consent screen, "Who can act for you", agent and service registry, one check API. Internal view at `/ops` | New |
 | **HMRC: Claim tax relief for your job expenses** (`apps/hmrc`) | 3302 | A One Login relying party with a human journey and an API for agents. Three lanes: signed-in person, authorised agent, not identified. Internal view at `/ops` | Authority checks; request creation/polling; agent sessions and browser guards; discovery; domain/traffic controls; receipts, disputes and outcome reporting |
 
-Each service has its own database (one Postgres container, a database each) and they talk only over HTTP. The join key between HMRC and Delegate is the person's One Login subject.
+Delegate and HMRC each have their own database in one Postgres container; One Login and About have no application database and they talk only over HTTP. The join key between HMRC and Delegate is the person's One Login subject.
 
 ## Run it
 
@@ -57,6 +63,20 @@ docker compose up --build
 Open **http://localhost:3304** and pick a scenario. Data is seeded on first start. To start again, use **Reset everything** on the about site, or a scenario page’s starting-point buttons.
 
 For development: `docker compose up -d db simulator`, copy each `apps/*/.env.example` to `.env` (the about app has no database), then `npm install && npm run db:migrate --workspaces --if-present && npm run db:reset && npm run dev`.
+
+### Updating an existing local stack
+
+After fetching and reviewing merged changes, fast-forward `main` and rebuild the containers:
+
+```bash
+git switch main
+git pull --ff-only
+npm ci
+docker compose up -d --build
+docker compose ps
+```
+
+Startup applies migrations and seeds only empty databases. Rebuilding retains the existing database volume; `db:reset` deliberately replaces citizen demo fixtures. The HMRC queue worker is a separate compose service and must be running for asynchronous claims. See [current behaviour](docs/CURRENT_BEHAVIOUR.md) before resetting or testing.
 
 ### On public URLs, for agents that browse from the cloud
 

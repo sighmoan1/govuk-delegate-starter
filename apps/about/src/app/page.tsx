@@ -39,9 +39,9 @@ export default async function Overview({ searchParams }: { searchParams: Promise
       <div className="two-thirds">
         <p className="lead">A person who has signed in with GOV.UK One Login gives an agent limited, revocable permission to act for them.</p>
         <p>
-          A service like HMRC then needs to add very little to let that agent through on the same route as a signed-in person. Because a
-          trusted route exists, government can put more friction on traffic that won’t identify itself. That steers automation into the
-          approved route instead of letting it flood services.
+          HMRC checks that permission before an agent acts and records what happens. Consent, agent sessions, discovery,
+          receipts and service controls support the journey. This gives legitimate automation an explicit route; whether
+          it improves outcomes beyond a good service API remains a question for our experiments.
         </p>
       </div>
 
@@ -49,8 +49,9 @@ export default async function Overview({ searchParams }: { searchParams: Promise
       <div className="two-thirds">
         <p>
           Government doesn’t need to detect every AI agent to control agentic flooding. Where it can, agents identify themselves and get
-          explicit permission from the person they act for. The scarce capacity, such as claims, checks and open cases, is then given to the
-          person whose authority is being used, not to each browser, session or agent.
+          explicit permission from the person they act for. HMRC applies its business rules to the person and handles repeated
+          submissions as one operation. It manages technical traffic separately, so genuine demand can be distinguished
+          from retries and excessive polling. Asking Delegate about authority spends no citizen allowance.
         </p>
       </div>
       <div className="table-container">
@@ -81,6 +82,8 @@ export default async function Overview({ searchParams }: { searchParams: Promise
         <p><Link href="/evidence">See our experiments, existing observations and evidence register</Link>.</p>
       </div>
 
+      <p><Link href="/project-status">See what is implemented, what is in review and what remains unproven</Link>.</p>
+
       <h2>Four scenarios</h2>
       <p>The first two scenarios have starting-point buttons. Route findings show previous observations; the swarm runner creates fresh people.</p>
       <ul className="scenarios">
@@ -109,7 +112,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
         <li>
           <h3><a href={urls.oneLogin}>GOV.UK One Login</a></h3>
           <p>Signs Sam in, for both GOV.UK and HMRC.</p>
-          <p className="added">Added: nothing.</p>
+          <p className="added">Prototype sign-in screens and a proxy to the official simulator. Authentication is separate from delegation.</p>
         </li>
         <li>
           <h3><a href={`${urls.delegate}/account/delegates`}>GOV.UK Delegate</a></h3>
@@ -126,7 +129,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
       <section id="start" className="start-from" aria-labelledby="reset-h">
         <h2 id="reset-h">Reset the demo</h2>
         {reset && <p className="start-from__done" role="status">Reset. Everything is back to the start.</p>}
-        <p>Put GOV.UK Delegate and HMRC back as they started. Each scenario page also has its own starting points.</p>
+        <p>Put GOV.UK Delegate and HMRC citizen fixtures back as they started. Scenarios 1 and 2 also have starting-point buttons; registered catalogue history is retained.</p>
         <form action={resetDemo}>
           <input type="hidden" name="mode" value="clean" />
           <input type="hidden" name="back" value="/" />
