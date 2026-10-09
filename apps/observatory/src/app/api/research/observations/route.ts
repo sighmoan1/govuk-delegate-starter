@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   const headers = { "Cache-Control": "private, no-store" };
-  if (process.env.RESEARCH_INGEST_ENABLED !== "true" || !bearerMatches(req, process.env.OBSERVATORY_COLLECTION_KEY))
+  if (process.env.PUBLIC_MODE === "true" || process.env.RESEARCH_INGEST_ENABLED !== "true" || !bearerMatches(req, process.env.OBSERVATORY_COLLECTION_KEY))
     return Response.json({ error: "COLLECTION_UNAVAILABLE" }, { status: 403, headers });
   let event;
   try {
