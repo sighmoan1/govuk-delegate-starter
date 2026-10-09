@@ -5,7 +5,8 @@ import { loadRequest } from "@/lib/requests";
 import { cookies } from "next/headers";
 import { currentPrincipal, SESSION_COOKIE } from "@/lib/session";
 import { decisionToken } from "@/lib/consent-csrf";
-import { prisma } from "@/lib/db";
+import { consentPresentation } from "@/lib/consent-presentation";
+import { ConsentTerms, ConsentUnavailable, PermissionDescription } from "@/components/consent-details";
 
 export const metadata: Metadata = { title: "Request to act for you" };
 
@@ -36,9 +37,9 @@ export default async function RequestPage({
     );
   }
 
-  const requested = req.permissions.map((p) => p.capability);
-  const all = await prisma.capability.findMany({ where: { serviceId: req.serviceId, catalogueId: req.permissions[0]?.capability.catalogueId ?? null }, orderBy: { sortOrder: "asc" } });
-  const notRequested = all.filter((c) => !requested.some((r) => r.id === c.id));
+  let presentation;
+  try { presentation = consentPresentation(req); } catch { return <ConsentUnavailable id={id} csrf={csrf} />; }
+  const requested = presentation.capabilities;
   const hasError = Boolean(error) && error !== "AGENT_CANNOT_APPROVE";
 
   return (
@@ -65,25 +66,23 @@ export default async function RequestPage({
               {req.delegate.name} is an AI assistant from {req.delegate.provider}. It has asked GOV.UK for permission to act for you with {req.service.name}.
               It will not see your GOV.UK sign-in, and you can remove its access at any time.
             </p>
+            <ConsentTerms presentation={presentation} />
             <p className="label label--m">Choose what it can do.</p>
             {hasError && <p className="error-message"><span className="visually-hidden">Error: </span>Choose at least one permission</p>}
             {requested.map((c, i) => (
               <div className="choice-item" key={c.id}>
-                <input id={`c-${i}`} type="checkbox" name="c" value={c.code} defaultChecked={hasError ? false : kept ? kept.includes(c.code) : true} aria-describedby={`c-${i}-hint`} />
+                <input id={`c-${i}`} type="checkbox" name="c" value={c.code} defaultChecked={!hasError && Boolean(kept?.includes(c.code))} aria-describedby={`c-${i}-hint`} />
                 <label htmlFor={`c-${i}`}>
                   {c.name}
-                  {c.riskLevel === "HIGH" && <> — <span className="sensitive">sensitive action</span></>}
+                  {c.risk === "HIGH" && <> — <span className="sensitive">sensitive action</span></>}
                   <span id={`c-${i}-hint`} className="choice-hint">
-                    {c.riskLevel === "HIGH" ? "This affects money or where HMRC writes to you. Only allow it if you are sure." : c.riskLevel === "MEDIUM" ? "This changes your tax records." : "This only reads information."}
+                    <PermissionDescription capability={c} />
                   </span>
                 </label>
               </div>
             ))}
           </fieldset>
         </div>
-        {notRequested.length > 0 && (
-          <p className="hint">It has not asked to: {notRequested.map((c) => c.name.toLowerCase()).join(", ")}.</p>
-        )}
         <div className="button-row">
           <button className="button" type="submit">Continue</button>
         </div>

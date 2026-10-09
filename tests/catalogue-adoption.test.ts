@@ -4,7 +4,8 @@ import { prisma } from "@/lib/db";
 import { catalogueDigest, currentCapabilities, publishCatalogue, validateCatalogue, type Catalogue } from "@/lib/catalogues";
 import { parseProposal } from "@/lib/step-ups";
 import { seedDemo } from "@/lib/demo-seed";
-import { createRequest, approveRequest } from "@/lib/requests";
+import { consentPresentation } from "@/lib/consent-presentation";
+import { createRequest, approveRequest, rejectRequest } from "@/lib/requests";
 import { hashSecret } from "@/lib/secrets";
 
 afterAll(() => prisma.$disconnect());
@@ -71,4 +72,18 @@ it("bootstrap replay of a pre-adoption publication hydrates equivalent legacy pr
  await prisma.serviceCatalogue.create({data:{serviceId:service.id,version:1,digest:catalogueDigest(doc),document:JSON.parse(JSON.stringify(doc))}});
  expect((await publishCatalogue(service.id,doc)).replayed).toBe(true);
  expect(await prisma.capability.findUnique({where:{id:legacy.id}})).toMatchObject({id:legacy.id,riskLevel:"HIGH",requiresStepUp:true,metadata:cap});
+});
+
+it("another service renders its own definitions and supports approval or rejection", async () => {
+ const service=await prisma.service.create({data:{slug:"library-"+randomUUID(),name:"Council library",apiKeyHash:hashSecret("fixture-key")}});
+ const cap={code:"reserve_book",name:"Reserve a library book",description:"Reserve a synthetic library book",risk:"LOW" as const,requires_step_up:false,minimum_assurance:"REGISTERED" as const,operation:{method:"POST" as const,path:"/api/reservations"}};
+ await publishCatalogue(service.id,{schema_version:1,service:service.slug,version:1,capabilities:[cap]});
+ const delegate=await prisma.delegate.findFirstOrThrow({where:{clientId:"demo-personal-agent"}});
+ const principal=await prisma.principal.create({data:{oneLoginSubjectId:"urn:library:"+randomUUID(),displayName:"Synthetic citizen"}});
+ const first=await createRequest({delegateId:delegate.id,service:service.slug,capabilities:[cap.code]});
+ expect(consentPresentation(first).capabilities[0]).toMatchObject({name:cap.name,description:cap.description});
+ const auth=await approveRequest(first.id,principal.id,[cap.code]);
+ expect((await prisma.authorisationPermission.findMany({where:{authorisationId:auth.id}})).map(p=>p.capabilityId)).toEqual([first.permissions[0].capabilityId]);
+ const second=await createRequest({delegateId:delegate.id,service:service.slug,capabilities:[cap.code]});
+ expect((await rejectRequest(second.id,principal.id)).status).toBe("REJECTED");
 });
