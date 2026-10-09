@@ -73,6 +73,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .viz-table { margin-top: .75rem; font-size: .9rem; }
 .viz-table table { width: 100%; border-collapse: collapse; margin-top: .5rem; }
 .viz-table th, .viz-table td { padding: .35rem .5rem; border-bottom: 1px solid var(--border-soft); text-align: left; }
+/* Where a number comes from: the words carry it, the border style repeats it (solid measured, dotted demo limit, dashed simulated). */
+.prov { display: inline-block; margin: 0 .35rem .25rem 0; padding: .1rem .55rem; border: 2px solid currentColor; font-size: .9rem; font-weight: 700; white-space: nowrap; }
+.prov--limit { border-style: dotted; }
+.prov--sim { border-style: dashed; }
 .swarm-form { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem 1.5rem; margin: 1.5rem 0 .75rem; }
 .swarm-form .form-group { margin: 0; }
 .viz-scroll { overflow-x: auto; }
