@@ -21,3 +21,10 @@ test("loaded source evidence keeps protected truth out of monitoring", async ({ 
  await expect(page.getByRole('heading',{name:'Protected ground truth'})).toHaveCount(0);
  await page.getByLabel('View',{exact:true}).selectOption('research');await expect(page.getByRole('heading',{name:'Event evidence explorer'})).toHaveCount(0);await expect(page.getByLabel('Evaluation access key')).toHaveValue('');
 });
+test('switching view discards an outstanding protected response', async ({page})=>{
+ let resolveRoute: (()=>Promise<void>)|undefined;
+ await page.route('**/api/dashboard?*',route=>{resolveRoute=()=>route.fulfill({json:{events:[],invalid:0,truncated:false,refreshedAt:'protected-response'}});});
+ await page.goto('/');await page.getByLabel('View',{exact:true}).selectOption('research');await page.getByLabel('Evaluation access key').fill('synthetic-evaluation-fixture');await page.getByRole('button',{name:'Load or refresh events'}).click();
+ await expect.poll(()=>!!resolveRoute).toBe(true);await page.getByLabel('View',{exact:true}).selectOption('monitoring');await resolveRoute!();
+ await expect(page.getByRole('status')).toHaveText('Enter the access key for this view.');await expect(page.getByRole('heading',{name:'Event timeline'})).toHaveCount(0);
+});
