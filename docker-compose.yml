@@ -1,8 +1,8 @@
-# GOV.UK Delegate prototype: four services, so the boundaries are real.
+# GOV.UK Delegate prototype: five applications, so the boundaries are real.
 #   docker compose up --build            everything
 #   docker compose up -d db simulator    just the dependencies, for `npm run dev`
 #   npm run public / npm run public:stop  the same stack on temporary public URLs (see scripts/public.mjs)
-# Ports: Delegate 3300 · One Login 3301 (simulator behind it on 3399) · HMRC 3302 · About 3304 · Postgres 5433
+# Ports: Delegate 3300 · One Login 3301 (simulator behind it on 3399) · HMRC 3302 · Observatory 3303 · About 3304 · Postgres 5433
 services:
   db:
     image: postgres:16-alpine
@@ -74,6 +74,9 @@ services:
       - "3300:3300"
     environment:
       DATABASE_URL: postgresql://delegate:delegate@db:5432/delegate
+      RESEARCH_FEED_ENABLED: ${RESEARCH_FEED_ENABLED:-false}
+      RESEARCH_FEED_KEY: ${RESEARCH_FEED_KEY:-dev-research-feed-key}
+      RESEARCH_PSEUDONYM_KEY: ${RESEARCH_PSEUDONYM_KEY:-dev-project-pseudonym-key}
       PUBLIC_MODE: ${PUBLIC_MODE:-false}
       APP_URL: ${DELEGATE_PUBLIC_URL:-http://localhost:3300}
       # Browser-facing issuer vs. the address the app container uses server-side.
@@ -102,6 +105,9 @@ services:
       - "3302:3302"
     environment:
       DATABASE_URL: postgresql://delegate:delegate@db:5432/hmrc
+      RESEARCH_FEED_ENABLED: ${RESEARCH_FEED_ENABLED:-false}
+      RESEARCH_FEED_KEY: ${RESEARCH_FEED_KEY:-dev-research-feed-key}
+      RESEARCH_PSEUDONYM_KEY: ${RESEARCH_PSEUDONYM_KEY:-dev-project-pseudonym-key}
       PUBLIC_MODE: ${PUBLIC_MODE:-false}
       APP_URL: ${HMRC_PUBLIC_URL:-http://localhost:3302}
       OIDC_ISSUER: ${ONELOGIN_PUBLIC_URL:-http://localhost:3301}
@@ -154,6 +160,32 @@ services:
       ONE_LOGIN_INTERNAL_URL: http://onelogin:3301
       DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:-dev-demo-console-key}
       HMRC_MIDDLEWARE_FILE: ../hmrc/src/lib/delegated-authority.ts
+
+  # Local research only: no inbound dependency from existing applications.
+  observatory:
+    build:
+      context: .
+      dockerfile: apps/observatory/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3303:3303"
+    environment:
+      DATABASE_URL: postgresql://observatory:observatory@db:5432/observatory?connect_timeout=3&pool_timeout=3
+      PUBLIC_MODE: ${PUBLIC_MODE:-false}
+      RESEARCH_INGEST_ENABLED: ${RESEARCH_INGEST_ENABLED:-false}
+      OBSERVATORY_COLLECTION_KEY: ${OBSERVATORY_COLLECTION_KEY:-dev-observatory-collection-key}
+      HMRC_RESEARCH_FEED_URL: http://hmrc:3302/api/research/events
+      HMRC_RESEARCH_FEED_KEY: ${RESEARCH_FEED_KEY:-dev-research-feed-key}
+      DELEGATE_RESEARCH_FEED_URL: http://delegate:3300/api/research/events
+      DELEGATE_RESEARCH_FEED_KEY: ${RESEARCH_FEED_KEY:-dev-research-feed-key}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3303/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   dbdata:

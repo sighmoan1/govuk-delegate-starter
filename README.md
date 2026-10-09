@@ -36,7 +36,7 @@ Start with **DB-01 (legal authority)** and **DB-02 (when the person must approve
 
 [Documentation index](docs/README.md) links the current behaviour, target architecture, decision history, evidence and setup guidance. [Repository status](docs/REPOSITORY_STATUS.md) records the 9 October branch audit. The About site serves the plain-language current-state summary at `/project-status`.
 
-## Four apps
+## Five apps
 
 The three systems in the scenario are mock-ups of real services. They carry no explanation of the demo, only a "Prototype · About this prototype" line. Everything explanatory lives on the about site.
 
@@ -51,6 +51,8 @@ The three systems in the scenario are mock-ups of real services. They carry no e
 | GOV.UK One Login (`apps/onelogin` in front of the official simulator) | 3301 | Signs people in, for Delegate and for HMRC: "Enter your email address", "Enter your password". The official simulator (internal, :3399) does the OIDC work | Prototype sign-in screens and simulator proxy; no delegation logic in authentication |
 | **GOV.UK Delegate** (`apps/delegate`) | 3300 | Part of the GOV.UK account: consent screen, "Who can act for you", agent and service registry, one check API. Internal view at `/ops` | New |
 | **HMRC: Claim tax relief for your job expenses** (`apps/hmrc`) | 3302 | A One Login relying party with a human journey and an API for agents. Three lanes: signed-in person, authorised agent, not identified. Internal view at `/ops` | Authority checks; request creation/polling; agent sessions and browser guards; discovery; domain/traffic controls; receipts, disputes and outcome reporting |
+
+Observatory (`apps/observatory`, port **3303**) is a separate, local-only read-only research workbench. It has its own database/login and generated Prisma client. Synthetic research feeds are available behind explicit opt-in; collection is disabled by default and no classifier is implemented. It cannot change authority or service outcomes. See [Observatory setup](docs/observatory/SETUP.md) and [research protocol](docs/observatory/RESEARCH_PROTOCOL.md). The historical Example AI brief mentioned 3303; that app is not implemented and the port is now assigned to Observatory.
 
 Delegate and HMRC each have their own database in one Postgres container; One Login and About have no application database and they talk only over HTTP. The join key between HMRC and Delegate is the person's One Login subject.
 
@@ -75,6 +77,8 @@ npm ci
 docker compose up -d --build
 docker compose ps
 ```
+
+For existing database volumes, first provision the new Observatory database/login using [the upgrade steps](docs/observatory/SETUP.md#existing-database-volumes); Postgres init scripts run only on a new volume.
 
 Startup applies migrations and seeds only empty databases. Rebuilding retains the existing database volume; `db:reset` deliberately replaces citizen demo fixtures. The HMRC queue worker is a separate compose service and must be running for asynchronous claims. See [current behaviour](docs/CURRENT_BEHAVIOUR.md) before resetting or testing.
 
@@ -113,7 +117,7 @@ The core idea, in one line: **identify the agent, authorise the mandate, limit t
 - [Demo and claims guide](docs/DEMO_GUIDE.md) — a seven-minute walkthrough and defensible language for stakeholders.
 - [About-site evidence page](apps/about/src/app/evidence/page.tsx) — readable explanation at `/evidence` when deployed.
 
-**No comparative or real-world economic result has yet been published in the register.** Existing route-choice observations and synthetic swarm tests are useful starting points, not proof of national-scale benefit. Keep further architecture debates in the relevant ADRs, not in experiment results.
+**A [bounded technical B/C comparison](docs/evidence/RUN-20261009-E2-01.md) is recorded; no citizen-effort, economic or real-world product-benefit result has been established.** Existing route-choice observations and synthetic swarm tests are useful starting points, not proof of national-scale benefit. Keep further architecture debates in the relevant ADRs, not in experiment results.
 
 ## Tests
 
@@ -129,7 +133,7 @@ npx vitest run
 The tests use synthetic data and reset fixtures. Use an isolated test database, not a shared demonstration database.
 
 ```bash
-npm test            # Pause hmrc-worker for HMRC database tests; restart it for root HTTP/swarm tests.
+npm test            # Observatory unit health tests first. Pause hmrc-worker for HMRC database tests; restart it for root HTTP/swarm tests.
                     # Vitest: HMRC database-backed idempotency/atomicity/queue tests (apps/hmrc/tests), then over HTTP: scenarios A–F at Delegate's check API and again through HMRC;
                     # the swarm experiments (tests/swarm.test.ts: seven scenarios measured, then a seeded simulation; needs the queue worker running);
                     # one event per attempt in both logs; untrusted-lane friction; lifecycle; return URLs
