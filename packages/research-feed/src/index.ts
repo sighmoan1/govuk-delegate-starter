@@ -11,7 +11,7 @@ const observed = <T extends z.ZodType>(value: T) => z.object({
 export const Event = z.object({
   schema_version: z.literal(1), source_service: Source, source_event_id: text.min(1),
   event_kind: z.enum(["service_request", "authority_check", "browser_sensor"]).default("service_request"),
-  occurred_at: observed(z.iso.datetime()), run_id: observed(text),
+  occurred_at: z.object({ value: z.iso.datetime(), status: z.literal("known"), provenance: z.literal("source_clock") }).strict(), run_id: observed(text),
   correlation: z.object({ request_id: observed(text), transaction_id: observed(text),
     session_id: observed(text), delegate_check_id: observed(text) }).strict(),
   observed: z.object({ lane: z.enum(["AUTHENTICATED_HUMAN", "AUTHORISED_AGENT", "DECLARED_AGENT", "UNTRUSTED", "UNKNOWN"]),
@@ -22,7 +22,18 @@ export const Event = z.object({
   browser_sensor: z.object({ status: z.enum(["not_run", "blocked", "error", "missing", "identified"]),
     provenance: z.enum(["not_collected", "unverified_client_claim", "vendor_verified"]),
     event_id: observed(z.string().regex(/^[0-9a-f]{64}$/)).optional(),
-    visitor_id: observed(z.string().regex(/^[0-9a-f]{64}$/)).optional() }).strict(),
+    visitor_id: observed(z.string().regex(/^[0-9a-f]{64}$/)).optional() }).strict().superRefine((sensor, ctx) => {
+      const hasEvent = sensor.event_id?.value != null;
+      const hasVisitor = sensor.visitor_id?.value != null;
+      if (sensor.status === "identified" && (!hasEvent || sensor.provenance === "not_collected"))
+        ctx.addIssue({ code: "custom", message: "Identified sensor needs observed event evidence" });
+      if (sensor.provenance === "vendor_verified" && (sensor.status !== "identified" || !hasEvent))
+        ctx.addIssue({ code: "custom", message: "Verified vendor evidence needs identified event" });
+      if (["missing", "not_run"].includes(sensor.status) && (hasEvent || hasVisitor))
+        ctx.addIssue({ code: "custom", message: "Missing sensor cannot contain identifiers" });
+      for (const field of [sensor.event_id, sensor.visitor_id]) if (field?.value != null && (field.status !== "inferred" || field.provenance !== "pseudonymised"))
+        ctx.addIssue({ code: "custom", message: "Vendor identifiers must be marked derived pseudonyms" });
+    }),
 }).strict();
 export type ResearchEvent = z.infer<typeof Event>;
 export const Page = z.object({ schema_version: z.literal(1), source_service: Source,

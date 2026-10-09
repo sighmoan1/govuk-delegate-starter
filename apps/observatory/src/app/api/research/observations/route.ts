@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const body = await req.text();
     if (body.length > 16384) throw new Error("TOO_LARGE");
     event = Event.parse(JSON.parse(body));
-    if (event.source_service !== "hmrc" || event.event_kind !== "browser_sensor" || event.outcome.decision !== "OBSERVED" || !event.occurred_at.value)
+    if (event.source_service !== "hmrc" || !event.source_event_id.startsWith("sensor:") || event.event_kind !== "browser_sensor" || event.outcome.decision !== "OBSERVED" || !event.occurred_at.value)
       throw new Error("INVALID_SENSOR_ENVELOPE");
   } catch { return Response.json({ error: "INVALID_OBSERVATION" }, { status: 400, headers }); }
   try {
