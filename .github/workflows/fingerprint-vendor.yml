@@ -43,6 +43,8 @@ jobs:
             exit 1
           fi
       - uses: actions/checkout@v4
+      - name: Prepare cached public Docker images
+        run: bash scripts/ci-images.sh
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
