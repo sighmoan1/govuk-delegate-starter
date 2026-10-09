@@ -18,6 +18,45 @@ const action = (summary: string, method: "get" | "post") => ({
   },
 });
 
+/**
+ * Claim progress is polled, never pushed (no webhooks or subscriptions). Send the last ETag as
+ * If-None-Match to get 304 Not Modified when nothing has changed. Responses are private, no-store:
+ * the ETag is for the caller's own conditional requests, not for any cache.
+ */
+const progressPath = () => {
+  const base = action("Scheduled claim progress check: the same status as /api/claims, plus observed_at, a version, changed_since (with ?since=<ISO time>) and polling guidance. This is polling only: HMRC does not push or call webhooks. Send the ETag from your last response as If-None-Match and you get 304 Not Modified, with no body, while nothing has changed; a new reply, question, dispute, withdrawn answer, correction or claim gives a new ETag and the full status. Every response is Cache-Control: private, no-store, so the ETag is for your own conditional requests, not for any cache. There is a small number of checks a day per person, however many agents act for them (polling.limit); a 304 still counts as a check. Over that, 429 RATE_LIMITED with Retry-After: a limit on checks, not on the claim, and nothing is lost by waiting.", "get");
+  const get = base.get as Record<string, unknown>;
+  return {
+    get: {
+      ...get,
+      parameters: [
+        ...(get.parameters as unknown[]),
+        { name: "since", in: "query", required: false, schema: { type: "string", format: "date-time" }, description: "An earlier observed_at. changed_since says whether anything changed after it." },
+        { name: "If-None-Match", in: "header", required: false, schema: { type: "string" }, description: "The ETag of your last response. If the status is unchanged you get 304 with no body. Only ever matched against the version of the person you are acting for." },
+      ],
+      responses: {
+        ...(get.responses as Record<string, unknown>),
+        "200": {
+          description: "The status, with observed_at (when HMRC looked), version (the ETag value), changed_since, and polling: suggested_next_poll_seconds, the limit and how to back off.",
+          headers: {
+            ETag: { schema: { type: "string" }, description: "Weak validator for the person's current claim status. Changes whenever any claim, question or answer changes." },
+            "Cache-Control": { schema: { type: "string", enum: ["private, no-store"] }, description: "Personal data: do not store." },
+            "X-Suggested-Poll-Interval": { schema: { type: "integer" }, description: "Seconds to wait before the next check that the limit allows evenly across a day. Guidance, not a promise of when anything will change." },
+          },
+        },
+        "304": {
+          description: "Not Modified: nothing has changed since the version in If-None-Match. No body. Repeat ETag, Cache-Control and X-Suggested-Poll-Interval headers. It counts as a check.",
+          headers: {
+            ETag: { schema: { type: "string" } },
+            "Cache-Control": { schema: { type: "string", enum: ["private, no-store"] } },
+            "X-Suggested-Poll-Interval": { schema: { type: "integer" } },
+          },
+        },
+      },
+    },
+  };
+};
+
 export function GET() {
   return NextResponse.json({
     openapi: "3.1.0",
@@ -31,7 +70,7 @@ export function GET() {
       "/api/refund-account": action("Change the bank account for refunds. Needs the person's approval of this one change. Send an Idempotency-Key header and the (made-up, demo) details: { account_name, sort_code, account_number }. Without approval you get 403 STEP_UP_REQUIRED with step_up.details and a code for the person. Their approval covers only these details, once, for a limited time (step_up.expires_at); different details or a new key need a new approval. Retrying the same request after it succeeded returns the original result.", "post"),
       "/api/address": action("Change address. Needs the person's approval of this one change, exactly as for /api/refund-account. Send an Idempotency-Key header and the (made-up, demo) details: { address_line_1, address_line_2?, town, postcode }.", "post"),
       "/api/claims": action("See the person's claims, their status, and anything HMRC has asked (open_queries)", "get"),
-      "/api/claims/progress": action("Scheduled claim progress check: same as /api/claims, plus ?since=<ISO time> to see if anything changed. A few checks a day per person; over that, 429 RATE_LIMITED with Retry-After, which is a polling limit, not a limit on the claim.", "get"),
+      "/api/claims/progress": progressPath(),
       "/api/claims/respond": action("Answer a question HMRC asked about a claim. Body: { query_id, answer, confirmed_by_person? }. Check the wording with the person first and say so with confirmed_by_person: true. It is optional, but the person sees on GOV.UK what you sent and whether you said they agreed, and can say they did not.", "post"),
     },
   });

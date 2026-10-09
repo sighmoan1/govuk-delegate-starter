@@ -5,6 +5,8 @@ import { prisma } from "./db";
 import type { Actor } from "./delegated-authority";
 import { recordReceipt, disputedReceipts, receiptKey } from "./delegate-client";
 import type { Admitted, Tx } from "./domain-policy";
+import { PRINCIPAL_WINDOWS } from "./throughput";
+import { extraVersionInputs, progressVersion } from "./progress-version";
 
 export type Taxpayer = TaxpayerRow;
 
@@ -97,25 +99,62 @@ const claimJson = (c: { reference: string; summary: string; kind: string; create
   };
 };
 
-/** The person's claims, each with its status and anything HMRC has asked. */
-export async function claimStatus(taxpayer: Taxpayer) {
+/** The person's claims as they stand now, after any disputed answers have been reopened. */
+async function loadClaimState(taxpayer: Taxpayer) {
   const { checked } = await reopenDisputedAnswers(taxpayer.id);
   const claims = await prisma.claim.findMany({ where: { taxpayerId: taxpayer.id }, include: { queries: true }, orderBy: { createdAt: "desc" } });
+  return { checked, claims };
+}
+
+const statusBody = (taxpayer: Taxpayer, state: Awaited<ReturnType<typeof loadClaimState>>) => ({
+  taxpayer: taxpayer.name, claims: state.claims.map(claimJson), synthetic: true,
+  dispute_check: state.checked ? "OK" : "UNAVAILABLE",
+  ...(state.checked ? {} : { dispute_check_notice: "GOV.UK Delegate could not be asked whether the person disputes any answer sent for them. Answers shown as received may still be withdrawn. Check again shortly." }),
+});
+
+/** The person's claims, each with its status and anything HMRC has asked. */
+export async function claimStatus(taxpayer: Taxpayer) {
+  return statusBody(taxpayer, await loadClaimState(taxpayer));
+}
+
+/**
+ * Polling guidance, from the same numbers that enforce the limit (throughput.ts),
+ * so the advice and the 429 cannot drift apart. Polling is the only way to
+ * learn of changes: HMRC does not push, call webhooks or hold subscriptions.
+ */
+export function pollingGuidance() {
+  const w = PRINCIPAL_WINDOWS.check_claim_progress;
+  const windowSeconds = w.windowMs / 1000;
   return {
-    taxpayer: taxpayer.name, claims: claims.map(claimJson), synthetic: true,
-    dispute_check: checked ? "OK" : "UNAVAILABLE",
-    ...(checked ? {} : { dispute_check_notice: "GOV.UK Delegate could not be asked whether the person disputes any answer sent for them. Answers shown as received may still be withdrawn. Check again shortly." }),
+    delivery: "polling_only",
+    push_or_webhooks: false,
+    suggested_next_poll_seconds: Math.ceil(windowSeconds / w.limit),
+    limit: { rule: w.rule, checks: w.limit, per_seconds: windowSeconds, shared_by: "the person, however many agents act for them" },
+    if_limited: "429 RATE_LIMITED with a Retry-After header: wait that long and ask again. It is a limit on checks, never a decision about the claim, and nothing is lost by waiting.",
+    conditional_requests: "Send the last ETag back as If-None-Match. 304 Not Modified means nothing has changed since that version; any change to a claim, question or answer gives a new ETag and the full status. A 304 still counts as a check.",
   };
 }
 
-/** A scheduled check: the same status, plus what changed since the agent last looked. */
+/**
+ * A scheduled check: the same status, plus what changed since the agent last looked.
+ * `version` is the ETag value (progress-version.ts). It changes whenever anything in
+ * the status changes and does not depend on `since`, so a caller holding it has seen this state.
+ */
 export async function claimProgress(taxpayer: Taxpayer, body: Record<string, unknown>) {
-  const status = await claimStatus(taxpayer);
+  const state = await loadClaimState(taxpayer);
   const since = typeof body.since === "string" ? new Date(body.since) : null;
   const changed = since && !Number.isNaN(+since)
     ? await prisma.claim.count({ where: { taxpayerId: taxpayer.id, OR: [{ createdAt: { gt: since } }, { queries: { some: { OR: [{ askedAt: { gt: since } }, { answeredAt: { gt: since } }, { stateChangedAt: { gt: since } }] } } }] } })
     : null;
-  return { ...status, checked_at: new Date().toISOString(), changed_since: changed === null ? null : changed > 0 };
+  const observedAt = new Date().toISOString();
+  return {
+    ...statusBody(taxpayer, state),
+    observed_at: observedAt,
+    checked_at: observedAt, // the earlier name for observed_at
+    changed_since: changed === null ? null : changed > 0,
+    version: progressVersion(taxpayer.id, state.claims, state.checked, await extraVersionInputs(taxpayer.id)),
+    polling: pollingGuidance(),
+  };
 }
 
 /**
