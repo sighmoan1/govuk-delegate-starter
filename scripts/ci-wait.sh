@@ -8,6 +8,8 @@ urls=(
   http://localhost:3300/api/catalogues/hmrc-personal-tax
   http://localhost:3302/
   http://localhost:3304/
+  http://localhost:3305/health
+  http://localhost:3300/api/catalogues/council-casework
 )
 deadline=$((SECONDS + 180))
 for url in "${urls[@]}"; do

@@ -8,16 +8,17 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -n onelogin,delegate,hmrc,worker,about -c gray,blue,green,yellow,cyan \"npm:dev -w apps/onelogin\" \"npm:dev -w apps/delegate\" \"npm:dev -w apps/hmrc\" \"npm:worker -w apps/hmrc\" \"npm:dev -w apps/about\"",
+    "dev": "concurrently -n onelogin,delegate,hmrc,worker,about -c gray,blue,green,yellow,cyan \"npm:dev -w apps/onelogin\" \"npm:dev -w apps/delegate\" \"npm:dev -w apps/hmrc\" \"npm:worker -w apps/hmrc\" \"npm:dev -w apps/about\" \"npm:dev -w apps/council\"",
     "public": "node scripts/public.mjs start",
     "public:stop": "node scripts/public.mjs stop",
     "build": "npm run build --workspaces --if-present",
     "db:setup": "npm run db:migrate --workspaces --if-present && npm run db:seed --workspaces --if-present",
     "db:reset": "npm run db:reset --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm test -w apps/hmrc && vitest run",
+    "test": "npm test -w apps/council && npm test -w apps/hmrc && vitest run",
     "test:e2e": "playwright test",
-    "test:public": "node --env-file=.env.public ./node_modules/.bin/playwright test e2e/public.spec.ts --workers 1"
+    "test:public": "node --env-file=.env.public ./node_modules/.bin/playwright test e2e/public.spec.ts --workers 1",
+    "council:register": "SERVICE_CATALOGUE_FILE=../council/service-catalogue.json DEMO_SERVICE_NAME=\"Example council\" HMRC_SERVICE_KEY=${COUNCIL_SERVICE_KEY:-dev-council-service-key} npm run catalogue:register -w apps/delegate"
   },
   "devDependencies": {
     "@playwright/test": "^1.50.0",

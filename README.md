@@ -154,3 +154,7 @@ npm run test:e2e    # Playwright: the scenarios (each started from its UI reset)
 [Current integration contract](docs/CURRENT_BEHAVIOUR.md) is the implemented-state entry point. [BUILD_SPEC.md](docs/BUILD_SPEC.md) and [PROTOTYPE_CONTENT.md](docs/PROTOTYPE_CONTENT.md) preserve the original DWP/Example AI brief; later decisions supersede those examples. The current HMRC seed has eight capabilities; the browser request form offers seven and omits `change_address`, which remains available through the API.
 
 Service-owned catalogue publication and immutable version/discovery rules are described in [Service catalogues](docs/SERVICE_CATALOGUES.md).
+
+## Independent council proof
+
+A second synthetic service runs on port 3305 with its own catalogue, credential, records and case-ownership rule. Run `npm run council:register` after database setup for local development; Docker Compose registers it automatically. Authorise it through the same unchecked generic consent UI. See [the integration guide and identity limits](docs/SECOND_SERVICE.md).

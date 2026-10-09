@@ -47,8 +47,10 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Build and start isolated application stack (worker paused)
         run: |
-          docker compose up -d --build db simulator onelogin delegate hmrc about 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/stack-start.log
+          docker compose up -d --build db simulator onelogin delegate hmrc about council 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/stack-start.log
           bash scripts/ci-wait.sh
+      - name: Run independent council unit regression
+        run: npm test -w apps/council 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/council-tests.log
       - name: Run HMRC database regression (worker paused)
         run: npm test -w apps/hmrc -- --reporter=default --reporter=junit --outputFile="$PWD/ci-artifacts/hmrc-junit.xml" 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/hmrc-tests.log
       - name: Start queue worker for HTTP and browser journeys

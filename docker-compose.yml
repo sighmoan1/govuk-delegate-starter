@@ -155,5 +155,35 @@ services:
       DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:-dev-demo-console-key}
       HMRC_MIDDLEWARE_FILE: ../hmrc/src/lib/delegated-authority.ts
 
+  # Registration is configuration; Delegate contains no council-specific code.
+  council-register:
+    build:
+      context: .
+      dockerfile: apps/delegate/Dockerfile
+    command: ["sh", "-c", "for attempt in 1 2 3 4 5 6 7 8 9 10; do npm run catalogue:register && exit 0; sleep 3; done; exit 1"]
+    volumes:
+      - ./apps/council/service-catalogue.json:/repo/apps/council/service-catalogue.json:ro
+    depends_on:
+      delegate:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://delegate:delegate@db:5432/delegate
+      SERVICE_CATALOGUE_FILE: ../council/service-catalogue.json
+      DEMO_SERVICE_NAME: Example council
+      HMRC_SERVICE_KEY: ${COUNCIL_SERVICE_KEY:-dev-council-service-key}
+
+  council:
+    build:
+      context: .
+      dockerfile: apps/council/Dockerfile
+    depends_on:
+      council-register:
+        condition: service_completed_successfully
+    ports:
+      - "3305:3305"
+    environment:
+      DELEGATE_INTERNAL_URL: http://delegate:3300
+      COUNCIL_SERVICE_KEY: ${COUNCIL_SERVICE_KEY:-dev-council-service-key}
+
 volumes:
   dbdata:
