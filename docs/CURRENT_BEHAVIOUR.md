@@ -51,3 +51,7 @@ Local sign-in accepts the prefilled Sam email (other emails create separate synt
 Scenarios 1 and 2 have reset controls. Route-choice findings display recorded observations without reset. The swarm runner creates fresh people. Public About links default to localhost and are unreachable remotely; configure `ABOUT_URL` only with a suitable explanatory site and keep local reset/phone tooling private.
 
 Remaining production issues include pairwise identity mapping, catalogue governance, lawful authority, assurance, retention, resilience and proportionate inclusion/access policies. See `DECISION_BACKLOG.md` and the validation/evidence register.
+
+## Observatory scaffold
+
+The independent `apps/observatory` workbench serves a synthetic-research disclaimer and implementation status on port 3303. `GET /api/health` checks its own migrated research-workspace table and returns 200 when ready, otherwise a redacted 503. It uses a separate Prisma client, database and login; explicitly enabled synthetic read-only feeds and an authenticated research-only sensor collection endpoint are available; there are no classifiers or HMRC/Delegate decision dependencies on it. Public tunnel scripts do not expose Observatory. The collection default is disabled. This workbench publishes no study result or automation performance claim. See [setup](observatory/SETUP.md).

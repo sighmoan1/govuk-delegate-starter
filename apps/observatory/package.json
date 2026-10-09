@@ -1,0 +1,33 @@
+{
+  "name": "@prototype/observatory",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Independent read-only synthetic research scaffold; no operational decisions.",
+  "scripts": {
+    "sync-css": "node scripts/sync-css.mjs",
+    "dev": "npm run sync-css && prisma generate && next dev -H 127.0.0.1 -p 3303",
+    "build": "npm run sync-css && prisma generate && next build",
+    "start": "next start -H 0.0.0.0 -p 3303",
+    "db:migrate": "prisma migrate deploy",
+    "typecheck": "prisma generate && tsc --noEmit",
+    "test": "vitest run",
+    "ingest": "node --env-file=.env --import tsx scripts/ingest.ts",
+    "verify:feeds": "node --env-file=.env --import tsx scripts/verify-feeds.ts"
+  },
+  "dependencies": {
+    "next": "^15.5.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@prisma/client": "^6.0.0",
+    "@prototype/research-feed": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.6.0",
+    "prisma": "^6.0.0",
+    "vitest": "^3.2.7",
+    "tsx": "^4.19.0"
+  }
+}
