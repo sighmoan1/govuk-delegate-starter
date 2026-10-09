@@ -53,6 +53,16 @@ export async function activeResearch(binding: ResearchBinding) {
   return data.session_id === binding.session_id && data.run_id === binding.run_id && data.attempt_id === binding.attempt_id && Date.parse(data.expires_at) > Date.now();
 }
 
+/** Local, bounded observational evidence only. No ledger/vendor availability is
+ * consulted on a business request, and an invalid sensor cookie adds nothing. */
+export async function researchLogEvidence(req: Request): Promise<{ sessionId?: string; runTag?: string }> {
+  if (!researchEnabled()) return {};
+  try {
+    const binding = await readResearch(req);
+    return binding ? { sessionId: binding.session_id, runTag: binding.run_id } : {};
+  } catch { return {}; }
+}
+
 export async function verifyVendor(sample: SensorSample, binding: ResearchBinding): Promise<"unverified_client_claim" | "vendor_verified" | "verification_failed" | "verification_unavailable"> {
   const secret = process.env.FINGERPRINT_SERVER_API_KEY;
   if (!secret || sample.state !== "identified") return "unverified_client_claim";
@@ -81,7 +91,7 @@ export async function appendSensor(sample: SensorSample, binding: ResearchBindin
   const event = {
     schema_version: 1, source_service: "hmrc", source_event_id: `sensor:${randomUUID()}`, event_kind: "browser_sensor",
     occurred_at: { value: new Date().toISOString(), status: "known", provenance: "source_clock" }, run_id: known(binding.run_id),
-    correlation: { request_id: known(randomUUID()), transaction_id: missing(), session_id: known(binding.session_id), delegate_check_id: missing() },
+    correlation: { request_id: known(randomUUID()), transaction_id: missing(), session_id: pseudo("session", binding.session_id), delegate_check_id: missing() },
     observed: { lane: "UNKNOWN", signature_verified: missing(), latency_ms: missing() },
     outcome: { decision: "OBSERVED", outcome_class: missing(), cost_class: missing() },
     browser_sensor: { status: sample.state, provenance: verification === "vendor_verified" ? "vendor_verified" : sample.state === "not_run" ? "not_collected" : "unverified_client_claim",

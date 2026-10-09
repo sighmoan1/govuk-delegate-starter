@@ -10,6 +10,7 @@ import { verifyAgentSignature } from "@/lib/agent-identity";
 import { agentSessionFromRequest } from "@/lib/agent-session";
 import { askDelegate, DelegateUnavailableError } from "@/lib/delegate-client";
 import type { Actor } from "@/lib/delegated-authority";
+import { researchLogEvidence } from "@/lib/fingerprint-research";
 
 const CAPABILITY = "respond_to_query";
 
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
   } catch (e) {
     if (!(e instanceof DelegateUnavailableError)) throw e;
     // Nothing was accepted: the question is still open for the agent to try again.
-    await logEvent({ path: "/query/reply", capability: CAPABILITY, lane: "AUTHORISED_AGENT", outcome: "REFUSED", reason: "DELEGATE_UNAVAILABLE", latencyMs: 0 });
+    await logEvent({ ...await researchLogEvidence(req), path: "/query/reply", capability: CAPABILITY, lane: "AUTHORISED_AGENT", outcome: "REFUSED", reason: "DELEGATE_UNAVAILABLE", latencyMs: 0 });
     return NextResponse.redirect(new URL("/your-tax?replyError=DELEGATE_UNAVAILABLE", config.appUrl), 303);
   }
 }
@@ -34,7 +35,7 @@ async function reply(req: Request) {
   const started = Date.now();
   const go = (path: string) => NextResponse.redirect(new URL(path, config.appUrl), 303);
   const sig = await verifyAgentSignature(req);
-  const evidence = { path: "/query/reply", capability: CAPABILITY, userAgent: req.headers.get("user-agent")?.slice(0, 300) ?? null, signatureAgent: sig.verified ? sig.agent : sig.agent ?? null, signatureResult: sig.verified ? "verified" : sig.reason };
+  const evidence = { path: "/query/reply", capability: CAPABILITY, userAgent: req.headers.get("user-agent")?.slice(0, 300) ?? null, signatureAgent: sig.verified ? sig.agent : sig.agent ?? null, signatureResult: sig.verified ? "verified" : sig.reason, ...await researchLogEvidence(req) };
   const form = await req.formData().catch(() => new FormData());
   const fields = { query_id: String(form.get("query_id") ?? ""), answer: String(form.get("answer") ?? "") };
 

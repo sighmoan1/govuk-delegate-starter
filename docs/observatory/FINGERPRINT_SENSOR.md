@@ -37,6 +37,13 @@ No vendor attributes, IP addresses, taxpayer data or ground-truth classes are
 included. Missing/inactive research bindings and collection outages refuse only
 research collection, never the HMRC journey.
 
+The API wrapper and human claim/query submission logs read the signed research
+cookie locally and add only opaque run/session references. Cookie failure adds
+no evidence; the business path never calls Observatory or Fingerprint. Service
+and sensor feeds use the same source-scoped session HMAC for comparison. A log
+reference is observational: the protected ledger still verifies active enrolled
+bindings before evaluation, and no truth label is copied into service logs.
+
 Coverage states are `not_run`, `blocked`, `error`, `missing` and `identified`.
 Explicit CSP/script-load blockers are `blocked`; generic network errors remain
 `error` because their cause is unknown. Missing coverage and direct API access

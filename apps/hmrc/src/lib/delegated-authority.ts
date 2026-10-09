@@ -32,6 +32,7 @@ import { config, UNTRUSTED_DELAY_MS } from "./config";
 import { ASYNC_OPERATIONS } from "./transaction-queue";
 import { freshReceipt, isReceipt, statusUrl } from "./transactions";
 import { isStorageFailure, prefersAsync } from "./acceptance";
+import { researchLogEvidence } from "./fingerprint-research";
 
 export type Actor =
   | { kind: "SELF" }
@@ -75,6 +76,7 @@ export function requireDelegatedAuthority(capability: string, handler: Handler, 
       runTag: req.headers.get("x-run-tag")?.slice(0, 80) ?? null,
       signatureAgent: sig.verified ? sig.agent : sig.agent ?? null,
       signatureResult: sig.verified ? "verified" : sig.reason,
+      ...await researchLogEvidence(req),
     };
     const log: Log = (e) => logEvent({ ...evidence, ...e, path, capability, latencyMs: Date.now() - started });
     const body = { ...(await readBody(req)), ...options.extraBody?.(req) };
@@ -265,7 +267,7 @@ async function acceptanceUnavailable(req: Request, capability: string, rc: Rc) {
   const t = rc.trace;
   if (t.lane) {
     // Best effort: the store that just failed is the one the log is in.
-    await logEvent({ lane: t.lane, outcome: "REFUSED", reason: "SERVICE_UNAVAILABLE", path: new URL(req.url).pathname, capability, subject: t.subject ?? null, agentName: t.agentName ?? null, agentId: t.agentId ?? null, latencyMs: 0, retryAfterSeconds, costClass: "write" }).catch(() => undefined);
+    await logEvent({ ...await researchLogEvidence(req), lane: t.lane, outcome: "REFUSED", reason: "SERVICE_UNAVAILABLE", path: new URL(req.url).pathname, capability, subject: t.subject ?? null, agentName: t.agentName ?? null, agentId: t.agentId ?? null, latencyMs: 0, retryAfterSeconds, costClass: "write" }).catch(() => undefined);
   }
   return NextResponse.json(
     {

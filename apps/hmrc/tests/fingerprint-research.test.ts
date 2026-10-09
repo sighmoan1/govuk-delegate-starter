@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createHmac } from "node:crypto";
 import { initialCoverage, errorCoverage, parseSample } from "@/lib/fingerprint-coverage";
-import { verifyVendor, signResearch, readResearch, RESEARCH_COOKIE, type ResearchBinding } from "@/lib/fingerprint-research";
+import { verifyVendor, signResearch, readResearch, researchLogEvidence, RESEARCH_COOKIE, type ResearchBinding } from "@/lib/fingerprint-research";
 import { POST as enrol } from "@/app/api/research/fingerprint/enrol/route";
 import { POST as collect } from "@/app/api/research/fingerprint/sample/route";
 
@@ -86,7 +87,10 @@ describe("research bindings and optional v4 verification", () => {
     const response = await collect(req);
     expect(response.status).toBe(200);
     const event = JSON.parse(fetch.mock.calls[1][1].body);
-    expect(event.run_id.value).toBe(binding.run_id); expect(event.correlation.session_id.value).toBe(binding.session_id);
+    expect(event.run_id.value).toBe(binding.run_id);
+    const serviceEvidence = await researchLogEvidence(req);
+    expect(serviceEvidence).toEqual({ sessionId: binding.session_id, runTag: binding.run_id });
+    expect(event.correlation.session_id.value).toBe(createHmac("sha256", process.env.RESEARCH_PSEUDONYM_KEY!).update(`hmrc:session:${serviceEvidence.sessionId}`).digest("hex"));
     expect(event.browser_sensor).toMatchObject({ status: "identified", provenance: "unverified_client_claim" });
     expect(event.browser_sensor.visitor_id.value).toMatch(/^[0-9a-f]{64}$/);
     expect(JSON.stringify(event)).not.toMatch(/raw-event|raw-visitor|spoofed|collection-key|truth|actor_class/);
@@ -98,5 +102,16 @@ describe("research bindings and optional v4 verification", () => {
     const cookie = await signResearch(binding);
     const req = new Request("http://localhost:3302/api/research/fingerprint/sample", { method: "POST", headers: { origin: "http://localhost:3302", "content-type": "application/json", cookie: `${RESEARCH_COOKIE}=${cookie}` }, body: JSON.stringify({ nonce: "other", sample: { state: "missing" } }) });
     expect((await collect(req)).status).toBe(403); expect(fetch).not.toHaveBeenCalled();
+  });
+  it("business-log research correlation is local-only and invalid/disabled cookies add nothing", async () => {
+    vi.stubEnv("FINGERPRINT_RESEARCH_ENABLED", "true");
+    const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
+    const cookie = await signResearch(binding);
+    const req = new Request("http://localhost:3302/api/job-expenses", { headers: { cookie: `${RESEARCH_COOKIE}=${cookie}`, "x-run-tag": "browser-chosen" } });
+    expect(await researchLogEvidence(req)).toEqual({ sessionId: binding.session_id, runTag: binding.run_id });
+    expect(await researchLogEvidence(new Request("http://localhost", { headers: { cookie: `${RESEARCH_COOKIE}=forged` } }))).toEqual({});
+    vi.stubEnv("FINGERPRINT_RESEARCH_ENABLED", "false");
+    expect(await researchLogEvidence(req)).toEqual({});
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

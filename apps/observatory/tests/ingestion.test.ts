@@ -49,3 +49,12 @@ test("a concurrent cursor owner prevents stale puller committing", async () => {
   const result = await pullSource({ source: "hmrc", url: "http://source/", key: "synthetic", store, fetcher: (async () => page([event("a")])) as typeof fetch });
   expect(result.concurrent).toBe(true); expect(result.inserted).toBe(0);
 });
+
+test("source clocks are never fabricated from missing values and sensor evidence stays explicit", () => {
+  expect(() => Event.parse({ ...event("a"), occurred_at: missing() })).toThrow();
+  expect(() => Event.parse({ ...event("a"), browser_sensor: { status: "identified", provenance: "unverified_client_claim" } })).toThrow();
+  const id = { value: "a".repeat(64), status: "inferred", provenance: "pseudonymised" };
+  expect(() => Event.parse({ ...event("a"), browser_sensor: { status: "not_run", provenance: "not_collected", event_id: id } })).toThrow();
+  expect(() => Event.parse({ ...event("a"), browser_sensor: { status: "blocked", provenance: "vendor_verified", event_id: id } })).toThrow();
+  expect(Event.parse({ ...event("a"), browser_sensor: { status: "identified", provenance: "unverified_client_claim", event_id: id } }).browser_sensor.provenance).toBe("unverified_client_claim");
+});
