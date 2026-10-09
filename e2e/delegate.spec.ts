@@ -65,6 +65,8 @@ test("the person sees what an agent said they agreed to, can say they didn't, an
   await page.getByRole("link", { name: "View this authority" }).click();
   await expect(page).toHaveURL(/\/account\/delegates\/[0-9a-f-]{36}$/);
   const mandateId = page.url().split("/").pop()!;
+  await expect(page.getByRole("heading", { name: "What you originally allowed" })).toBeVisible();
+  await expect(page.getByText("the signed-in citizen consent form", { exact: false })).toBeVisible();
 
   const res = await fetch(`${DELEGATE}/api/receipts`, {
     method: "POST",

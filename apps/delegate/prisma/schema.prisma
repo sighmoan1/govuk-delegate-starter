@@ -227,6 +227,8 @@ model Authorisation {
   delegations Delegation[]
   stepUps     StepUp[]
   events      ActivityEvent[]
+  consentEvidence ConsentEvidence[]
+  consentReads ConsentEvidenceAccess[]
 
   @@index([principalId, delegateId, serviceId])
   @@map("authorisation")
@@ -406,4 +408,26 @@ model ServiceCatalogue {
   service   Service @relation(fields: [serviceId], references: [id])
   @@unique([serviceId, version])
   @@map("service_catalogue")
+}
+
+// Minimal immutable consent proof, separate from receipts and action outcomes.
+model ConsentEvidence {
+  id String @id @default(uuid())
+  authorisationId String @map("authorisation_id")
+  kind String
+  occurredAt DateTime @default(now()) @map("occurred_at")
+  payload Json
+  authorisation Authorisation @relation(fields: [authorisationId], references: [id], onDelete: Cascade)
+  @@index([authorisationId, occurredAt])
+  @@map("consent_evidence")
+}
+
+model ConsentEvidenceAccess {
+  id String @id @default(uuid())
+  authorisationId String @map("authorisation_id")
+  principalRef String @map("principal_ref")
+  occurredAt DateTime @default(now()) @map("occurred_at")
+  authorisation Authorisation @relation(fields: [authorisationId], references: [id], onDelete: Cascade)
+  @@index([authorisationId, occurredAt])
+  @@map("consent_evidence_access")
 }

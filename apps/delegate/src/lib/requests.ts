@@ -1,3 +1,4 @@
+import { approvalEvidence } from "./consent-evidence";
 import { consentPresentation } from "./consent-presentation";
 import { currentCapabilities } from "./catalogues";
 import { prisma } from "./db";
@@ -87,10 +88,10 @@ async function pendingOrThrow(id: string, principalId?: string) {
 }
 
 /** Principal approves, optionally narrowing the permissions. Creates the active relationship. */
-export async function approveRequest(id: string, principalId: string, capabilityCodes?: string[]) {
+export async function approveRequest(id: string, principalId: string, capabilityCodes?: string[], method: "CITIZEN_BROWSER" | "SYNTHETIC_DEMO_API" = "SYNTHETIC_DEMO_API") {
   const req = await pendingOrThrow(id, principalId);
   // Approval must validate the same pinned service definitions shown to the person.
-  consentPresentation(req);
+  const presentation = consentPresentation(req);
   const requested = req.permissions.map((p) => p.capability);
   const chosen = capabilityCodes ? requested.filter((c) => capabilityCodes.includes(c.code)) : requested;
   if (capabilityCodes && capabilityCodes.some((c) => !requested.some((r) => r.code === c))) {
@@ -119,10 +120,11 @@ export async function approveRequest(id: string, principalId: string, capability
       throw new DomainError("NOT_PENDING", `Request is ${current?.status ?? "unavailable"}`, 409);
     }
     // One live relationship per principal/delegate/service: a new approval replaces the old.
-    await tx.authorisation.updateMany({
-      where: { principalId, delegateId: req.delegateId, serviceId: req.serviceId, status: "ACTIVE" },
-      data: { status: "REVOKED", revokedAt: now },
-    });
+    const replaced = await tx.authorisation.findMany({ where: { principalId, delegateId: req.delegateId, serviceId: req.serviceId, status: "ACTIVE" }, select: { id: true } });
+    for (const old of replaced) {
+      const removed = await tx.authorisation.updateMany({ where: { id: old.id, status: "ACTIVE" }, data: { status: "REVOKED", revokedAt: now } });
+      if (removed.count) await tx.consentEvidence.create({ data: { authorisationId: old.id, kind: "REVOKED", occurredAt: now, payload: { principal_ref: principalId, reason: "REPLACED_BY_NEW_APPROVAL" } } });
+    }
     const auth = await tx.authorisation.create({
       data: {
         principalId,
@@ -133,6 +135,11 @@ export async function approveRequest(id: string, principalId: string, capability
         permissions: { create: chosen.map((c) => ({ capabilityId: c.id })) },
       },
     });
+    await tx.consentEvidence.create({ data: { authorisationId: auth.id, kind: "APPROVED", occurredAt: now,
+      payload: approvalEvidence({ presentation, selected: chosen.map(c => c.code), principalRef: principalId,
+        delegateId: req.delegateId, serviceId: req.serviceId,
+        assurance: req.delegate.identityType === "WEB_BOT_AUTH" ? "VERIFIED" : req.delegate.identityType === "DECLARED" ? "DECLARED" : "REGISTERED",
+        approvedAt: now, validUntil: auth.validUntil, method }) } });
     // The agent the person approved is the root of the delegation chain.
     await tx.delegation.create({
       data: {
@@ -168,7 +175,13 @@ export async function revokeAuthorisation(id: string, principalId: string) {
   const auth = await prisma.authorisation.findUnique({ where: { id } });
   if (!auth || auth.principalId !== principalId) throw new DomainError("NOT_FOUND", "Authorisation not found", 404);
   if (auth.status !== "ACTIVE") throw new DomainError("NOT_ACTIVE", `Authorisation is ${auth.status}`, 409);
-  return prisma.authorisation.update({ where: { id }, data: { status: "REVOKED", revokedAt: new Date() } });
+  return prisma.$transaction(async tx => {
+    const now = new Date();
+    const changed = await tx.authorisation.updateMany({ where: { id, principalId, status: "ACTIVE" }, data: { status: "REVOKED", revokedAt: now } });
+    if (changed.count !== 1) throw new DomainError("NOT_ACTIVE", "That access has already ended", 409);
+    await tx.consentEvidence.create({ data: { authorisationId: id, kind: "REVOKED", occurredAt: now, payload: { principal_ref: principalId, reason: "CITIZEN_REMOVED_ACCESS" } } });
+    return tx.authorisation.findUniqueOrThrow({ where: { id } });
+  });
 }
 
 export function requestJson(r: NonNullable<Awaited<ReturnType<typeof loadRequest>>>) {
