@@ -167,7 +167,7 @@ function Results({ run: res }: { run: SwarmRun }) {
           <caption className="visually-hidden">Technical load by scenario</caption>
           <thead>
             <tr>
-              <th scope="col">Scenario</th><th scope="col">Requests sent</th><th scope="col">of which retries</th><th scope="col">Authority checks</th><th scope="col">Held back (429)</th><th scope="col">Unavailable (503)</th>
+              <th scope="col">Scenario</th><th scope="col">Requests sent</th><th scope="col">of which retries</th><th scope="col">Authority checks</th><th scope="col">Held back (429)</th><th scope="col">Unavailable (503)</th><th scope="col">Lost connections</th>
               <th scope="col">Back-end work admitted</th><th scope="col">Median request time at HMRC</th>
             </tr>
           </thead>
@@ -179,7 +179,7 @@ function Results({ run: res }: { run: SwarmRun }) {
                 <tr key={r.id}>
                   <th scope="row">{armName(r)}</th><td>{r.transport.attempts}</td><td>{r.transport.retries}</td><td>{ev.authorisedChecks}</td>
                   <td>{ev.technicalThrottles}{Object.keys(ev.throttlesByScope).length ? <span className="small"> ({Object.entries(ev.throttlesByScope).map(([k, v]) => `${k} ${v}`).join(", ")})</span> : null}</td>
-                  <td>{ev.unavailable}</td>
+                  <td>{ev.unavailable}</td><td>{r.transport.networkErrors}</td>
                   <td>{w.write ?? 0} writes, {w.expensive_query ?? 0} lookups, {(w.read ?? 0) + (w.status_poll ?? 0)} reads</td><td>{ms(ev.latencyMs.p50)}</td>
                 </tr>
               );
@@ -195,7 +195,7 @@ function Results({ run: res }: { run: SwarmRun }) {
       <ul>
         <li><strong>A, B and B′: one wish, many requests.</strong> {by.A && <>In A, {by.A.transport.byOp.claim.duplicate} attempts were refused as duplicates{by.A.transport.byOp.claim.throttled ? `, ${by.A.transport.byOp.claim.throttled} were held back for traffic (a repeat of a claim that is already in costs that person nothing)` : ""}, and {rec("A")} claim was received. </>}The same happened with {n} agents and with {n} hidden sessions.{by.A && by.A.transport.byOp.view.throttled > 0 ? ` The tax-code lookups in the same scenarios were held back once the person’s hourly allowance was spent (${by.A.transport.byOp.view.throttled} of ${by.A.transport.byOp.view.ok + by.A.transport.byOp.view.throttled} in A). They change nothing.` : ""} <Limit /></li>
         <li><strong>C: {n} people, {n} claims.</strong> {n} separately authorised people each got a claim. Each is a different person with a claim of their own, and {by.C?.server?.queue.byStatus.COMPLETED ?? 0} are recorded. {by.C?.server && <>The queue took {ms(by.C.server.queue.drainMs)} to empty, with {ms(by.C.server.queue.processingMs.p50)} of actual work per claim at the median.</>}</li>
-        <li><strong>D: the burst.</strong> {d?.server && <>{d.transport.attempts} requests (every claim sent twice) became {rec("D")} claims, all received and {d.server.queue.byStatus.COMPLETED ?? 0} recorded. {d.transport.byOp.claim.replay} repeats got the original receipt. {d.transport.retries ? `${d.transport.retries} requests were held back (429 or 503) and sent again after Retry-After. ` : ""}</>}{d?.bystander && d.bystander.note} Claims are recorded in the order they arrive, so someone arriving mid-burst waits behind the claims already queued. Whether a different order or a different limit would help is what the simulation below compares.</li>
+        <li><strong>D: the burst.</strong> {d?.server && <>{d.transport.attempts} requests (every claim sent twice) became {rec("D")} claims, all received and {d.server.queue.byStatus.COMPLETED ?? 0} recorded. {d.transport.byOp.claim.replay} repeats got the original receipt. {d.transport.retries ? `${d.transport.retries} requests were retried after a lost connection or after a 429/503 Retry-After. ` : ""}</>}{d?.bystander && d.bystander.note} Claims are recorded in the order they arrive, so someone arriving mid-burst waits behind the claims already queued. Whether a different order or a different limit would help is what the simulation below compares.</li>
         <li><strong>E: the retry storm.</strong> {e?.server && <>{e.transport.attempts} requests for one claim made {rec("E")} claim. {e.transport.byOp.claim.replay} came back as the original receipt, {e.transport.byOp.claim.throttled} were held back for traffic, and none created anything. A retry is a read, not a second submission.</>}</li>
         <li><strong>F: the status-poll flood.</strong> {f?.server && <>{f.transport.attempts} requests asked about two claims. {f.transport.total.throttled} were held back with 429 by the person’s own traffic limits. {f.bystander?.ok ? "The claim itself was untouched, and the bystander was not affected. " : "The bystander was affected: see the checks below. "}{f.bystander?.note} <Limit /></>}</li>
       </ul>
