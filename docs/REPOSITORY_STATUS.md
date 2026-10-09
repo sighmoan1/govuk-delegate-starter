@@ -56,4 +56,6 @@ Verification for this refresh is recorded below after execution. Existing `.last
 
 ### Refresh verification
 
-Pending execution: About build/typecheck, rendered-page and narrow-screen inspection, isolated mandatory authority scenarios, browser consent/revocation journey and local container refresh. See issue #87 / its linked PR for checkpoints.
+Executed against `949f2e2`: workspace typecheck and About production build passed; HMRC tests 118/118, root integration tests 223/223, browser tests 28 passed (6 public-tunnel tests skipped), documentation smoke passed at 1280px and 320px. The manual clean-fixture approval → ALLOW → undelegated DENY → revoke → DENY flow passed, with every attempt visible in activity.
+
+The local demo stack was rebuilt with its database volume retained; the HMRC worker is running and `/evidence`, `/delegate-orchestrate` and `/project-status` return 200. [The pinned engineering record and archived output](evidence/ENGINEERING-20261009.md) include reproduction, independent DB assertions and invalid initial setup runs. Dependency installation reported 10 audit advisories; remediation remains separate work. [PR #88](https://github.com/sighmoan1/govuk-delegate-starter/pull/88) contains this refresh.

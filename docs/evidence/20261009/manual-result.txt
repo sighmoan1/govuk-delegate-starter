@@ -1,0 +1,5 @@
+9 October 2026; clean isolated synthetic Docker fixtures
+Principal manually signed in through One Login; narrowed and approved view_tax_code + claim_job_expenses; excluded update_employment.
+Separate agent bearer token: GET /api/tax-code => 200 ALLOW; POST /api/employment => 403 PERMISSION_MISSING.
+Authority details showed both checks and completed tax-code result.
+Principal manually removed access; GET /api/tax-code => 403 AUTHORISATION_REVOKED.
