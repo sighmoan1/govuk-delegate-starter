@@ -92,6 +92,8 @@ Canaries, behavioural analysis and classifiers may be useful for aggregate resea
 
 ## Decision 9 — Keep DWP mocked
 
+**Historical service choice:** Decisions 11–13 move the demonstration to mock HMRC. Synthetic-only integration remains the rule.
+
 Do not depend on access to Universal Credit or other real DWP systems.
 
 The mock DWP service exists to prove that a receiving service can make an independent ALLOW/DENY decision from Delegate's relationship state.
@@ -110,6 +112,8 @@ For this prototype:
 - avoid unnecessary redesign before the end-to-end flow works.
 
 ## Decision 11 — Demo as a real agent, HMRC, and Delegate as a platform
+
+**Historical layout:** Decisions 12–13 change the application boundaries; Decision 17 removes Example AI.
 
 **Decision:** change three things in the prototype from the original brief (`BUILD_SPEC.md` and `PROTOTYPE_CONTENT.md` are kept unchanged as the brief).
 
@@ -187,7 +191,7 @@ Also: Delegate's check API now remembers service keys that have already verified
 
 - **Detection is evidence, not the security boundary.** Identity decides what an agent may do and whether it is shown the proper route (a known agent with no permission is redirected to "Act for someone", not blocked). It never confers extra allowance. The service's business limits work when detection fails.
 - **Root principal → mandate → delegation chain → transaction.** Every check and every HMRC transaction records the person, mandate, delegation, parent, depth and agent. Sub-delegation can't widen capabilities and is limited in depth.
-- **Business limits follow the person; Delegate's check is not one of them.** HMRC keys its rules by One Login subject: one working-from-home claim per tax year (more only with materially new evidence), open cases, refund-account changes. They are counted when HMRC performs or admits a transaction, never when someone merely asks whether an agent may act. Delegate's check proves identity, a live mandate, the capability and (for sensitive actions) assurance, and spends nothing. Delegate keeps no per-person action counter, and check responses carry no "capacity used" figure. A person with 100 agents, or 100 hidden sessions, gets what a person with one agent gets. Scenario 5 shows it, and `tests/swarm.test.ts` proves it.
+- **Business limits follow the person; Delegate's check is not one of them.** HMRC keys its rules by One Login subject: one working-from-home claim per tax year (more only with materially new evidence), open cases, refund-account changes. They are counted when HMRC performs or admits a transaction, never when someone merely asks whether an agent may act. Delegate's check proves identity, a live mandate, the capability and (for sensitive actions) assurance, and spends nothing. Delegate keeps no per-person action counter, and check responses carry no "capacity used" figure. A person with 100 agents, or 100 hidden sessions, gets what a person with one agent gets. Scenario 4 shows it, and `tests/swarm.test.ts` proves it.
 - **Technical demand management is separate from business constraints.** Protecting the check endpoint from overload (per-service throttling, back-pressure, 429/503 with `retry-after`) is about availability and is not a statement about what a person may do. It must be keyed to the calling service or network, never decremented from a person's allowance, and a throttled check is a retryable failure, not a refusal of authority. This prototype does not yet implement it for the check API (follow-up). Every check, allowed or denied, is still logged. The earlier per-person `agent_actions_per_hour` counter in Delegate was removed because it charged people for retries and for requests HMRC later refused on business grounds, and mixed rights, identity and throughput.
 - **Assurance limits actions, not volume.** Sensitive actions need a verified or registered agent, plus the person's fresh approval each time. Declared (self-asserted) agents can't make them.
 - **Access policy by surface.** Public information and agent discovery stay open to everyone. Transactions need a person or an authorised agent. An honest, signed agent is never worse off than a disguised one: it gets a structured API and clear errors, where a disguised one gets none of that and no attribution.
@@ -205,6 +209,8 @@ Consequences: limits are illustrative, chosen to make the demo legible, not poli
 - Delegate still seeds one registered agent, now called "Personal assistant", because the swarm runner, the tests and the "Who can act for you" starting point need a registered client. Its registered return URL is a placeholder (`https://assistant.example/callback`); no app listens there.
 
 ## Decision 18 — Four things to ask an agent
+
+**Historical behaviour:** Decision 20 supersedes the mandatory agreement flag and 428 refusal. Decisions 23 and 26 supersede the classification and handling of progress polling.
 
 **Decision:** the demo is driven by a real agent the visitor already uses. The visitor plays Sam and asks it to do one of four things at HMRC: read where a claim is, submit a claim, answer a question HMRC has asked, or keep checking progress.
 

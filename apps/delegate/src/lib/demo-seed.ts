@@ -61,7 +61,7 @@ export async function seedDemo(prisma: PrismaClient, opts: SeedOptions = {}): Pr
     ["change_refund_account", "Change the bank account for refunds", "HIGH", true],
     ["change_address", "Change your address", "HIGH", true],
     ["view_claim_status", "See how your claims are going", "LOW", false],
-    ["respond_to_query", "Answer HMRC’s questions about your claim, once you have agreed the answer", "MEDIUM", false],
+    ["respond_to_query", "Answer HMRC’s questions about your claim", "MEDIUM", false],
     ["check_claim_progress", "Check your claim progress on a schedule (a few times a day)", "LOW", false],
   ] as const;
   const caps: Record<string, string> = {};

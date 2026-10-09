@@ -11,33 +11,9 @@ Read these files before writing code:
 
 ## Your task
 
-Build the working MVP described in `docs/BUILD_SPEC.md`.
+Maintain and extend the current four-app synthetic HMRC prototype. Read `docs/CURRENT_BEHAVIOUR.md`, `docs/ARCHITECTURE.md`, `docs/VALIDATION.md` and `docs/DECISION_BACKLOG.md` alongside the code. BUILD_SPEC and PROTOTYPE_CONTENT are preserved original briefs, not an instruction to rebuild DWP or Example AI. Keep each requested engineering issue in a focused PR against the resulting main.
 
-This is not a mock-up task. Prioritise the complete working flow:
-
-```text
-agent creates authorisation request
-        ↓
-principal authenticates through One Login simulator
-        ↓
-principal approves selected capabilities
-        ↓
-active relationship is persisted
-        ↓
-agent authenticates separately
-        ↓
-agent attempts mock DWP transaction
-        ↓
-mock DWP checks Delegate relationship
-        ↓
-ALLOW / DENY
-        ↓
-principal revokes authority
-        ↓
-previously allowed transaction becomes DENY
-        ↓
-all attempts appear in activity view
-```
+Verify request → consent → scoped authority → service action → outcome → revocation → refusal, preserving both API and browser-agent journeys. The service owns domain validation, idempotency, technical throughput and durable queue processing; Delegate owns consent and authority.
 
 ## Architectural rule
 
@@ -94,12 +70,12 @@ If the existing repo already uses equivalent tools, preserve the existing stack 
 
 Do not connect to production GOV.UK One Login, Universal Credit or real claimant data.
 
-Seed:
+The current fixtures seed:
 
-- one principal;
-- Demo Personal Agent;
-- DWP Benefits Demo;
-- five capabilities;
+- Sam Taylor;
+- Personal assistant;
+- mock HMRC;
+- eight capabilities;
 - enough activity data to make the monitoring page useful before the first demo transaction.
 
 ## Test before completion

@@ -1,5 +1,6 @@
 # Build specification
 
+> Preserved original brief. DWP and Example AI examples are historical, and later numbered decisions supersede these requirements. Use [CURRENT_BEHAVIOUR.md](CURRENT_BEHAVIOUR.md), [ARCHITECTURE.md](ARCHITECTURE.md) and the current code for implementation work.
 ## 1. Goal
 
 Build a working technical prototype of **GOV.UK Delegate**.

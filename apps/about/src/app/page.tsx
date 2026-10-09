@@ -82,7 +82,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
       </div>
 
       <h2>Four scenarios</h2>
-      <p>Each one stands on its own and can reset everything to the right starting point.</p>
+      <p>The first two scenarios have starting-point buttons. Route findings show previous observations; the swarm runner creates fresh people.</p>
       <ul className="scenarios">
         {SCENARIOS.map((s) => (
           <li key={s.href}>
@@ -119,7 +119,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
         <li>
           <h3><a href={urls.hmrc}>HMRC</a></h3>
           <p>Claim tax relief for your job expenses. People use it signed in; agents use its API.</p>
-          <p className="added">Added: one registration and one middleware file.</p>
+          <p className="added">Added: authority checks, agent request and session flows, browser guards, discovery, traffic controls, receipts, dispute reconciliation and outcome reporting.</p>
         </li>
       </ul>
 

@@ -50,7 +50,7 @@ export default async function AuthorisationDetail({
         <div className="confirmation-panel"><h1>Access removed</h1><p>{a.delegate.name} can no longer act for you with {a.service.name}. HMRC will refuse anything it tries from now on.</p></div>
       )}
       {narrowed && <div className="inset-text"><p>That permission has been taken away. The rest still applies.</p></div>}
-      {disputed && <div className="inset-text"><p>Marked as not agreed. {a.delegate.name} can no longer do that, and {a.service.name} has been told to treat the answer as not given.</p></div>}
+      {disputed && <div className="inset-text"><p>Marked as not agreed. {a.delegate.name} can no longer do that, and {a.service.name} will discover the dispute when it next checks the receipt and then treat the answer as not given. This is not an immediate notification.</p></div>}
       {!removed && <h1>{a.delegate.name}</h1>}
       <dl className="summary-list">
         <div><dt>Status</dt><dd><span className={`status status--${a.status.toLowerCase()}`}>{label}</span></dd><dd /></div>

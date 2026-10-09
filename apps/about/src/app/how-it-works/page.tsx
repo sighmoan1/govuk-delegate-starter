@@ -47,7 +47,7 @@ export default function HowItWorks() {
           the very next request is refused.
         </p>
 
-        <h2>The one call a service makes</h2>
+        <h2>The core authority-check call</h2>
         <pre className="source">{`POST ${urls.delegate}/api/authorisations/check
 x-service-key: <HMRC's own key>
 
@@ -65,11 +65,11 @@ x-service-key: <HMRC's own key>
         <p>
           <strong>Answering HMRC.</strong> When HMRC asks about a claim, an agent can suggest an answer, but HMRC doesn’t block the agent, because it can’t
           see the chat. It records what was sent and whether the agent said the person agreed, and GOV.UK shows the person both. They can say
-          they didn’t agree, which reopens the question and removes that permission.
+          they didn’t agree. Delegate removes that permission and records the dispute; HMRC reopens the question when it next checks the receipt. This is pull-based, not an immediate notification.
         </p>
         <p>
           <strong>Checking in later.</strong> An agent can check a claim on a schedule while the person isn’t there. The permission ends on
-          a date, and HMRC allows a few checks a day for the person, however many agents ask. Removing access stops the next check.
+          a date. Scheduling belongs to the external agent or platform: the prototype supplies polling endpoints, without a scheduler or push notifications. HMRC allows a few checks a day for the person, however many agents ask. Removing access stops the next check.
         </p>
 
         <h2>Three lanes at the service</h2>
@@ -84,11 +84,11 @@ x-service-key: <HMRC's own key>
         <p>
           Three things are kept apart. <strong>Identity</strong> is who is asking, and it can be faked or hidden. <strong>Authority</strong> is
           what the person allowed, checked with GOV.UK Delegate on every request. <strong>Business limits</strong> are how much everyone using that
-          person’s authority may do together, applied by HMRC when it does the work (asking Delegate whether an agent may act uses none of them): tax-code checks per hour, one claim per tax year unless there’s new evidence, a cap on open
+          person’s authority may do together, applied by HMRC when it does the work (asking Delegate whether an agent may act uses none of them): one claim per tax year unless there’s new evidence, a cap on open
           claims, and one change to the refund bank account a month.
         </p>
         <p>
-          The limits are counted against the person’s One Login identifier, never against an agent or session. A person with a hundred agents,
+          Business limits are counted against the person’s One Login identifier. Technical throughput limits are separate and may follow the operator, person or whole service; tax-code lookups and progress polls are technical load. A person with a hundred agents,
           or a hundred hidden sessions, gets the same as a person with one. An agent’s identity decides what it may do: sensitive changes
           need an agent whose identity is verified or registered, plus the person’s fresh approval. It never raises the limits.
         </p>
@@ -105,8 +105,7 @@ x-service-key: <HMRC's own key>
 
         <h2>What HMRC added</h2>
         <p>
-          A registration with GOV.UK Delegate, done once: a name, the five actions it offers, and a key. Then one file, which wraps every API
-          route. Its sign-in, its pages and its business logic did not change.
+          HMRC integrates authority checks, agent-request creation and polling, agent sessions, browser permission guards, discovery documents, traffic controls, receipts, dispute reconciliation and outcome reporting. Its pages and handlers also support these journeys. The wrapper below shows the core check interface within that larger integration. Eight capabilities are seeded; the browser request page offers seven, omitting address changes, which the API supports.
         </p>
       </div>
       <details>
@@ -115,6 +114,8 @@ x-service-key: <HMRC's own key>
       </details>
 
       <div className="two-thirds">
+        <p>“New evidence” is a prototype check of hashes of trimmed, lowercased strings. It does not establish relevance or materiality. The business and technical limits are illustrative demo policy.</p>
+        <p>Sensitive changes bind approval to the proposal, normalised payload, person, service, capability, key and expiry. The default window is 10 minutes from proposal creation; checks do not consume approval. Bank and address details are synthetic and only shape-validated.</p>
         <h2>What this prototype simplifies</h2>
         <ul>
           <li><strong>A stand-in for One Login.</strong> The sign-in screens are a lookalike. Behind them, the official GOV.UK One Login simulator does the real OpenID Connect work: codes, signed tokens, keys and userinfo. On public URLs it’s strict, with a real password and a code “sent to Sam’s phone”. Locally, any password is accepted.</li>
