@@ -1,0 +1,602 @@
+{
+  "title": "GOV.UK Delegate briefings",
+  "prepared": "10 October 2026",
+  "baseline": "6b4f3895f246cfe9e274059c57e4dc1ea7989650",
+  "sources": {
+    "hmrc-request": {
+      "title": "HMRC digital handshake",
+      "url": "https://www.gov.uk/guidance/how-to-use-the-digital-handshake-to-get-authorised-as-a-tax-agent"
+    },
+    "hmrc-remove": {
+      "title": "HMRC removal of agent authorisation",
+      "url": "https://www.gov.uk/guidance/change-or-remove-your-tax-agents-authorisation"
+    },
+    "authority": {
+      "title": "Government delegated authority guidance",
+      "url": "https://www.gov.uk/guidance/delegated-authority-guidance"
+    },
+    "uc": {
+      "title": "Help with a Universal Credit claim",
+      "url": "https://www.gov.uk/guidance/get-help-with-your-universal-credit-claim"
+    },
+    "lpa": {
+      "title": "Use an LPA and verification",
+      "url": "https://www.gov.uk/guidance/using-the-donors-lpa-access-codes-and-view-an-lpa"
+    },
+    "tom": {
+      "title": "Tom Loosemore: How Agents Show Up, 9 October 2026",
+      "url": "https://loosemore.com/2026/10/09/how-agents-show-up-what-muse-and-other-agents-reveal-when-they-use-whenisbins/"
+    },
+    "behaviour": {
+      "title": "Implemented behaviour at the briefing baseline",
+      "url": "https://github.com/sighmoan1/govuk-delegate-starter/blob/6b4f3895f246cfe9e274059c57e4dc1ea7989650/docs/CURRENT_BEHAVIOUR.md"
+    },
+    "architecture": {
+      "title": "Architecture and ownership",
+      "url": "https://github.com/sighmoan1/govuk-delegate-starter/blob/6b4f3895f246cfe9e274059c57e4dc1ea7989650/docs/ARCHITECTURE.md"
+    },
+    "decisions": {
+      "title": "Open national decisions",
+      "url": "https://github.com/sighmoan1/govuk-delegate-starter/blob/6b4f3895f246cfe9e274059c57e4dc1ea7989650/docs/DECISION_BACKLOG.md"
+    },
+    "e2": {
+      "title": "Recorded E2 comparison and preserved raw records",
+      "url": "https://github.com/sighmoan1/govuk-delegate-starter/blob/6b4f3895f246cfe9e274059c57e4dc1ea7989650/docs/evidence/RUN-20261009-E2-01.md"
+    },
+    "constraints": {
+      "title": "Service-defined restrictions",
+      "url": "https://github.com/sighmoan1/govuk-delegate-starter/blob/6b4f3895f246cfe9e274059c57e4dc1ea7989650/docs/MANDATE_CONSTRAINTS.md"
+    },
+    "consent": {
+      "title": "Original consent evidence and history",
+      "url": "https://github.com/sighmoan1/govuk-delegate-starter/blob/6b4f3895f246cfe9e274059c57e4dc1ea7989650/docs/CONSENT_EVIDENCE.md"
+    },
+    "council": {
+      "title": "Independent council integration",
+      "url": "https://github.com/sighmoan1/govuk-delegate-starter/blob/6b4f3895f246cfe9e274059c57e4dc1ea7989650/docs/SECOND_SERVICE.md"
+    },
+    "swarm": {
+      "title": "Swarm scenarios and accounting",
+      "url": "https://github.com/sighmoan1/govuk-delegate-starter/blob/6b4f3895f246cfe9e274059c57e4dc1ea7989650/apps/about/src/app/swarm/page.tsx"
+    },
+    "verification": {
+      "title": "Recorded combined validation and manual walkthrough",
+      "url": "https://github.com/sighmoan1/govuk-delegate-starter/issues/90#issuecomment-6090819665"
+    },
+    "dashboard": {
+      "title": "Observatory dashboard, PR 110, unmerged at preparation",
+      "url": "https://github.com/sighmoan1/govuk-delegate-starter/pull/110"
+    },
+    "classifiers": {
+      "title": "Blind classifier contract, PR 109, unmerged at preparation",
+      "url": "https://github.com/sighmoan1/govuk-delegate-starter/pull/109"
+    },
+    "vendor": {
+      "title": "Real vendor validation still outstanding, issue 68",
+      "url": "https://github.com/sighmoan1/govuk-delegate-starter/issues/68"
+    },
+    "pilot": {
+      "title": "Participant pilot proposal, PR 108, awaiting approval",
+      "url": "https://github.com/sighmoan1/govuk-delegate-starter/pull/108"
+    },
+    "route": {
+      "title": "Existing exploratory route observations",
+      "url": "https://github.com/sighmoan1/govuk-delegate-starter/blob/6b4f3895f246cfe9e274059c57e4dc1ea7989650/apps/about/src/app/which-route/page.tsx"
+    },
+    "ledger": {
+      "title": "Protected execution ledger",
+      "url": "https://github.com/sighmoan1/govuk-delegate-starter/blob/6b4f3895f246cfe9e274059c57e4dc1ea7989650/docs/observatory/GROUND_TRUTH.md"
+    }
+  },
+  "briefings": {
+    "high-level": {
+      "title": "Concept briefing",
+      "duration": "About 10 minutes with demonstration",
+      "slides": [
+        {
+          "title": "GOV.UK Delegate",
+          "paragraphs": [
+            "A person gives an assistant limited permission to deal with government.",
+            "The service checks that permission. The person can inspect the activity and remove access."
+          ],
+          "notes": "This is an independent prototype using synthetic people and services. An agent here is software that can use a service for someone. The person chooses the assistant. The demo explores the arrangement government could offer, rather than asking government to build everyone's assistant. Allow about ten minutes including the short demonstration.",
+          "sources": [
+            "behaviour"
+          ]
+        },
+        {
+          "title": "Government already recognises representatives",
+          "paragraphs": [
+            "HMRC has an agent request and client approval journey. Clients can remove that authorisation.",
+            "Delegate adapts that relationship to software agents and makes the permission available to participating services."
+          ],
+          "notes": "HMRC is the main product precedent. Keep its request, independent approval and removal pattern visible. Existing human representation rules do not by themselves establish the legal status of AI actions. The sources addendum covers other relevant precedents and their limits.",
+          "sources": [
+            "hmrc-request",
+            "hmrc-remove",
+            "authority"
+          ]
+        },
+        {
+          "title": "Sam chooses the permission",
+          "paragraphs": [
+            "Sam lets her Personal assistant read her tax code and submit a job-expenses claim.",
+            "She leaves employment changes outside the grant. HMRC refuses that attempt."
+          ],
+          "notes": "Demo A: use the prepared synthetic approval and action rehearsal described in DEMO_RUNBOOK.md. Show the unchecked consent choices and expiry. The assistant has its own credential and never needs Sam's password. Demonstrate the refusal as well as the successful claim. If using a scripted API client, identify it as scripted.",
+          "sources": [
+            "behaviour",
+            "constraints"
+          ],
+          "demo": "A"
+        },
+        {
+          "title": "Sam can inspect and withdraw access",
+          "paragraphs": [
+            "The account shows permission checks and service-reported outcomes.",
+            "After Sam removes access, HMRC refuses the next request."
+          ],
+          "notes": "Complete Demo A with the account detail and Remove access controls. Show a later refusal with the same client identity. A prior completed action stays in the record. A job durably accepted before removal may still finish. Explain this if someone expects revocation to undo submitted work.",
+          "sources": [
+            "behaviour"
+          ],
+          "demo": "A"
+        },
+        {
+          "title": "More requests can mean different things",
+          "paragraphs": [],
+          "notes": "Demo B: run the existing seven-scenario runner at N=10 during rehearsal, then show its actual results. Compare repeated attempts for one person with claims from different people. Read the technical load and claim outcome measures separately. Demo limits are illustrative. HMRC supplies duplicate handling and queue processing in both authority designs.",
+          "sources": [
+            "swarm",
+            "e2"
+          ],
+          "table": [
+            [
+              "Traffic",
+              "Service response"
+            ],
+            [
+              "Repeated attempts for one claim",
+              "One claim, with repeat attempts recorded"
+            ],
+            [
+              "Claims from different people",
+              "Separate claims received and recorded"
+            ],
+            [
+              "Excessive polling or retries",
+              "Technical limits and retry guidance"
+            ]
+          ],
+          "demo": "B"
+        },
+        {
+          "title": "Authority gives government direct evidence",
+          "paragraphs": [],
+          "notes": "A declaration supplies a claimed name. Verification establishes the configured identity or signature, and a live relationship establishes scope. Unknown activity may include legitimate people, assistive technology and agents that cannot integrate. A signed-in human route can still conceal automation. Keep these distinctions separate on screen.",
+          "sources": [
+            "behaviour",
+            "architecture"
+          ],
+          "table": [
+            [
+              "Available evidence",
+              "Government can establish"
+            ],
+            [
+              "Verified agent and current permission",
+              "The registered actor and permitted action"
+            ],
+            [
+              "Self-declared agent name",
+              "What the caller claims"
+            ],
+            [
+              "Browser or traffic clues",
+              "A judgement with uncertainty"
+            ]
+          ]
+        },
+        {
+          "title": "Observatory makes the evidence inspectable",
+          "paragraphs": [
+            "The event explorer connects service attempts with recorded authority checks and outcomes.",
+            "Sensor coverage, recorded predictions and protected research labels have separate fields."
+          ],
+          "notes": "Demo C requires the unmerged dashboard and classifier PRs in a reviewed isolated stack. Use the read-only monitoring view first. Ground truth in research view describes audited scripted execution, not an inferred label. The current deterministic signature stub reports observed signature evidence. It is not a trained AI detector. Actual vendor validation remains outstanding.",
+          "sources": [
+            "dashboard",
+            "classifiers",
+            "vendor"
+          ],
+          "demo": "C",
+          "image": "observatory.png"
+        },
+        {
+          "title": "Independent work appeared alongside this project",
+          "paragraphs": [
+            "Tom Loosemore published WhenIsBins observations on 9 October while Delegate was already underway.",
+            "He found variable browser clues and agents choosing APIs. Some named themselves when asked."
+          ],
+          "notes": "His small exploratory study is a comparison point. The project chronology comes from the author's account. Compare behaviours on equivalent routes before treating a difference as disagreement. Our test count does not establish broader agent coverage.",
+          "sources": [
+            "tom",
+            "route"
+          ]
+        },
+        {
+          "title": "The adoption hypothesis",
+          "paragraphs": [
+            "A useful Delegate route could draw most well-behaved agents into identified, authorised activity.",
+            "That could substantially reduce Observatory's inference burden and shift effort towards helping people use the route."
+          ],
+          "notes": "This is the project's central adoption and operational-burden hypothesis. It remains unmeasured. Tool limitations, service coverage and consent barriers may leave legitimate agents outside. Authorised agents can still malfunction or abuse permission. Measure residual unexplained activity, investigation effort and access failures alongside adoption.",
+          "sources": [
+            "architecture",
+            "decisions",
+            "pilot"
+          ]
+        },
+        {
+          "title": "Evidence so far",
+          "paragraphs": [],
+          "notes": "The technical comparison used twenty synthetic citizen fixtures across four blocks. Both routes completed all tested legitimate tasks and prevented tested forbidden or duplicate effects. There were no real-agent or human participants in that comparison. Hundreds of checks describe software coverage. They cannot provide a detection accuracy estimate or an adoption rate. Show the preserved evidence if challenged.",
+          "sources": [
+            "e2",
+            "verification",
+            "ledger"
+          ],
+          "table": [
+            [
+              "Recorded work",
+              "Conclusion supported"
+            ],
+            [
+              "Permission and service regression",
+              "Specific synthetic behaviours work"
+            ],
+            [
+              "Matched service-local / Delegate comparison",
+              "Equal outcomes for the fixed workload"
+            ],
+            [
+              "Scripted ledger replay",
+              "Trace collection can be audited"
+            ],
+            [
+              "Genuine participant research",
+              "Still outstanding"
+            ]
+          ]
+        },
+        {
+          "title": "Discussion with Public Digital",
+          "paragraphs": [
+            "Could you use this demonstration to explain delegated agent access to a service team?",
+            "Which citizen task would make the next experiment useful, and which department could help test it?"
+          ],
+          "notes": "Ask the audience to explain the idea in their own words. Record what they find confusing and any precedents we have missed. Seek a bounded service example and relevant product, policy, accessibility and security owners. Offer the detailed briefing for people who want to inspect the design. Do not ask them to endorse a national platform on the basis of this demo.",
+          "sources": [
+            "decisions",
+            "pilot"
+          ]
+        }
+      ]
+    },
+    "detailed": {
+      "title": "Design briefing",
+      "duration": "About 25–30 minutes with discussion",
+      "slides": [
+        {
+          "title": "GOV.UK Delegate: design review",
+          "paragraphs": [
+            "Implemented safeguards, service boundaries and questions for a government trial.",
+            "Synthetic prototype. Production ownership and recognition remain open."
+          ],
+          "notes": "This briefing supports a twenty-five to thirty minute discussion after the concept walkthrough. Choose supporting demonstrations according to the audience's questions. The coverage map identifies what the short demonstration leaves out. The source baseline is main 6b4f389, plus explicitly labelled unmerged Observatory work.",
+          "sources": [
+            "behaviour",
+            "decisions"
+          ]
+        },
+        {
+          "title": "System responsibilities",
+          "paragraphs": [],
+          "notes": "One Login authenticates Sam. Delegate records and checks authority. HMRC and council define operations and decide their domain outcomes. The external assistant plans and executes tasks. Observatory receives minimised research data and cannot alter source-service decisions. A government Orchestrate is a hypothetical separate product.",
+          "sources": [
+            "architecture",
+            "council"
+          ],
+          "table": [
+            [
+              "System",
+              "Responsibility"
+            ],
+            [
+              "One Login",
+              "Authenticate the person"
+            ],
+            [
+              "Delegate",
+              "Record consent and check current authority"
+            ],
+            [
+              "HMRC / council",
+              "Define and execute service actions"
+            ],
+            [
+              "Chosen assistant",
+              "Plan work and use service interfaces"
+            ],
+            [
+              "Observatory",
+              "Inspect evidence and research predictions"
+            ]
+          ]
+        },
+        {
+          "title": "A request becomes a bounded relationship",
+          "paragraphs": [
+            "A registered representative asks for named service capabilities.",
+            "The person approves an unchecked selection and duration. Each service checks current authority before acting."
+          ],
+          "notes": "Demonstrate the pinned catalogue labels and purpose. The purpose helps Sam recognise the request but grants no extra actions. Credentials identify the representative separately from Sam. Show a granted and an ungranted action with the same token so scope enforcement is observable.",
+          "sources": [
+            "behaviour",
+            "architecture"
+          ],
+          "demo": "A"
+        },
+        {
+          "title": "Service catalogues and standards",
+          "paragraphs": [
+            "Services publish immutable versions of their capabilities and supported restrictions.",
+            "Delegate validates the shared contract. Services own the meaning of each operation and restriction."
+          ],
+          "notes": "Publication uses the service's own credential. Identical content replays. Conflicting content for a version is refused. Catalogue updates do not enlarge old grants. The prototype adopts a bounded contract without asserting conformance to a national delegation standard. Governance and minimum assurance remain DB-09.",
+          "sources": [
+            "constraints",
+            "decisions"
+          ]
+        },
+        {
+          "title": "Restrictions stay within the grant",
+          "paragraphs": [
+            "The prototype supports bounded sets of service-defined values, such as permitted tax years.",
+            "A person or sub-agent can narrow those values. A service checks the actual operation against the returned bounds."
+          ],
+          "notes": "Show requested and selected tax-year values, then an incompatible-year refusal. Delegate validates structure, membership and chain intersections. HMRC checks the actual synthetic target year and its supported catalogue digest. Arbitrary natural-language conditions are not executable policy. Wider or incompatible restrictions fail closed.",
+          "sources": [
+            "constraints"
+          ]
+        },
+        {
+          "title": "Credentials and replay defence",
+          "paragraphs": [
+            "The agent authenticates as itself. Request signatures bind the intended request.",
+            "Replay controls and consent CSRF checks protect the supported paths."
+          ],
+          "notes": "Identity here can mean registered client, operator or verified signer depending on the route. It is not a universal identity for an AI model or a guarantee of honest behaviour. Browser session binding, request-target binding and fresh signature checks prevent the tested substitution/replay cases. Production compromise response and provider identity taxonomy remain open.",
+          "sources": [
+            "behaviour",
+            "verification",
+            "decisions"
+          ]
+        },
+        {
+          "title": "Sub-agents inherit narrower authority",
+          "paragraphs": [
+            "Live checks inspect the parent chain as well as the current delegation.",
+            "Removing a capability, revoking an ancestor or reaching expiry prevents later use."
+          ],
+          "notes": "The child cannot add permissions or widen inherited restrictions. Depth is bounded. Demonstrate through existing API tests or a rehearsed subdelegation request, rather than imply the account has a complete sub-agent management UI. Assignment of liability across providers remains DB-10.",
+          "sources": [
+            "constraints",
+            "behaviour",
+            "decisions"
+          ]
+        },
+        {
+          "title": "Sensitive changes need exact-action approval",
+          "paragraphs": [
+            "Refund-account and address changes require approval of the proposed change.",
+            "Approval binds the payload, operation key, person, mandate and expiry."
+          ],
+          "notes": "Show a proposed synthetic refund-account change and the dedicated approval page. Checks do not consume approval. HMRC reserves it after admission, redeems it on completion and recovers abandoned leases. A different payload or key requires new approval. The default ten-minute deadline runs from proposal creation. The service must determine the lawful policy trigger for real actions.",
+          "sources": [
+            "behaviour",
+            "decisions"
+          ]
+        },
+        {
+          "title": "Original consent and later changes",
+          "paragraphs": [
+            "Approval stores the wording and catalogue version Sam saw.",
+            "Narrowing and revocation append history while preserving that original evidence."
+          ],
+          "notes": "Use the account detail to distinguish original selection from current permission. Old fixture grants have no fabricated historical snapshot. Triggers protect records against ordinary application mutation. A privileged database administrator remains outside that guarantee. Retention, administrative erasure and denied-read audit design need production owners.",
+          "sources": [
+            "consent"
+          ]
+        },
+        {
+          "title": "Receipts and redress",
+          "paragraphs": [
+            "Service outcomes differ from successful authority checks.",
+            "Sam can inspect an agent's answer, dispute it and remove that permission."
+          ],
+          "notes": "An agent's confirmed_by_person assertion is its claim, not proof of agreement. A dispute removes the relevant capability. HMRC learns about the dispute on a later receipt-status read and reopens the question. There is no immediate push notification. On failure it exposes unavailable dispute verification. Demonstrate using a prepared question/answer fixture.",
+          "sources": [
+            "behaviour"
+          ]
+        },
+        {
+          "title": "Transport load and service outcomes",
+          "paragraphs": [],
+          "notes": "Run Demo B. Technical throttles identify retryable conditions and leave substantive entitlement unchanged in the prototype response. Authority checks spend no citizen allowance. Person-based service rules prevent multiplying a claim through agents or sessions. The particular claim rules and numeric limits are synthetic policy choices. A central authority check still consumes work even if HMRC later throttles.",
+          "sources": [
+            "swarm",
+            "behaviour"
+          ],
+          "table": [
+            [
+              "Measure",
+              "Meaning"
+            ],
+            [
+              "Requests / authority checks",
+              "Technical demand"
+            ],
+            [
+              "Unique claims / accepted receipts",
+              "Service work received"
+            ],
+            [
+              "429 / 503 with retry guidance",
+              "Temporary technical refusal"
+            ],
+            [
+              "Business refusal",
+              "Service-owned domain decision"
+            ],
+            [
+              "Queue wait / worker time",
+              "Different sources of delay"
+            ]
+          ],
+          "demo": "B"
+        },
+        {
+          "title": "Durable acceptance and revocation",
+          "paragraphs": [
+            "HMRC returns an asynchronous receipt after storage commits. The worker records the claim later.",
+            "A retry uses the stored operation result. Revocation prevents new authorised work."
+          ],
+          "notes": "202 means received, not approved. A receipt timestamp is not a legal filing date. Already accepted jobs continue under the prototype policy even if authority later ends. Queue fairness is by person, not provider. There is no global queue bound or outcome-report dead-letter mechanism. National resilience needs separate workload and outage evidence.",
+          "sources": [
+            "behaviour",
+            "swarm"
+          ]
+        },
+        {
+          "title": "A second service owns its integration",
+          "paragraphs": [
+            "The council owns its catalogue, credential and case records.",
+            "It uses the generic consent and authority contract and checks case ownership itself."
+          ],
+          "notes": "Demonstrate independent council permission, read CASE-SAM, reject CASE-OTHER, then revoke council access while retaining HMRC. Council is read-only and has no queue or write approval. No council-specific Delegate application code was required. Shared simulator subjects simplify identity matching. Production pairwise correlation remains issue 35.",
+          "sources": [
+            "council"
+          ],
+          "demo": "D"
+        },
+        {
+          "title": "Observation has different strengths",
+          "paragraphs": [],
+          "notes": "Demo C: start in monitoring view, inspect a source event and its outcome. Sensor absence is visible. Research labels require separate evaluation access. Frozen evidence/configuration and append-only results support repeatable review in PR 109. The signature-observation stub cannot tell a hidden AI agent from a human browser. Training and signal ablation remain future work.",
+          "sources": [
+            "dashboard",
+            "classifiers",
+            "ledger",
+            "vendor"
+          ],
+          "table": [
+            [
+              "Evidence",
+              "Limit"
+            ],
+            [
+              "Verified request and grant",
+              "Proves supported identity/authority facts"
+            ],
+            [
+              "HTTP / browser / behaviour signals",
+              "Coverage varies by route and device"
+            ],
+            [
+              "Classifier output",
+              "Depends on features, thresholds and validation"
+            ],
+            [
+              "Protected execution label",
+              "Describes the enrolled research run"
+            ]
+          ]
+        },
+        {
+          "title": "Contemporaneous observations",
+          "paragraphs": [
+            "Tom's WhenIsBins work observed existing agents using a live service.",
+            "Observatory supports repeatable collection and inspection in a controlled synthetic service."
+          ],
+          "notes": "Tom describes one tester and a small account sample. We should compare equivalent agents, tools and routes. More regression checks establish software coverage, while agent generalisation requires diverse real runs. Multi-signal improvements remain a testable proposal. Correlated weak clues may add little.",
+          "sources": [
+            "tom",
+            "classifiers",
+            "route"
+          ]
+        },
+        {
+          "title": "Centralisation and standards remain open",
+          "paragraphs": [],
+          "notes": "Distinguish prototype implementation from national commitment. The current lookup offers straightforward revocation semantics but creates an availability dependency. Federated records could preserve existing departmental authority, while requiring issuer trust, outage semantics and identity matching. Shared catalogue syntax does not settle semantic governance. Request service and platform owner input before selecting a production model.",
+          "sources": [
+            "decisions",
+            "architecture"
+          ],
+          "table": [
+            [
+              "Question",
+              "Options for discussion"
+            ],
+            [
+              "Authority records",
+              "Central, departmental or hybrid issuers"
+            ],
+            [
+              "Verification",
+              "Online checks, portable proofs or a hybrid"
+            ],
+            [
+              "Shared standards",
+              "Minimum contract with service-owned semantics"
+            ],
+            [
+              "Existing standards",
+              "Consume suitable identity/authority evidence"
+            ],
+            [
+              "Citizen view",
+              "Combine grants with explicit provenance"
+            ]
+          ]
+        },
+        {
+          "title": "Conditions for a useful trial",
+          "paragraphs": [
+            "Choose a concrete service task and establish what authority the department can recognise.",
+            "Measure citizen effort and access failures, agent adoption, unexplained activity and investigation effort."
+          ],
+          "notes": "The hypothesis predicts many well-behaved agents use Delegate and reduce observation burden. Measure adoption and residual work together. Include incompatible tools and authorised misuse. Compare an equally capable service-local delegation route. Establish approval/redress, legal recognition, retention and responsible owners before any real-person consequential action. The pilot proposal is unapproved, and the 500-case corpus does not yet exist.",
+          "sources": [
+            "pilot",
+            "e2",
+            "decisions"
+          ]
+        },
+        {
+          "title": "Questions for service and platform owners",
+          "paragraphs": [
+            "Which actions can use standing permission, and which need approval of the precise act?",
+            "Which existing authority sources should Delegate recognise?",
+            "Which minimum evidence and service contract would make participation worthwhile?"
+          ],
+          "notes": "Invite specific examples and owners. Capture disagreements as open questions with evidence needed and a trigger for revisiting. Do not turn audience interest into acceptance of the prototype's national legal, security or architecture positions. Pair the discussion with a limited next experiment.",
+          "sources": [
+            "decisions"
+          ]
+        }
+      ]
+    }
+  }
+}

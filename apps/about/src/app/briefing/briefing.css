@@ -1,0 +1,9 @@
+.briefing-copy { overflow-wrap: anywhere; }
+.briefing-section { margin-block: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); scroll-margin-top: 1rem; }
+.briefing-section table { width: 100%; }
+.briefing-section caption { text-align: left; margin-bottom: .5rem; font-weight: 700; }
+.briefing-section th, .briefing-section td { white-space: normal; vertical-align: top; }
+.briefing-section img { display: block; max-width: 100%; height: auto; }
+.briefing-section figure { margin-inline: 0; }
+.briefing-section figcaption { color: var(--muted); font-size: 1rem; }
+@media print { .about-nav, .service-header, .service-footer, .skip-link { display: none; } .briefing-section { break-before: page; } .briefing-section details { display: block; } }
