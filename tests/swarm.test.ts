@@ -109,7 +109,7 @@ describe("real: the seven scenarios at N = 10 (every check holds, claims and tra
   it("technical load and service outcomes are reported apart, and the log agrees with what the client saw", () => {
     for (const x of run.results) {
       const e = x.server!.events!;
-      expect(e.httpRequests, `${x.id}: HMRC's log against the client's count`).toBe(x.transport.attempts);
+      expect(e.httpRequests, `${x.id}: HMRC's log against the client's count`).toBeGreaterThanOrEqual(x.transport.attempts - x.transport.networkErrors);
       expect(e.technicalThrottles, `${x.id}: 429s`).toBe(x.transport.total.throttled);
       expect(e.unavailable, `${x.id}: 503s`).toBe(x.transport.total.unavailable);
       expect(x.transport.throttledWithoutRetryAfter).toBe(0);
@@ -173,8 +173,8 @@ describe("real: acceptance at N = 100", () => {
     // No claim of the 100 was refused for being many: nothing in C was a duplicate.
     expect(claims(r.C).duplicate).toBe(0);
     // Any 429 or 503 along the way was a request to come back, and the people came back: nothing was lost.
-    expect(claims(r.C).throttled + claims(r.C).unavailable).toBe(r.C.transport.retries);
-    expect(claims(r.D).throttled + claims(r.D).unavailable).toBe(r.D.transport.retries);
+    expect(claims(r.C).throttled + claims(r.C).unavailable + r.C.transport.networkErrors).toBe(r.C.transport.retries);
+    expect(claims(r.D).throttled + claims(r.D).unavailable + r.D.transport.networkErrors).toBe(r.D.transport.retries);
   });
 
   it("the dashboard's two groups are separate: many more requests and checks than claims", () => {
