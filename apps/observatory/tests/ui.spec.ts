@@ -5,7 +5,7 @@ test("research scope stays explicit and usable at mobile width", async ({ page }
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Understand automated service activity");
   await expect(page.getByRole("note")).toContainText("no study results yet");
-  await expect(page.getByText("Not connected. No HMRC or Delegate events are collected.")).toBeVisible();
+  await expect(page.getByText("Opt-in synthetic feeds are available. Collection is disabled by default; no live study status is inferred here.")).toBeVisible();
   await expect(page.getByText("Not implemented. No automation scores or measured performance.")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.keyboard.press("Tab");

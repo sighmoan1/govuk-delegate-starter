@@ -17,3 +17,26 @@ model ResearchWorkspace {
 
   @@map("research_workspace")
 }
+
+// Append-only minimised source snapshots. No ground-truth labels here.
+model ObservedEvent {
+  id            String   @id @default(uuid())
+  sourceService String   @map("source_service")
+  sourceEventId String   @map("source_event_id")
+  schemaVersion Int      @map("schema_version")
+  occurredAt    DateTime @map("occurred_at")
+  receivedAt    DateTime @default(now()) @map("received_at")
+  snapshot      Json
+
+  @@unique([sourceService, sourceEventId])
+  @@map("observed_event")
+}
+
+model FeedCursor {
+  sourceService String   @id @map("source_service")
+  cursor        String?
+  generation    Int      @default(0)
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("feed_cursor")
+}

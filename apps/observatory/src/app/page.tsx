@@ -10,7 +10,7 @@ export default function Page() {
     <h2>Current status</h2>
     <dl className="research-status">
       <div><dt>Research protocol</dt><dd>Version 0.1 recorded. Study execution has not started.</dd></div>
-      <div><dt>Service feeds</dt><dd>Not connected. No HMRC or Delegate events are collected.</dd></div>
+      <div><dt>Service feeds</dt><dd>Opt-in synthetic feeds are available. Collection is disabled by default; no live study status is inferred here.</dd></div>
       <div><dt>Predictions and results</dt><dd>Not implemented. No automation scores or measured performance.</dd></div>
     </dl>
     <h2>Research boundaries</h2>

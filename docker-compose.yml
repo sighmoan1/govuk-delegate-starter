@@ -74,6 +74,9 @@ services:
       - "3300:3300"
     environment:
       DATABASE_URL: postgresql://delegate:delegate@db:5432/delegate
+      RESEARCH_FEED_ENABLED: ${RESEARCH_FEED_ENABLED:-false}
+      RESEARCH_FEED_KEY: ${RESEARCH_FEED_KEY:-dev-research-feed-key}
+      RESEARCH_PSEUDONYM_KEY: ${RESEARCH_PSEUDONYM_KEY:-dev-project-pseudonym-key}
       PUBLIC_MODE: ${PUBLIC_MODE:-false}
       APP_URL: ${DELEGATE_PUBLIC_URL:-http://localhost:3300}
       # Browser-facing issuer vs. the address the app container uses server-side.
@@ -102,6 +105,9 @@ services:
       - "3302:3302"
     environment:
       DATABASE_URL: postgresql://delegate:delegate@db:5432/hmrc
+      RESEARCH_FEED_ENABLED: ${RESEARCH_FEED_ENABLED:-false}
+      RESEARCH_FEED_KEY: ${RESEARCH_FEED_KEY:-dev-research-feed-key}
+      RESEARCH_PSEUDONYM_KEY: ${RESEARCH_PSEUDONYM_KEY:-dev-project-pseudonym-key}
       PUBLIC_MODE: ${PUBLIC_MODE:-false}
       APP_URL: ${HMRC_PUBLIC_URL:-http://localhost:3302}
       OIDC_ISSUER: ${ONELOGIN_PUBLIC_URL:-http://localhost:3301}
@@ -167,6 +173,13 @@ services:
       - "127.0.0.1:3303:3303"
     environment:
       DATABASE_URL: postgresql://observatory:observatory@db:5432/observatory?connect_timeout=3&pool_timeout=3
+      PUBLIC_MODE: ${PUBLIC_MODE:-false}
+      RESEARCH_INGEST_ENABLED: ${RESEARCH_INGEST_ENABLED:-false}
+      OBSERVATORY_COLLECTION_KEY: ${OBSERVATORY_COLLECTION_KEY:-dev-observatory-collection-key}
+      HMRC_RESEARCH_FEED_URL: http://hmrc:3302/api/research/events
+      HMRC_RESEARCH_FEED_KEY: ${RESEARCH_FEED_KEY:-dev-research-feed-key}
+      DELEGATE_RESEARCH_FEED_URL: http://delegate:3300/api/research/events
+      DELEGATE_RESEARCH_FEED_KEY: ${RESEARCH_FEED_KEY:-dev-research-feed-key}
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3303/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 10s
