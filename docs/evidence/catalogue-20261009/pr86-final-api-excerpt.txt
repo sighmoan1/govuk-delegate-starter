@@ -1,0 +1,65 @@
+EXCERPT: full output retained locally in .validation/pr86-final-api.log
+
+ RUN  v3.2.7 <repo>
+
+ ❯ tests/swarm.test.ts (30 tests | 6 failed | 14 skipped) 112ms
+   ↓ real: the seven scenarios at N = 10 (every check holds, claims and traffic counted apart) > every scenario's own checks hold
+   ↓ real: the seven scenarios at N = 10 (every check holds, claims and traffic counted apart) > A, B and B′: ten attempts at one person's claim are one claim, however they are sent
+   ↓ real: the seven scenarios at N = 10 (every check holds, claims and traffic counted apart) > an authorised check is not a claim: the checks outnumber the claims, and hidden sessions cause none
+   ↓ real: the seven scenarios at N = 10 (every check holds, claims and traffic counted apart) > C: ten different people's claims are all kept and recorded
+   ↓ real: the seven scenarios at N = 10 (every check holds, claims and traffic counted apart) > D: a burst of claims, each sent twice, makes one claim per person; the repeats are replays
+   ↓ real: the seven scenarios at N = 10 (every check holds, claims and traffic counted apart) > E: a retry storm for one accepted claim makes no second claim, before or after it is recorded
+   ↓ real: the seven scenarios at N = 10 (every check holds, claims and traffic counted apart) > F: a status-poll flood leaves the claim, and a bystander, alone
+   ↓ real: the seven scenarios at N = 10 (every check holds, claims and traffic counted apart) > technical load and service outcomes are reported apart, and the log agrees with what the client saw
+   ↓ real: the seven scenarios at N = 10 (every check holds, claims and traffic counted apart) > GOV.UK Delegate's own record of checks matches HMRC's count of authorised checks (A, C)
+   ↓ real: the seven scenarios at N = 10 (every check holds, claims and traffic counted apart) > worker processing time and queue wait are measured for every claim
+   ↓ real: acceptance at N = 100 > 100 duplicate requests yield one business action, not 100 entitlements
+   ↓ real: acceptance at N = 100 > 100 valid submissions from 100 distinct people are all preserved, even though they are recorded gradually
+   ↓ real: acceptance at N = 100 > the dashboard's two groups are separate: many more requests and checks than claims
+   ↓ real: acceptance at N = 100 > a status-poll flood on one claim is slowed with 429s that say when to return, without touching the claim or the bystander
+   × real: no cross-user state mixing > one person cannot read another person's receipt: the answer is the same as for an id that does not exist 30ms
+     → fetch failed
+   × real: no cross-user state mixing > two people sending the same Idempotency-Key get two claims, not one 3ms
+     → fetch failed
+   × real: no cross-user state mixing > one person's traffic does not draw on another's: whatever a flood costs its person, a bystander's identical requests all succeed 3ms
+     → fetch failed
+   × real: no cross-user state mixing > an agent's identity assurance buys no extra capacity: the same traffic gets the same answers at any assurance level 3ms
+     → fetch failed
+   × real: a burst of status checks on one claim > is answered, every time: checking a claim does not hold a second database connection while it holds the first 3ms
+     → fetch failed
+   × real: the accounting is reproducible > running the same scenarios twice, with new people, gives the same claim and duplicate counts 2ms
+     → fetch failed
+   ✓ accounting: how requests are classified (no services needed) > keeps receipts, replays, duplicates, throttles and unavailability apart 1ms
+   ✓ accounting: how requests are classified (no services needed) > counts a throttle without Retry-After, and a receipt count that differs from the request count 1ms
+   ✓ simulated: protections compared in a seeded model (not evidence about the real service) > is reproducible: the same seed gives the same tables, a different seed a different one 40ms
+   ✓ simulated: protections compared in a seeded model (not evidence about the real service) > covers every workload under every protection 0ms
+   ✓ simulated: protections compared in a seeded model (not evidence about the real service) > never lets a duplicate create a business action, under any protection 1ms
+   ✓ simulated: protections compared in a seeded model (not evidence about the real service) > keeps the 100 distinct people's claims under every protection, with a horizon long enough to finish 0ms
+   ✓ simulated: protections compared in a seeded model (not evidence about the real service) > an agent-level throttle slows the people behind the agent, after the authority check has been paid; the person-level throttle leaves distinct people alone 0ms
+   ✓ simulated: protections compared in a seeded model (not evidence about the real service) > fair scheduling by person helps the crowd when one person has many items, and does nothing for a bystander in a crowd of different people 0ms
+   ✓ simulated: protections compared in a seeded model (not evidence about the real service) > repeats of a request HMRC already holds are absorbed, whatever the protection 0ms
+   ✓ simulated: protections compared in a seeded model (not evidence about the real service) > states its assumptions 0ms
+ ❯ tests/hmrc.test.ts (10 tests | 7 failed) 9705ms
+   × A — authorised action > agent with permission → 200 ALLOW, acting for the person; logged by HMRC and by Delegate 38ms
+     → fetch failed
+   × B — undelegated action > permission the person never gave → 403 PERMISSION_MISSING, machine-readable 3ms
+     → fetch failed
+... excerpt omitted ...
+       |               ^
+    155|   if (!res.ok) throw new Error(`${path} failed (${res.status})`);
+    156|   return res.json();
+ ❯ people apps/about/src/lib/swarm.ts:214:16
+ ❯ runExperiments apps/about/src/lib/swarm.ts:275:39
+ ❯ tests/swarm.test.ts:286:18
+
+Caused by: SocketError: other side closed
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'UND_ERR_SOCKET', socket: { localAddress: '127.0.0.1', localPort: 55241, remoteAddress: '127.0.0.1', remotePort: 3410, remoteFamily: 'IPv4', timeout: undefined, bytesWritten: 424, bytesRead: +0 } }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/15]⎯
+
+
+ Test Files  2 failed | 15 passed (17)
+      Tests  13 failed | 200 passed | 14 skipped (227)
+   Start at  19:23:44
+   Duration  31.38s (transform 200ms, setup 28ms, collect 793ms, tests 27.29s, environment 1ms, prepare 551ms)
+

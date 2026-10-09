@@ -1,0 +1,27 @@
+
+> @prototype/hmrc@0.2.0 test
+> vitest run
+
+
+ RUN  v3.2.7 <repo>/apps/hmrc
+
+ ✓ tests/queue.test.ts (32 tests) 5400ms
+   ✓ the worker: durable, safe across workers, bounded > hundreds accepted while no worker runs all stay queued; a worker that starts later records every one exactly once  1302ms
+   ✓ the status endpoint > is only for the person it is about: other people, other people's agents and strangers learn nothing, not even that it exists  1555ms
+ ✓ tests/progress-etag.test.ts (21 tests) 4207ms
+   ✓ one person's ETag exposes nothing of another's > an unidentified caller presenting an ETag gets a refusal, not a 304 and not an ETag  1523ms
+   ✓ private, no-store: nothing personal is served from or kept in a shared cache > every kind of response from the progress endpoint says private, no-store and varies on the credentials  1569ms
+ ✓ tests/idempotency.test.ts (24 tests) 1326ms
+   ✓ failure injection: no success without a durable record, no stuck PENDING > a timed-out attempt leaves nothing behind: the lock and the transaction are released  332ms
+ ✓ tests/throughput.test.ts (18 tests) 758ms
+stderr | tests/step-up.test.ts > service failure > the report of completion is lost: the caller still gets the change that was made, and the next retry finishes the report
+[step-up] could not record the use of step-1; a retry with the same Idempotency-Key will
+
+ ✓ tests/step-up.test.ts (16 tests) 356ms
+ ✓ tests/transaction-ui.test.tsx (7 tests) 24ms
+
+ Test Files  6 passed (6)
+      Tests  118 passed (118)
+   Start at  19:00:53
+   Duration  13.81s (transform 204ms, setup 14ms, collect 617ms, tests 12.07s, environment 1ms, prepare 202ms)
+

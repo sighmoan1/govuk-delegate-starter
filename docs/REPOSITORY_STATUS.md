@@ -64,3 +64,5 @@ The local demo stack was rebuilt with its database volume retained; the HMRC wor
 ## Catalogue adoption follow-up — PR #86
 
 HMRC now owns its versioned capability definitions in `apps/hmrc/service-catalogue.json`. Bootstrap registers them through the authenticated publication handler; citizen reset preserves publications. New requests select the current catalogue, while pending consent and grants retain historical capability IDs. Account and activity views use those stored labels. The branch inventory above preserves the earlier audit baseline; #30–33 remain follow-up work.
+
+Catalogue adoption validation: typecheck/production builds passed; final API 227 passed, HMRC 118 passed, upgraded and fresh browser suites 28 passed each (6 public-tunnel skips each), documentation smoke passed. [Pinned evidence and negative-run notes](evidence/CATALOGUE-ADOPTION-20261009.md).

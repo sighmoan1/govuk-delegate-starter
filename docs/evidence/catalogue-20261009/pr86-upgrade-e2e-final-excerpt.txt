@@ -1,0 +1,65 @@
+EXCERPT: full output retained locally in .validation/pr86-upgrade-e2e-final.log
+
+Running 34 tests using 1 worker
+
+(node:83357) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 e2e/agents.spec.ts:74:5 › a verified agent is shown the proper route, Sam approves on her own device, and the agent's claim is attributed to it (5.6s)
+SIGNER FAILED http://localhost:3412/act-for-someone/check route.fetch: Test ended.
+Call log:
+  - → GET http://localhost:3412/act-for-someone/check
+    - user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36
+    - accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+    - accept-encoding: gzip,deflate,br
+    - accept-language: en-US
+    - cookie: hmrc_agent_pending=eyJhbGciOiJIUzI1NiJ9.eyJ0eXAiOiJhZ2VudC1wZW5kaW5nIiwicmVxdWVzdElkIjoiYzRmMzM3YjctYmZlZS00YTg0LTljMjQtNjBkZWRlZjliNTY0IiwidXNlckNvZGUiOiJHRkNLLThKTkgiLCJhZ2VudE5hbWUiOiJUZXN0IGFnZW50Iiwic2lnbmF0dXJlQWdlbnQiOiJodHRwczovL3Rlc3QtYWdlbnQubG9jYWwiLCJpc3MiOiJobXJjLWRlbW8iLCJpYXQiOjE3OTE1Njk5ODksImV4cCI6MTc5MTU3MTE4OX0.duG44OD7LGYz2pi_lAbR8r2nLYJzkkOCU3zEs_qBtbM; delegate_session=eyJhbGciOiJIUzI1NiJ9.eyJ0eXAiOiJwcmluY2lwYWwtc2Vzc2lvbiIsInN1YiI6ImU3MTA3ZDgwLWM4MjYtNDA2Zi05MzdiLTY1MDg0OTBkMDc2ZCIsImlzcyI6ImdvdnVrLWRlbGVnYXRlIiwiaWF0IjoxNzkxNTY5OTg5LCJleHAiOjE3OTE1NzcxODl9.GcoxI53Vkxmf1OBHNXj8jG2pnLsFAkjBLcY1GIgAf5Y
+    - referer: http://localhost:3412/act-for-someone/waiting
+    - upgrade-insecure-requests: 1
+    - sec-ch-ua: "HeadlessChrome";v="153", "Not_A Brand";v="8", "Chromium";v="153"
+    - sec-ch-ua-mobile: ?0
+    - sec-ch-ua-platform: "macOS"
+    - signature-agent: "https://test-agent.local"
+    - signature-input: sig1=("@authority" "@method" "@path" "signature-agent");created=1791570088;keyid="QRict4Unt9TWNLtA1JFhr_oMCdmSF9v_yo3Cca87SsI";alg="ed25519";expires=1791570148;nonce="OhfGnVmyZLZlnS6OmB3x5w==";tag="web-bot-auth"
+    - signature: sig1=:uUX/ka5jrMXQ1Zvfcy76qMnBKwuliAf9xKEt/867H5x8NZZxsMXNnl/qaaVoEYosllXfa6mQDNUJdShszxZ0BA==:
+
+    at signAndForward (<repo>/e2e/agents.spec.ts:35:32)
+    at <repo>/e2e/agents.spec.ts:19:17 {
+  log: [
+    '  - → GET http://localhost:3412/act-for-someone/check',
+    '    - user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36',
+    '    - accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+    '    - accept-encoding: gzip,deflate,br',
+    '    - accept-language: en-US',
+    '    - cookie: hmrc_agent_pending=eyJhbGciOiJIUzI1NiJ9.eyJ0eXAiOiJhZ2VudC1wZW5kaW5nIiwicmVxdWVzdElkIjoiYzRmMzM3YjctYmZlZS00YTg0LTljMjQtNjBkZWRlZjliNTY0IiwidXNlckNvZGUiOiJHRkNLLThKTkgiLCJhZ2VudE5hbWUiOiJUZXN0IGFnZW50Iiwic2lnbmF0dXJlQWdlbnQiOiJodHRwczovL3Rlc3QtYWdlbnQubG9jYWwiLCJpc3MiOiJobXJjLWRlbW8iLCJpYXQiOjE3OTE1Njk5ODksImV4cCI6MTc5MTU3MTE4OX0.duG44OD7LGYz2pi_lAbR8r2nLYJzkkOCU3zEs_qBtbM; delegate_session=eyJhbGciOiJIUzI1NiJ9.eyJ0eXAiOiJwcmluY2lwYWwtc2Vzc2lvbiIsInN1YiI6ImU3MTA3ZDgwLWM4MjYtNDA2Zi05MzdiLTY1MDg0OTBkMDc2ZCIsImlzcyI6ImdvdnVrLWRlbGVnYXRlIiwiaWF0IjoxNzkxNTY5OTg5LCJleHAiOjE3OTE1NzcxODl9.GcoxI53Vkxmf1OBHNXj8jG2pnLsFAkjBLcY1GIgAf5Y',
+    '    - referer: http://localhost:3412/act-for-someone/waiting',
+    '    - upgrade-insecure-requests: 1',
+    '    - sec-ch-ua: "HeadlessChrome";v="153", "Not_A Brand";v="8", "Chromium";v="153"',
+    '    - sec-ch-ua-mobile: ?0',
+    '    - sec-ch-ua-platform: "macOS"',
+    '    - signature-agent: "https://test-agent.local"',
+    '    - signature-input: sig1=("@authority" "@method" "@path" "signature-agent");created=1791570088;keyid="QRict4Unt9TWNLtA1JFhr_oMCdmSF9v_yo3Cca87SsI";alg="ed25519";expires=1791570148;nonce="OhfGnVmyZLZlnS6OmB3x5w==";tag="web-bot-auth"',
+    '    - signature: sig1=:uUX/ka5jrMXQ1Zvfcy76qMnBKwuliAf9xKEt/867H5x8NZZxsMXNnl/qaaVoEYosllXfa6mQDNUJdShszxZ0BA==:'
+  ]
+}
+  ✘   2 e2e/agents.spec.ts:106:5 › an agent can't approve itself, even with Sam's sign-in (2.1m)
+  -   3 e2e/agents.spec.ts:125:5 › an agent using Sam's password is still the agent: it's sent to the proper route
+  -   4 e2e/agents.spec.ts:149:5 › a declared agent (unsigned, in a browser) can be given permission, but not for sensitive changes
+... excerpt omitted ...
+    .validation/browser-results/agents-an-agent-can-t-approve-itself-even-with-Sam-s-sign-in/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: .validation/browser-results/agents-an-agent-can-t-approve-itself-even-with-Sam-s-sign-in/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    .validation/browser-results/agents-an-agent-can-t-approve-itself-even-with-Sam-s-sign-in/trace.zip
+    Usage:
+
+        npx playwright show-trace .validation/browser-results/agents-an-agent-can-t-approve-itself-even-with-Sam-s-sign-in/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    e2e/agents.spec.ts:106:5 › an agent can't approve itself, even with Sam's sign-in ──────────────
+  6 skipped
+  5 did not run
+  22 passed (3.5m)

@@ -1,0 +1,1 @@
+Registered service catalogue: {"id":"10087587-68b5-4192-96d2-e713bb8b983d","version":1,"digest":"2bc3f0a767241fa42aaa056a27c3b7c1df21fcbf9acb729b91fae5fd106b6634","replayed":true}
