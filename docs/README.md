@@ -13,7 +13,6 @@ The current prototype uses synthetic One Login, Delegate and mock HMRC, with an 
 | [Decision backlog](DECISION_BACKLOG.md) / [dispositions](DECISION_DISPOSITIONS.md) | Unresolved national questions, owners and reopening triggers |
 | [Validation](VALIDATION.md) | Experimental protocol and fair comparator |
 | [Evidence](EVIDENCE.md) | Recorded evidence and limits on claims |
-| [Observatory research protocol](observatory/RESEARCH_PROTOCOL.md) | Proposed labels, ground truth, evaluation and measurement boundaries; no study results yet |
 | [Demo guide](DEMO_GUIDE.md) | Stakeholder walkthrough and defensible claims |
 | [Federated authority](FEDERATED_AUTHORITY.md) | Open central/federated/hybrid authority question |
 | [Build specification](BUILD_SPEC.md) / [prototype content](PROTOTYPE_CONTENT.md) | Preserved original briefs; superseded examples are not current requirements |

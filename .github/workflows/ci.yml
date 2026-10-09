@@ -1,0 +1,96 @@
+name: Prototype regression
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: regression-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      COMPOSE_PROJECT_NAME: delegate-ci-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Prepare synthetic workspace environments
+        run: bash scripts/ci-prepare.sh
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Generate database clients
+        run: |
+          npx prisma generate --schema apps/delegate/prisma/schema.prisma
+          npx prisma generate --schema apps/hmrc/prisma/schema.prisma
+          npx prisma generate --schema apps/observatory/prisma/schema.prisma
+      - name: Typecheck all workspaces
+        run: npm run typecheck 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/typecheck.log
+      - name: Build all workspaces
+        run: npm run build 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/build.log
+      - name: Install Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Build and start isolated application stack (worker paused)
+        run: |
+          docker compose up -d --build db simulator onelogin delegate hmrc about observatory 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/stack-start.log
+          bash scripts/ci-wait.sh
+          bash scripts/ci-observatory-wait.sh
+      - name: Run Observatory readiness unit tests
+        run: npm test -w apps/observatory 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/observatory-tests.log
+      - name: Stop Observatory before existing-service regression
+        run: |
+          docker compose stop observatory
+          test -z "$(docker compose ps --status running -q observatory)"
+      - name: Run HMRC database regression (worker paused)
+        run: npm test -w apps/hmrc -- --reporter=default --reporter=junit --outputFile="$PWD/ci-artifacts/hmrc-junit.xml" 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/hmrc-tests.log
+      - name: Start queue worker for HTTP and browser journeys
+        run: |
+          # Ready app dependencies must not be recreated before HTTP tests.
+          docker compose up -d --no-deps hmrc-worker
+          test -n "$(docker compose ps --status running -q hmrc-worker)"
+          bash scripts/ci-wait.sh
+      - name: Run root API and swarm regression
+        run: npx vitest run --reporter=default --reporter=junit --outputFile=ci-artifacts/api-junit.xml 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/api-tests.log
+      - name: Run browser regression from clean fixtures
+        run: npx playwright test --reporter=list,html 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/browser-tests.log
+      - name: Restart Observatory and verify UI and schema readiness
+        run: |
+          docker compose start observatory
+          bash scripts/ci-observatory-wait.sh
+          npx playwright test --config apps/observatory/playwright.config.ts 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/observatory-browser.log
+      - name: Collect redacted stack diagnostics
+        if: always()
+        run: |
+          mkdir -p ci-artifacts
+          docker compose ps -a > ci-artifacts/stack-status.txt 2>&1 || true
+          docker compose logs --no-color --timestamps 2>&1 | node scripts/ci-redact.mjs > ci-artifacts/stack.log || true
+      - name: Retain reports and failure traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ci-artifacts/
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Remove isolated stack and its fixture volumes
+        if: always()
+        run: docker compose down --volumes --remove-orphans
