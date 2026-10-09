@@ -22,7 +22,7 @@ The pattern copies HMRC's agent authorisation: an agent asks, the person approve
 
 **Open architecture question:** [Where should authority records live?](docs/FEDERATED_AUTHORITY.md) compares a central national registry with federated and hybrid recognition of existing departmental authority. It proposes one narrow experiment; federation is **not yet decided or implemented**.
 
-**Current catalogue status:** authenticated publication, immutable versions and public discovery are implemented (Decision 29). HMRC owns its versioned capability catalogue and registers it during bootstrap ([PR #86](https://github.com/sighmoan1/govuk-delegate-starter/pull/86)); generic catalogue-driven consent and immutable consent snapshots follow in #30–31. Publication alone changes no existing grant. See [Service catalogues](docs/SERVICE_CATALOGUES.md).
+**Current catalogue status:** authenticated publication, immutable versions and public discovery are implemented (Decision 29). HMRC owns its versioned capability catalogue and registers it during bootstrap ([PR #86](https://github.com/sighmoan1/govuk-delegate-starter/pull/86)); generic unchecked consent and immutable original approval evidence are implemented (#30–31). Bounded service-defined restrictions are enforced (#32), and the independent council proof uses the same contract (#33). Publication alone changes no existing grant. See [Service catalogues](docs/SERVICE_CATALOGUES.md).
 
 ## What still needs deciding
 

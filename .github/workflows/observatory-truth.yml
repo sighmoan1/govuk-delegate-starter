@@ -12,15 +12,6 @@ jobs:
   protected-ledger:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: research
-          POSTGRES_PASSWORD: synthetic-ci-only
-          POSTGRES_DB: observatory
-        ports: ['5432:5432']
-        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       DATABASE_URL: postgresql://research:synthetic-ci-only@localhost:5432/observatory
       OBSERVATORY_EVALUATION_KEY: evaluation-synthetic-ci-only-0123456789abcdef
@@ -28,6 +19,15 @@ jobs:
       NEXT_TELEMETRY_DISABLED: '1'
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare cached PostgreSQL and isolated database
+        run: |
+          bash scripts/ci-images.sh postgres:16
+          docker run -d --name observatory-truth-db -e POSTGRES_USER=research -e POSTGRES_PASSWORD=synthetic-ci-only -e POSTGRES_DB=observatory -p 5432:5432 postgres:16
+          for i in $(seq 1 60); do
+            if docker exec observatory-truth-db pg_isready -U research -d observatory; then break; fi
+            sleep 1
+          done
+          docker exec observatory-truth-db pg_isready -U research -d observatory
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -55,3 +55,6 @@ jobs:
           name: protected-truth-validation
           path: truth-report
           retention-days: 7
+      - name: Remove isolated research database
+        if: always()
+        run: docker rm -f observatory-truth-db || true

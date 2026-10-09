@@ -1,0 +1,85 @@
+name: Opt-in EU Fingerprint vendor validation
+
+# Researcher-triggered only. Never runs for PRs, pushes or participant traffic.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+concurrency:
+  group: fingerprint-vendor-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  real-vendor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      COMPOSE_PROJECT_NAME: fingerprint-vendor-${{ github.run_id }}-${{ github.run_attempt }}
+      # A secret provides automatic masking even though this is a public key.
+      NEXT_PUBLIC_FINGERPRINT_API_KEY: ${{ secrets.FINGERPRINT_PUBLIC_API_KEY }}
+      FINGERPRINT_SERVER_API_KEY: ''
+      FINGERPRINT_RESEARCH_ENABLED: 'true'
+      FINGERPRINT_VENDOR_TEST: 'true'
+      PUBLIC_MODE: 'false'
+      RESEARCH_FEED_ENABLED: 'true'
+      RESEARCH_INGEST_ENABLED: 'true'
+      OBSERVATORY_EVALUATION_KEY: vendor-check-evaluation-synthetic-only-0123456789
+      OBSERVATORY_COLLECTION_KEY: vendor-check-collection-synthetic-only-0123456789
+      RESEARCH_PSEUDONYM_KEY: vendor-check-project-hmac-synthetic-only-0123456789
+      RESEARCH_FEED_KEY: vendor-check-source-feed-synthetic-only-0123456789
+      RESEARCH_SOURCE_COMMIT: ${{ github.sha }}
+      DATABASE_URL: postgresql://observatory:observatory@localhost:5433/observatory?connect_timeout=3&pool_timeout=3
+    steps:
+      - name: Require masked public EU key configuration
+        run: |
+          if [[ -z "$NEXT_PUBLIC_FINGERPRINT_API_KEY" ]]; then
+            echo 'Configure the Actions secret FINGERPRINT_PUBLIC_API_KEY before manually running this workflow.' >&2
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - name: Prepare cached public Docker images
+        run: bash scripts/ci-images.sh
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Prepare synthetic configuration and isolated ledger override
+        run: |
+          bash scripts/ci-prepare.sh
+          cat > compose.fingerprint-ci.yml <<'YAML'
+          services:
+            observatory:
+              environment:
+                OBSERVATORY_EVALUATION_KEY: ${OBSERVATORY_EVALUATION_KEY}
+                OBSERVATORY_COLLECTION_KEY: ${OBSERVATORY_COLLECTION_KEY}
+          YAML
+      - run: npm ci
+      - name: Generate protected-ledger client and discover real test
+        run: |
+          npx prisma generate --schema apps/observatory/prisma/schema.prisma
+          npx playwright test --config research-tests/playwright.config.ts --list
+      - run: npx playwright install --with-deps chromium
+      - name: Start isolated synthetic services and protected research ledger
+        run: |
+          docker compose -f docker-compose.yml -f compose.fingerprint-ci.yml up -d --build db simulator onelogin delegate hmrc about council observatory
+          bash scripts/ci-wait.sh
+          bash scripts/ci-observatory-wait.sh
+      - name: Require actual vendor IDs and persisted unverified session evidence
+        run: npx playwright test --config research-tests/playwright.config.ts
+      - name: Record minimal successful outcome
+        run: |
+          echo 'Real EU browser event and visitor identifiers were returned and their HMACs persisted against an unlabelled protected-ledger attempt. Provenance remains unverified_client_claim; no server verification or participant execution-class evidence is claimed.' >> "$GITHUB_STEP_SUMMARY"
+      # No traces, screenshots, video, environment dumps, stack logs or artifacts
+      # are exported: vendor/client identifiers are asserted inside the test.
+      - name: Remove isolated synthetic stack and fixture volumes
+        if: always()
+        run: |
+          if [[ -f compose.fingerprint-ci.yml ]]; then
+            docker compose -f docker-compose.yml -f compose.fingerprint-ci.yml down --volumes --remove-orphans
+          fi

@@ -14,7 +14,13 @@ Eight capabilities are seeded. The browser request form offers seven, omitting `
 
 A registered service can publish bounded catalogue documents with its own credential. Delegate retains immutable, version-addressable history and exposes safe public discovery. Publication is idempotent for identical content and rejects version conflicts, malformed metadata and weak high-risk declarations. It creates no citizen authority. Catalogue adoption preserves historical permission IDs, names and security settings; equivalent legacy rows receive presentation metadata on first registration.
 
-HMRC definitions are owned by its versioned catalogue and registered through the authenticated publication handler during bootstrap. New requests use the latest publication; pending consent and grants retain their existing capability IDs. Citizen reset preserves all catalogue history; generic consent (#30), immutable consent snapshots (#31), richer enforceable constraints (#32) and a second mock service (#33) remain separate work. See [SERVICE_CATALOGUES.md](SERVICE_CATALOGUES.md).
+HMRC definitions are owned by its versioned catalogue and registered through the authenticated publication handler during bootstrap. New requests use the latest publication; pending consent and grants retain their existing capability IDs. Citizen reset preserves all catalogue history. Generic consent renders the requested service's pinned definitions, starts unchecked and rejects empty approval. See [SERVICE_CATALOGUES.md](SERVICE_CATALOGUES.md).
+
+Approval atomically stores immutable original consent evidence, including displayed copy, catalogue identity/version/digest, selected permissions, representative and expiry. Later narrowing and revocation append history; old grants receive no invented retrospective evidence. Access audits and prototype erasure rules are documented in [CONSENT_EVIDENCE.md](CONSENT_EVIDENCE.md).
+
+Bounded service-defined enum restrictions retain catalogue provenance. Citizens and subdelegates can narrow values; malformed, unsupported or wider restrictions fail closed. Delegate performs structural checks and live chain intersection. HMRC owns the tax-year meaning and verifies its actual synthetic target before any business effect. Plain historical grants acquire no defaults. See [MANDATE_CONSTRAINTS.md](MANDATE_CONSTRAINTS.md).
+
+The independent synthetic council service on port 3305 owns its catalogue, credential, local case records and ownership rule. It uses the same generic consent and check contract without council-specific Delegate application code. HMRC and council grants/revocations are independent. The simulator's shared subject remains a simplification, not proof of production identity mapping; see [SECOND_SERVICE.md](SECOND_SERVICE.md).
 
 ## Approval, answers and revocation
 
@@ -52,6 +58,10 @@ Scenarios 1 and 2 have reset controls. Route-choice findings display recorded ob
 
 Remaining production issues include pairwise identity mapping, catalogue governance, lawful authority, assurance, retention, resilience and proportionate inclusion/access policies. See `DECISION_BACKLOG.md` and the validation/evidence register.
 
-## Observatory scaffold
+## Observatory research boundary
 
 The independent `apps/observatory` workbench serves a synthetic-research disclaimer and implementation status on port 3303. `GET /api/health` checks its own migrated research-workspace table and returns 200 when ready, otherwise a redacted 503. It uses a separate Prisma client, database and login; explicitly enabled synthetic read-only feeds and an authenticated research-only sensor collection endpoint are available; there are no classifiers or HMRC/Delegate decision dependencies on it. Public tunnel scripts do not expose Observatory. The collection default is disabled. This workbench publishes no study result or automation performance claim. See [setup](observatory/SETUP.md).
+
+Separate evaluator and collection credentials protect research labels. One-use enrollment binds opaque sessions; sensors receive no actor class. Archived scripted runs require original trace/digest checks and independently audited effects. Unlabelled monitoring counts observed requests without inventing execution truth or durable effects. The audited archive reports zero human participant runs; actual participant collection remains #71.
+
+The optional Fingerprint adapter runs only after explicit study opt-in and protected enrollment. It records coverage states and pseudonymised identifiers separately from service events. Missing configuration and vendor/Observatory failures do not alter authority or business decisions. Real vendor execution remains unvalidated in this delivery environment; returned client identifiers require separate server verification before being labelled vendor-verified. A device signal never supplies an execution label. See [FINGERPRINT_SENSOR.md](observatory/FINGERPRINT_SENSOR.md).

@@ -70,7 +70,7 @@ An explicit real-vendor check is available separately from ordinary CI:
 Run it only against an isolated configured stack with
 `FINGERPRINT_VENDOR_TEST=true`, `TEST_HMRC_URL`, `TEST_OBSERVATORY_URL`,
 `RESEARCH_SOURCE_COMMIT` (the deployed 40-character commit),
-`OBSERVATORY_EVALUATION_KEY`, `RESEARCH_PSEUDONYM_KEY`, and `DATABASE_URL`
+`OBSERVATORY_EVALUATION_KEY`, `RESEARCH_PSEUDONYM_KEY`, `RESEARCH_FEED_KEY`, and `DATABASE_URL`
 pointing to that stack's Observatory database. Configure the public key only in
 the HMRC build environment, enable the study and research collection at runtime,
 and leave the server verification secret unset for this unverified-claim check.
@@ -95,3 +95,9 @@ Official sources checked 9 October 2026:
 - [Server API, EU region and Bearer authentication](https://docs.fingerprint.com/reference/server-api)
 - [v4 event response](https://docs.fingerprint.com/reference/server-api-get-event)
 
+
+## Manual Actions runner
+
+The `Opt-in EU Fingerprint vendor validation` workflow is manual-only. Configure the Actions secret `FINGERPRINT_PUBLIC_API_KEY` with the public EU key, then dispatch `.github/workflows/fingerprint-vendor.yml` against the reviewed revision. The secret provides automatic log masking even though the browser key is public. No server verification secret is required for this client-claim check.
+
+The isolated synthetic stack requires two real SDK events, persists their event/visitor HMACs and records whether the observed visitor hashes match without equating either result with a physical person. It also records a genuine HMRC request using the enrolled research cookie, imports its authenticated feed event and verifies the protected session/attempt association for all observations. The run remains unlabelled and identifiers remain unverified client claims. Missing configuration or vendor failure fails the run; it never substitutes fixture IDs. The workflow exports a minimal success summary and no raw identifiers, environment dumps, traces, screenshots, video or artifacts.

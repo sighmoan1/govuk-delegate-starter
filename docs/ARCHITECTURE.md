@@ -73,7 +73,7 @@ For a portable, readable view of the architecture, see the About site's **Delega
 
 **Target:** departments publish their own versioned catalogue through a trusted service registration process. Delegate validates, stores and renders a generic representation; it does not author tax-specific permissions or invent permissions on the fly from agent prose.
 
-The publication/discovery foundation is implemented: a registered service publishes bounded, immutable versions with its own credential. See [the implemented protocol](SERVICE_CATALOGUES.md) for the actual schema and endpoints. HMRC catalogue-backed bootstrap is under review in [PR #86](https://github.com/sighmoan1/govuk-delegate-starter/pull/86); generic consent and consent snapshots remain follow-up work (#30–31).
+The publication/discovery foundation is implemented: a registered service publishes bounded, immutable versions with its own credential. See [the implemented protocol](SERVICE_CATALOGUES.md) for the actual schema and endpoints. HMRC catalogue-backed bootstrap, generic unchecked consent and immutable original consent evidence are implemented. The independent council service uses the same service-neutral contract; see [consent evidence](CONSENT_EVIDENCE.md) and [second-service limits](SECOND_SERVICE.md).
 
 The following is a target-model illustration, **not valid input to the implemented publication API**:
 
@@ -210,7 +210,7 @@ The central registry, fully federated and hybrid alternatives—including privac
 |---|---|---|
 | One Login + Delegate consent lifecycle | **Implemented** with simulator and synthetic identities | Real relying-party integration and identity correlation |
 | Service catalogue publication/discovery | **Implemented**: authenticated publication, immutable history, bounded schema, public discovery | Governed catalogue lifecycle and service adoption |
-| HMRC delegation permissions | **Implemented**, HMRC-owned catalogue bootstrap with historical grant preservation (#86) | Generic consent and immutable consent snapshots (#30–31) |
+| Catalogue-driven consent and evidence | **Implemented**, unchecked service-defined permissions, immutable original approval and append-only narrowing/revocation (#30–31) | Production retention, lawful authority and catalogue governance |
 | Rich structured constraints | **Implemented** bounded service-defined enum sets, pinned catalogue provenance, citizen/sub-agent narrowing and HMRC tax-year adapter (#32) | Additional constraint types only when a service owns and verifies their semantics; see [implemented contract](MANDATE_CONSTRAINTS.md) |
 | User-facing task purpose | **Not a structured consent object** | Human-readable label, not an authorisation bypass |
 | HMRC authority checks and revocation | **Implemented** | Generic, service-neutral check plus structured grants |
@@ -222,7 +222,7 @@ The prototype's earlier decision "Identify the agent. Authorise the mandate. Lim
 
 ## 11. What to build next
 
-Build on the merged catalogue publication foundation by completing: (1) dynamic generic consent rendering; (2) structured enforceable mandates with a stable check contract; (3) an independent second mock department as a decoupling proof; (4) optional grouped consent and grant-template portability. These are distinct implementation phases.
+Generic consent, bounded enforceable restrictions and the independent council proof are implemented. Optional grouped consent, grant-template portability and production pairwise identity mapping remain separate work. More constraint types require service-owned semantics and enforcement.
 
 **Acceptance test for the architectural boundary:** a new government service can publish its own capability catalogue, offer consent, check mandates and receive an enforceable result **without adding a service-specific capability or endpoint to Delegate's application code**.
 
