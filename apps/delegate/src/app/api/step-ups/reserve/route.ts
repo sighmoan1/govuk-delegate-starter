@@ -31,6 +31,7 @@ export async function POST(req: Request) {
 
   const r = await reserveStepUp({
     principalId: String(b.principal_id ?? ""),
+    catalogueVersion: typeof b.catalogue_version === "number" ? b.catalogue_version : undefined,
     presenter: presenter.kind === "agent" ? { kind: "agent", delegateId: presenter.delegateId } : { kind: "delegation", delegationId: presenter.delegationId },
     service: service.slug,
     capability: String(b.capability ?? ""),

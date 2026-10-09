@@ -125,7 +125,7 @@ export type ReserveOutcome =
  * DelegateUnavailableError if Delegate cannot answer: the operation must not proceed.
  */
 export async function reserveStepUp(r: { agent_token: string; principal_id: string; capability: string; proposal: Proposal; reservation_id: string }): Promise<ReserveOutcome> {
-  const res = await post("step-up reserve", "/api/step-ups/reserve", { ...r, service: config.serviceSlug }, 2);
+  const res = await post("step-up reserve", "/api/step-ups/reserve", { ...r, catalogue_version:catalogue.version, service: config.serviceSlug }, 2);
   const body = await res.json().catch(() => null);
   if (res.ok && body?.reserved === true) return { reserved: true };
   if (res.status === 401 || !body) throw new DelegateUnavailableError("step-up reserve", false, `status ${res.status}`);
@@ -166,7 +166,7 @@ export const receiptKey = (queryId: string, version: number) => `${config.servic
  * The idempotency key makes retries safe; repeating a write returns the same receipt.
  */
 export async function recordReceipt(r: { mandate_id: string; delegation_id: string; capability: string; reference: string; text: string; agent_confirmed: boolean; idempotency_key: string }): Promise<string> {
-  const res = await post("receipt", "/api/receipts", { ...r, service: config.serviceSlug }, 2);
+  const res = await post("receipt", "/api/receipts", { ...r, catalogue_version:catalogue.version, service: config.serviceSlug }, 2);
   if (!res.ok) throw new DelegateUnavailableError("receipt", false, `status ${res.status}`);
   const id = (await res.json().catch(() => null))?.receipt_id;
   if (typeof id !== "string" || !id) throw new DelegateUnavailableError("receipt", false, "no receipt id returned");
