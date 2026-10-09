@@ -3,6 +3,7 @@ set -euo pipefail
 
 # Only for disposable Linux GitHub Actions runners, before any containers start.
 # https://docs.cloud.google.com/artifact-registry/docs/pull-cached-dockerhub-images
+# https://www.docker.com/blog/news-from-aws-reinvent-docker-official-images-on-amazon-ecr-public/
 if [[ "${GITHUB_ACTIONS:-}" != "true" ]]; then
   echo "This Docker cache setup is for disposable GitHub Actions runners only." >&2
   exit 1
@@ -24,10 +25,17 @@ sudo systemctl restart docker
 docker info --format '{{json .RegistryConfig.Mirrors}}' | python3 -c 'import json,sys; assert "https://mirror.gcr.io/" in [v.rstrip("/")+"/" for v in json.load(sys.stdin)]; print("Docker public cache configured.")'
 
 # Pull exact existing tags through the daemon cache. A cache miss falls back to
-# Docker Hub and fails visibly if neither source is available; no test is skipped.
+# Docker Hub. Docker's official ECR Public distribution is a final source for
+# these same tags when the canonical pull is rate-limited; no test is skipped.
 if (( $# == 0 )); then
   set -- postgres:16-alpine node:22-slim node:22-alpine
 fi
 for image in "$@"; do
-  docker pull "$image"
+  if ! docker pull "$image"; then
+    official="public.ecr.aws/docker/library/$image"
+    echo "Canonical/cache pull unavailable; trying Docker official ECR distribution for $image."
+    docker pull "$official"
+    docker tag "$official" "$image"
+  fi
+  docker image inspect --format '{{json .RepoDigests}}' "$image"
 done
