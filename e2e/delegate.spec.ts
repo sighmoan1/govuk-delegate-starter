@@ -37,7 +37,14 @@ test("consent: sign in with One Login, narrow the request, allow; then remove ac
   await signInIfAsked(page);
 
   await expect(page.getByRole("heading", { level: 1, name: "Personal assistant wants to act for you" })).toBeVisible();
-  await page.getByLabel(/Update your employment details/).uncheck();
+  for (const checkbox of await page.getByRole("checkbox").all()) await expect(checkbox).not.toBeChecked();
+  const readPermission = page.getByRole("checkbox", { name: /View your tax code/ });
+  await readPermission.focus();
+  await page.keyboard.press("Space");
+  await expect(readPermission).toBeChecked();
+  await expect(readPermission).toHaveAttribute("aria-describedby", "c-0-hint");
+  await page.getByLabel(/Claim tax relief for working from home/).check();
+  await expect(page.getByLabel(/Update your employment details/)).not.toBeChecked();
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("heading", { name: "Check what you are allowing" })).toBeVisible();
   await expect(page.getByText("Not allowed to")).toBeVisible();
@@ -55,7 +62,12 @@ test("the person sees what an agent said they agreed to, can say they didn't, an
   const req = await createRequest();
   await page.goto(req.consent_url);
   await signInIfAsked(page);
+  // Locator.all() does not wait for the redirect from the password screen.
+  await expect(page.getByRole("heading", { level: 1, name: "Personal assistant wants to act for you" })).toBeVisible();
+  await expect(page.getByRole("checkbox")).toHaveCount(3);
+  for (const checkbox of await page.getByRole("checkbox").all()) await checkbox.check();
   await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Check what you are allowing" })).toBeVisible();
   await page.getByRole("button", { name: "Allow" }).click();
   await expect(page.getByRole("heading", { name: "Agent authorised" })).toBeVisible();
   await page.getByRole("link", { name: "View this authority" }).click();

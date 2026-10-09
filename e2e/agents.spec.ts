@@ -56,6 +56,7 @@ async function samApproves(browser: Browser, code: string, opts: { untick?: RegE
   await sam.goto(`${DELEGATE}/approve?code=${code}`);
   await signIn(sam);
   await expect(sam.getByRole("heading", { level: 1 })).toContainText("wants to act for you");
+  for (const checkbox of await sam.getByRole("checkbox").all()) await checkbox.check();
   if (opts.untick) await sam.getByLabel(opts.untick).uncheck();
   await sam.getByRole("button", { name: "Continue" }).click();
   await sam.getByRole("button", { name: "Allow" }).click();
@@ -116,7 +117,12 @@ test("an agent can't approve itself, even with Sam's sign-in", async ({ browser,
   await tab.goto(`${DELEGATE}/approve?code=${code}`);
   await expect(tab.locator(".ol-warning")).toContainText("This sign-in is for people");
   await signIn(tab);
+  // Wait for consent before enumerating scopes; an empty selection is refused.
+  await expect(tab.getByRole("heading", { level: 1 })).toContainText("wants to act for you");
+  await expect(tab.getByRole("checkbox").first()).toBeVisible();
+  for (const checkbox of await tab.getByRole("checkbox").all()) await checkbox.check();
   await tab.getByRole("button", { name: "Continue" }).click();
+  await expect(tab.getByRole("heading", { name: "Check what you are allowing" })).toBeVisible();
   await tab.getByRole("button", { name: "Allow" }).click();
   await expect(tab.getByRole("heading", { name: "The person needs to do this themselves" })).toBeVisible();
   await agentCtx.close();
@@ -226,6 +232,8 @@ test("removing access ends the agent's session, and a copied session doesn't wor
   await sam.goto(`${DELEGATE}/account/delegates`);
   await sam.getByRole("link", { name: /Remove access/ }).first().click();
   await sam.getByRole("button", { name: "Remove access" }).click();
+  // The other browser must wait until the citizen revocation has committed.
+  await expect(sam.getByRole("heading", { name: "Access removed", exact: true })).toBeVisible();
   await agent.goto(`${HMRC}/your-tax`);
   await expect(agent.getByText("The person has removed your permission.")).toBeVisible();
   await samCtx.close();

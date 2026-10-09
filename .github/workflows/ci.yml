@@ -39,6 +39,7 @@ jobs:
         run: |
           npx prisma generate --schema apps/delegate/prisma/schema.prisma
           npx prisma generate --schema apps/hmrc/prisma/schema.prisma
+          npx prisma generate --schema apps/observatory/prisma/schema.prisma
       - name: Typecheck all workspaces
         run: npm run typecheck 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/typecheck.log
       - name: Build all workspaces
@@ -47,14 +48,20 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Build and start isolated application stack (worker paused)
         run: |
-          docker compose up -d --build db simulator onelogin delegate hmrc about 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/stack-start.log
+          docker compose up -d --build db simulator onelogin delegate hmrc about observatory 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/stack-start.log
           bash scripts/ci-wait.sh
+          bash scripts/ci-observatory-wait.sh
+      - name: Run Observatory readiness unit tests
+        run: npm test -w apps/observatory 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/observatory-tests.log
+      - name: Stop Observatory before existing-service regression
+        run: |
+          docker compose stop observatory
+          test -z "$(docker compose ps --status running -q observatory)"
       - name: Run HMRC database regression (worker paused)
         run: npm test -w apps/hmrc -- --reporter=default --reporter=junit --outputFile="$PWD/ci-artifacts/hmrc-junit.xml" 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/hmrc-tests.log
       - name: Start queue worker for HTTP and browser journeys
         run: |
-          # Dependencies are already migrated and ready. Recreating them here
-          # races the first HTTP test file against application bootstrap.
+          # Ready app dependencies must not be recreated before HTTP tests.
           docker compose up -d --no-deps hmrc-worker
           test -n "$(docker compose ps --status running -q hmrc-worker)"
           bash scripts/ci-wait.sh
@@ -62,6 +69,11 @@ jobs:
         run: npx vitest run --reporter=default --reporter=junit --outputFile=ci-artifacts/api-junit.xml 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/api-tests.log
       - name: Run browser regression from clean fixtures
         run: npx playwright test --reporter=list,html 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/browser-tests.log
+      - name: Restart Observatory and verify UI and schema readiness
+        run: |
+          docker compose start observatory
+          bash scripts/ci-observatory-wait.sh
+          npx playwright test --config apps/observatory/playwright.config.ts 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/observatory-browser.log
       - name: Collect redacted stack diagnostics
         if: always()
         run: |
