@@ -1,3 +1,6 @@
+import {createHash} from "node:crypto";
+import catalogue from "../../service-catalogue.json";
+import { TAX_YEAR } from "./taxpayers";
 import { config } from "./config";
 
 export type DelegateChain = {
@@ -33,7 +36,7 @@ export type StepUpReport = {
 export type Proposal = { idempotency_key: string; payload: Record<string, string> };
 
 export type DelegateCheck =
-  | { authorised: true; status: "ACTIVE"; authorisation_id: string; principal_id: string; subject: string; delegate: DelegateInfo; chain: DelegateChain; check_id: string; step_up?: StepUpReport }
+  | { authorised: true; status: "ACTIVE"; authorisation_id: string; principal_id: string; subject: string; delegate: DelegateInfo; chain: DelegateChain; check_id: string; constraints?:Record<string,Record<string,string[]>>; constraint_provenance?:{mandate_id:string;delegation_id:string;catalogue:{version:number;id:string;digest:string}|null}; step_up?: StepUpReport }
   | {
       authorised: false;
       reason: string;
@@ -52,6 +55,8 @@ export class DelegateUnavailableError extends Error {
   }
 }
 
+const canonical=(v:unknown):string=>Array.isArray(v)?"["+v.map(canonical).join(",")+"]":v&&typeof v==="object"?"{"+Object.keys(v).sort().map(k=>JSON.stringify(k)+":"+canonical((v as Record<string,unknown>)[k])).join(",")+"}":JSON.stringify(v);
+const supportedDigest=createHash("sha256").update(canonical(catalogue)).digest("hex");
 const TIMEOUT_MS = 5_000;
 const retryDelayMs = () => Number(process.env.DELEGATE_RETRY_DELAY_MS ?? 200);
 
@@ -81,16 +86,31 @@ async function post(operation: string, path: string, body: unknown, retries: num
   throw new DelegateUnavailableError(operation, true, detail);
 }
 
+export function hmrcConstraintsPermit(constraints:Record<string,Record<string,string[]>>, capability:string, context:Record<string,unknown>):boolean {
+ const entries=Object.entries(constraints);
+ if(entries.length!==1 || entries[0][0]!==capability || !["view_tax_code","claim_job_expenses"].includes(capability)) return false;
+ const fields=entries[0][1];
+ if(!fields || Object.keys(fields).length!==1 || !Array.isArray(fields.tax_year) || !fields.tax_year.length || fields.tax_year.some(v=>typeof v!=="string" || !["2025 to 2026","2026 to 2027"].includes(v))) return false;
+ // These synthetic operations act on HMRC's current tax year. Caller text cannot change that semantic target.
+ return fields.tax_year.includes(TAX_YEAR) && (context.tax_year===undefined || (typeof context.tax_year==="string" && fields.tax_year.includes(context.tax_year)));
+}
+
 /**
  * The one call HMRC makes to GOV.UK Delegate. HMRC presents its own service
  * key; Delegate verifies the agent, the mandate, the capability and
  * assurance (it spends none of the person's business limits, which HMRC applies itself), and tells HMRC who the person is only if the answer is yes.
  * Throws DelegateUnavailableError if Delegate can't answer: that is not a "no".
  */
-export async function askDelegate(input: { agent_token: string; principal_id: string; capability: string; proposal?: Proposal }): Promise<DelegateCheck> {
-  const res = await post("check", "/api/authorisations/check", { ...input, service: config.serviceSlug }, 0);
+export async function askDelegate(input: { agent_token: string; principal_id: string; capability: string; proposal?: Proposal; constraint_context?:Record<string,unknown> }): Promise<DelegateCheck> {
+  const res = await post("check", "/api/authorisations/check", { ...input, constraint_context:undefined, catalogue_version:catalogue.version, service: config.serviceSlug }, 0);
   if (!res.ok) throw new DelegateUnavailableError("check", false, `status ${res.status}`);
-  return res.json();
+  const check: DelegateCheck=await res.json();
+  if(check.authorised && check.constraints && Object.keys(check.constraints).length) {
+    const provenance=check.constraint_provenance;
+    const allowed=hmrcConstraintsPermit(check.constraints,input.capability,input.constraint_context ?? {});
+    if(!allowed || !provenance || provenance.catalogue?.version!==catalogue.version || provenance.catalogue?.digest!==supportedDigest || provenance.mandate_id!==check.authorisation_id || provenance.delegation_id!==check.chain.delegation_id) return {authorised:false,reason:"MANDATE_CONSTRAINT_REFUSED",delegate:check.delegate,chain:check.chain,check_id:check.check_id};
+  }
+  return check;
 }
 
 export type ReserveOutcome =
@@ -105,7 +125,7 @@ export type ReserveOutcome =
  * DelegateUnavailableError if Delegate cannot answer: the operation must not proceed.
  */
 export async function reserveStepUp(r: { agent_token: string; principal_id: string; capability: string; proposal: Proposal; reservation_id: string }): Promise<ReserveOutcome> {
-  const res = await post("step-up reserve", "/api/step-ups/reserve", { ...r, service: config.serviceSlug }, 2);
+  const res = await post("step-up reserve", "/api/step-ups/reserve", { ...r, catalogue_version:catalogue.version, service: config.serviceSlug }, 2);
   const body = await res.json().catch(() => null);
   if (res.ok && body?.reserved === true) return { reserved: true };
   if (res.status === 401 || !body) throw new DelegateUnavailableError("step-up reserve", false, `status ${res.status}`);
@@ -146,7 +166,7 @@ export const receiptKey = (queryId: string, version: number) => `${config.servic
  * The idempotency key makes retries safe; repeating a write returns the same receipt.
  */
 export async function recordReceipt(r: { mandate_id: string; delegation_id: string; capability: string; reference: string; text: string; agent_confirmed: boolean; idempotency_key: string }): Promise<string> {
-  const res = await post("receipt", "/api/receipts", { ...r, service: config.serviceSlug }, 2);
+  const res = await post("receipt", "/api/receipts", { ...r, catalogue_version:catalogue.version, service: config.serviceSlug }, 2);
   if (!res.ok) throw new DelegateUnavailableError("receipt", false, `status ${res.status}`);
   const id = (await res.json().catch(() => null))?.receipt_id;
   if (typeof id !== "string" || !id) throw new DelegateUnavailableError("receipt", false, "no receipt id returned");

@@ -125,3 +125,22 @@ test("reflow at 320px: no horizontal page scroll", async ({ page }) => {
     expect(overflow, `${url} overflows horizontally`).toBeLessThanOrEqual(0);
   }
 });
+
+test("service-defined restrictions can be narrowed in consent and remain in original evidence", async ({page})=>{
+ const tok=await (await fetch(`${DELEGATE}/api/agent/token`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({client_id:CLIENT_ID,client_secret:CLIENT_SECRET})})).json();
+ const response=await fetch(`${DELEGATE}/api/authorisation-requests`,{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${tok.access_token}`},body:JSON.stringify({service:"hmrc-personal-tax",capabilities:["claim_job_expenses"],catalogue_version:2,constraints:{claim_job_expenses:{tax_year:["2025 to 2026","2026 to 2027"]}}})});
+ expect(response.status).toBe(201);const request=await response.json();
+ await page.goto(request.consent_url);await signInIfAsked(page);
+ await expect(page.getByRole("heading",{name:"Personal assistant wants to act for you"})).toBeVisible();
+ await page.getByRole("checkbox",{name:/Claim tax relief/}).check();
+ await page.getByRole("checkbox",{name:"2025 to 2026",exact:true}).uncheck();
+ await page.getByRole("button",{name:"Continue",exact:true}).click();
+ await expect(page.getByRole("heading",{name:"Check what you are allowing"})).toBeVisible();
+ await expect(page.locator('.summary-list').getByText(/Tax year: 2026 to 2027/)).toBeVisible();
+ await page.getByRole("button",{name:"Allow",exact:true}).click();
+ await expect(page.getByRole("heading",{name:"Agent authorised"})).toBeVisible();
+ await page.getByRole("link",{name:"View this authority"}).click();
+ await expect(page.getByRole("heading",{name:"Current restrictions"})).toBeVisible();
+ await expect(page.getByText(/Restriction for Claim tax relief.*Tax year — 2026 to 2027/)).toBeVisible();
+ await expect(page.getByRole("checkbox",{name:"2025 to 2026",exact:true})).toHaveCount(0);
+});

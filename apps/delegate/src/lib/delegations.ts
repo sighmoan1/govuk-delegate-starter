@@ -1,3 +1,6 @@
+import { validateConstraints, narrowConstraints, selectConstraints } from "./constraints";
+import type { CatalogueCapability } from "./catalogues";
+import { effectiveConstraints } from "./authority";
 import { prisma } from "./db";
 import { DomainError } from "./requests";
 import { expireDueAuthorisations, rootDelegationFor } from "./authority";
@@ -10,7 +13,7 @@ type Parent = { kind: "agent"; delegateId: string } | { kind: "delegation"; dele
  * mandate (and so the root principal), can't widen its parent's capabilities,
  * and can't go deeper than the mandate allows.
  */
-export async function subDelegate(input: { parent: Parent; principalId: string; service: string; capabilities: string[]; label?: string }) {
+export async function subDelegate(input: { parent: Parent; principalId: string; service: string; capabilities: string[]; constraints?:unknown; label?: string }) {
   await expireDueAuthorisations();
   const service = await prisma.service.findUnique({ where: { slug: input.service } });
   if (!service) throw new DomainError("UNKNOWN_SERVICE", "Unknown service");
@@ -28,7 +31,7 @@ export async function subDelegate(input: { parent: Parent; principalId: string; 
     parent = await prisma.delegation.findUnique({ where: { id: input.parent.delegationId } });
     if (!parent || parent.status !== "ACTIVE") throw new DomainError("NO_AUTHORISATION", "Delegation not found or ended", 403);
   }
-  const mandate = await prisma.authorisation.findUniqueOrThrow({ where: { id: parent.mandateId } });
+  const mandate = await prisma.authorisation.findUniqueOrThrow({ where: { id: parent.mandateId }, include:{permissions:{include:{capability:true}}} });
   if (mandate.principalId !== input.principalId || mandate.serviceId !== service.id || mandate.status !== "ACTIVE") {
     throw new DomainError("NO_AUTHORISATION", "No live permission from this person", 403);
   }
@@ -41,8 +44,13 @@ export async function subDelegate(input: { parent: Parent; principalId: string; 
   if (wanted.length === 0) throw new DomainError("NO_CAPABILITIES", "Pass on at least one capability");
   if (widened.length) throw new DomainError("PERMISSION_MISSING", `Can't pass on what you don't hold: ${widened.join(", ")}`, 403);
 
+  const definitions=mandate.permissions.map(p=>p.capability.metadata as unknown as CatalogueCapability).filter(Boolean);
+  const effective=Object.assign({},...await Promise.all(wanted.map(c=>effectiveConstraints(mandate,parent,c))));
+  const constraints=narrowConstraints(effective,validateConstraints(input.constraints ?? selectConstraints(effective,wanted),definitions),wanted);
+  if(Object.keys(constraints).some(c=>!wanted.includes(c))) throw new DomainError("CONSTRAINTS_INVALID", "Restrictions must belong to passed permissions");
   const child = await prisma.delegation.create({
     data: {
+      constraints: JSON.parse(JSON.stringify(constraints)),
       mandateId: mandate.id,
       delegateId: parent.delegateId,
       parentDelegationId: parent.id,

@@ -1,3 +1,5 @@
+import { validateConstraints } from "@/lib/constraints";
+import type { CatalogueCapability } from "@/lib/catalogues";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -9,7 +11,7 @@ import { fmt, fmtTime } from "@/lib/format";
 import { ConsentHistory } from "@/components/consent-history";
 import { loadConsentHistory, type ApprovalEvidence } from "@/lib/consent-evidence";
 import { outcomeLabel, reasonLabel } from "@/lib/outcomes";
-import { narrowAction, disputeAction } from "../../../actions";
+import { narrowRestrictionsAction, narrowAction, disputeAction } from "../../../actions";
 
 export const metadata: Metadata = { title: "Access details" };
 
@@ -18,10 +20,10 @@ export default async function AuthorisationDetail({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ removed?: string; narrowed?: string; disputed?: string }>;
+  searchParams: Promise<{ removed?: string; narrowed?: string; disputed?: string; restrictions?:string }>;
 }) {
   const { id } = await params;
-  const { removed, narrowed, disputed } = await searchParams;
+  const { removed, narrowed, disputed, restrictions: restrictionStatus } = await searchParams;
   const principal = await currentPrincipal();
   if (!principal) redirect(`/auth/login?returnTo=${encodeURIComponent(`/account/delegates/${id}`)}`);
   await expireDueAuthorisations();
@@ -49,6 +51,7 @@ export default async function AuthorisationDetail({
   for (const o of [...outcomes].reverse()) latestByCheck.set(o.checkId, o);
   const receipts = await prisma.receipt.findMany({ where: { mandateId: a.id }, orderBy: { createdAt: "desc" } });
   await prisma.receipt.updateMany({ where: { mandateId: a.id, seenAt: null }, data: { seenAt: new Date() } });
+  const restrictions=validateConstraints(a.constraints,a.permissions.map(p=>p.capability.metadata as unknown as CatalogueCapability).filter(Boolean));
   const label = a.status === "ACTIVE" ? "Active" : a.status === "REVOKED" ? "Removed" : "Expired";
 
   return (
@@ -83,6 +86,7 @@ export default async function AuthorisationDetail({
       </dl>
       {a.status === "ACTIVE" && <Link className="button" href={`/account/delegates/${a.id}/remove`}>Remove access</Link>}
 
+      {Object.keys(restrictions).length>0 && <section><h2>Current restrictions</h2>{restrictionStatus && <p role="status">{restrictionStatus==="saved"?"Restrictions saved. All sub-agents are limited by them immediately.":"Keep at least one value for each restriction. Restrictions can only be narrowed."}</p>}<form action={narrowRestrictionsAction}><input type="hidden" name="id" value={id} />{Object.entries(restrictions).flatMap(([cap,fields])=>Object.entries(fields).map(([key,values])=><fieldset key={`${cap}:${key}`}><legend>{capabilityName(cap)}: {(a.permissions.find(p=>p.capability.code===cap)?.capability.metadata as unknown as CatalogueCapability)?.supported_constraints?.[key]?.label ?? key}</legend>{values.map(value=><div className="choice-item" key={value}><input type="checkbox" id={`current-${cap}-${key}-${value}`} name={`restriction:${cap}:${key}`} value={value} defaultChecked disabled={a.status!=="ACTIVE"} /><label htmlFor={`current-${cap}-${key}-${value}`}>{value}</label></div>)}</fieldset>))}{a.status==="ACTIVE" && <button className="button button--secondary" type="submit">Save narrower restrictions</button>}</form></section>}
       <ConsentHistory original={original} changed={catalogueChanged} history={consentHistory.map(event => {
         const payload = event.payload as { capability?: string; reason?: string };
         return { id: event.id, kind: event.kind, occurredAt: event.occurredAt, capability: payload.capability, reason: payload.reason };

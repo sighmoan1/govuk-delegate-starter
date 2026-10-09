@@ -1,6 +1,8 @@
+import { validateConstraints, narrowConstraints, selectConstraints, type Constraints } from "./constraints";
+import type { CatalogueCapability } from "./catalogues";
 import { approvalEvidence } from "./consent-evidence";
 import { consentPresentation } from "./consent-presentation";
-import { currentCapabilities } from "./catalogues";
+import { catalogueDigest, currentCapabilities } from "./catalogues";
 import { prisma } from "./db";
 import { AUTHORISATION_DAYS, REQUEST_DAYS } from "./config";
 
@@ -18,6 +20,8 @@ export async function createRequest(input: {
   capabilities: string[];
   principalHint?: string;
   returnUrl?: string;
+  constraints?: unknown;
+  catalogueVersion?: unknown;
 }) {
   const delegate = await prisma.delegate.findUniqueOrThrow({ where: { id: input.delegateId } });
   if (input.returnUrl && !isRegisteredReturnUrl(input.returnUrl, delegate.redirectUris)) {
@@ -27,11 +31,25 @@ export async function createRequest(input: {
   if (!service) throw new DomainError("UNKNOWN_SERVICE", "Unknown service");
   const wanted = [...new Set(input.capabilities)];
   if (wanted.length === 0) throw new DomainError("NO_CAPABILITIES", "Request at least one capability");
-  const caps = (await currentCapabilities(service.id)).filter((c) => wanted.includes(c.code));
+  if(input.catalogueVersion!==undefined && (!Number.isSafeInteger(input.catalogueVersion) || Number(input.catalogueVersion)<1)) throw new DomainError("CATALOGUE_INCOMPATIBLE","Invalid catalogue version");
+  const publication=input.catalogueVersion===undefined?null:await prisma.serviceCatalogue.findUnique({where:{serviceId_version:{serviceId:service.id,version:Number(input.catalogueVersion)}}});
+  if(input.catalogueVersion!==undefined && !publication) throw new DomainError("CATALOGUE_INCOMPATIBLE","Unknown catalogue version");
+  const available=publication?await prisma.capability.findMany({where:{serviceId:service.id,catalogueId:publication.id},orderBy:{sortOrder:"asc"}}):await currentCapabilities(service.id);
+  const caps = available.filter((c) => wanted.includes(c.code));
   if (caps.length !== wanted.length) throw new DomainError("UNKNOWN_CAPABILITY", "Unknown capability for this service");
 
+  if(publication) {
+    const latest=await currentCapabilities(service.id);
+    const digest=(definition:CatalogueCapability)=>catalogueDigest({schema_version:1,service:service.slug,version:1,capabilities:[definition]});
+    for(const cap of caps) {
+      const current=latest.find(c=>c.code===cap.code);
+      if(!current || !cap.metadata || !current.metadata || digest(cap.metadata as unknown as CatalogueCapability)!==digest(current.metadata as unknown as CatalogueCapability)) throw new DomainError("CATALOGUE_INCOMPATIBLE","Requested definitions no longer match the service's current publication");
+    }
+  }
+  const constraints = validateConstraints(input.constraints, caps.map(c=>c.metadata as unknown as CatalogueCapability));
   return prisma.authorisationRequest.create({
     data: {
+      constraints: JSON.parse(JSON.stringify(constraints)),
       delegateId: input.delegateId,
       serviceId: service.id,
       principalHint: input.principalHint?.slice(0, 200) || null,
@@ -88,7 +106,7 @@ async function pendingOrThrow(id: string, principalId?: string) {
 }
 
 /** Principal approves, optionally narrowing the permissions. Creates the active relationship. */
-export async function approveRequest(id: string, principalId: string, capabilityCodes?: string[], method: "CITIZEN_BROWSER" | "SYNTHETIC_DEMO_API" = "SYNTHETIC_DEMO_API") {
+export async function approveRequest(id: string, principalId: string, capabilityCodes?: string[], method: "CITIZEN_BROWSER" | "SYNTHETIC_DEMO_API" = "SYNTHETIC_DEMO_API", approvedConstraints?: unknown) {
   const req = await pendingOrThrow(id, principalId);
   // Approval must validate the same pinned service definitions shown to the person.
   const presentation = consentPresentation(req);
@@ -99,6 +117,10 @@ export async function approveRequest(id: string, principalId: string, capability
   }
   if (chosen.length === 0) throw new DomainError("NO_PERMISSIONS", "Choose at least one permission, or reject the request");
 
+  const definitions = requested.map(c=>c.metadata as unknown as CatalogueCapability);
+  const proposed = validateConstraints(req.constraints, definitions);
+  const constraints = narrowConstraints(proposed, validateConstraints(approvedConstraints ?? selectConstraints(proposed, chosen.map(c=>c.code)), definitions), chosen.map(c=>c.code));
+  if(Object.keys(constraints).some(c=>!chosen.some(x=>x.code===c))) throw new DomainError("CONSTRAINTS_INVALID", "Restrictions must belong to selected permissions");
   return prisma.$transaction(async (tx) => {
     const now = new Date();
     // Serialise every approval for this principal/delegate/service, so two requests
@@ -127,6 +149,7 @@ export async function approveRequest(id: string, principalId: string, capability
     }
     const auth = await tx.authorisation.create({
       data: {
+        constraints: JSON.parse(JSON.stringify(constraints)),
         principalId,
         delegateId: req.delegateId,
         serviceId: req.serviceId,
@@ -139,10 +162,11 @@ export async function approveRequest(id: string, principalId: string, capability
       payload: approvalEvidence({ presentation, selected: chosen.map(c => c.code), principalRef: principalId,
         delegateId: req.delegateId, serviceId: req.serviceId,
         assurance: req.delegate.identityType === "WEB_BOT_AUTH" ? "VERIFIED" : req.delegate.identityType === "DECLARED" ? "DECLARED" : "REGISTERED",
-        approvedAt: now, validUntil: auth.validUntil, method }) } });
+        constraints, approvedAt: now, validUntil: auth.validUntil, method }) } });
     // The agent the person approved is the root of the delegation chain.
     await tx.delegation.create({
       data: {
+        constraints: JSON.parse(JSON.stringify(constraints)),
         mandateId: auth.id,
         delegateId: req.delegateId,
         depth: 0,
@@ -191,6 +215,7 @@ export function requestJson(r: NonNullable<Awaited<ReturnType<typeof loadRequest
     delegate_id: r.delegateId,
     service: r.service.slug,
     capabilities: r.permissions.map((p) => p.capability.code),
+    constraints: r.constraints ?? {},
     created_at: r.createdAt,
     expires_at: r.expiresAt,
     responded_at: r.respondedAt,
@@ -199,6 +224,7 @@ export function requestJson(r: NonNullable<Awaited<ReturnType<typeof loadRequest
       ? {
           principal_id: r.principalId,
           authorisation_id: r.authorisationId,
+          granted_constraints: r.authorisation?.constraints ?? {},
           granted_capabilities: r.authorisation?.permissions.map((p) => p.capability.code) ?? [],
         }
       : {}),

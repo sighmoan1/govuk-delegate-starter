@@ -1,3 +1,5 @@
+import { constraintsFromForm, validateConstraints } from "@/lib/constraints";
+import type { CatalogueCapability } from "@/lib/catalogues";
 import { NextResponse } from "next/server";
 import { config } from "@/lib/config";
 import { approveRequest, rejectRequest, loadRequest, returnTo, DomainError } from "@/lib/requests";
@@ -36,7 +38,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const decision = String(form.get("decision"));
   try {
     if (decision === "approve") {
-      await approveRequest(id, principal.id, form.getAll("c").map(String), "CITIZEN_BROWSER");
+      const request=await loadRequest(id);
+      if(!request) throw new DomainError("NOT_FOUND","Request not found",404);
+      const picked=form.getAll("c").map(String);
+      const proposed=validateConstraints(request.constraints,request.permissions.map(p=>p.capability.metadata as unknown as CatalogueCapability));
+      await approveRequest(id, principal.id, picked, "CITIZEN_BROWSER", constraintsFromForm(form,proposed,picked));
     } else if (decision === "reject") {
       await rejectRequest(id, principal.id);
     } else {

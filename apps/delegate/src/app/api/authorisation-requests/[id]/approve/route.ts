@@ -10,7 +10,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const { id } = await params;
     const body = await readJson(req);
     const caps = Array.isArray(body.capabilities) ? body.capabilities.map(String) : undefined;
-    const auth = await approveRequest(id, principal.id, caps);
+    const auth = await approveRequest(id, principal.id, caps, "SYNTHETIC_DEMO_API", body.constraints);
     return NextResponse.json({ authorisation_id: auth.id, status: auth.status, valid_until: auth.validUntil }, { status: 201 });
   } catch (e) {
     return fail(e);

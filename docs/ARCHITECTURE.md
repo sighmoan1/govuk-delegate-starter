@@ -211,7 +211,7 @@ The central registry, fully federated and hybrid alternatives—including privac
 | One Login + Delegate consent lifecycle | **Implemented** with simulator and synthetic identities | Real relying-party integration and identity correlation |
 | Service catalogue publication/discovery | **Implemented**: authenticated publication, immutable history, bounded schema, public discovery | Governed catalogue lifecycle and service adoption |
 | HMRC delegation permissions | **Implemented**, HMRC-owned catalogue bootstrap with historical grant preservation (#86) | Generic consent and immutable consent snapshots (#30–31) |
-| Rich structured constraints | **Not implemented**; mostly flat capability codes | Structured grant/mandate constraints |
+| Rich structured constraints | **Implemented** bounded service-defined enum sets, pinned catalogue provenance, citizen/sub-agent narrowing and HMRC tax-year adapter (#32) | Additional constraint types only when a service owns and verifies their semantics; see [implemented contract](MANDATE_CONSTRAINTS.md) |
 | User-facing task purpose | **Not a structured consent object** | Human-readable label, not an authorisation bypass |
 | HMRC authority checks and revocation | **Implemented** | Generic, service-neutral check plus structured grants |
 | Cross-service bundles | **Not implemented** | Optional grouped consent, never blanket implicit authority |

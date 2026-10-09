@@ -12,6 +12,8 @@ export async function POST(req: Request) {
     const body = await readJson(req);
     if (!Array.isArray(body.capabilities)) throw new DomainError("INVALID_BODY", "capabilities must be an array");
     const created = await createRequest({
+      constraints: body.constraints,
+      catalogueVersion: body.catalogue_version,
       delegateId: delegate.id,
       service: String(body.service ?? ""),
       capabilities: body.capabilities.map(String),

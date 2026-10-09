@@ -16,6 +16,7 @@ export function ConsentHistory({ original, history, changed }: {
       <ul>{original.capabilities.map(c => <li key={c.id}>
         <strong>{c.name}</strong><p>{c.description}</p><p>{c.risk_explanation}</p><p>{c.identity_explanation}</p><p>{c.fresh_approval_explanation}</p>
       </li>)}</ul>
+      {(original.restrictions ?? []).map((r,i)=><p key={i}>Restriction for {original.capabilities.find(c=>c.code===r.capability)?.name ?? r.capability}: {original.capabilities.find(c=>c.code===r.capability)?.constraint_labels?.[r.field] ?? r.field} — {r.values.join(", ")}.</p>)}
       <p>The original access lasted {original.authorisation_days} days from approval, until {fmtTime(new Date(original.valid_until))}. You could remove it at any time.</p>
       <p>Permission definitions: version {original.catalogue.version}. Representative identity assurance: {original.representative.assurance.toLowerCase()}.</p>
       <p>Approval recorded through {original.approval_method === "CITIZEN_BROWSER" ? "the signed-in citizen consent form" : "the synthetic demo API"}.</p>
@@ -23,7 +24,7 @@ export function ConsentHistory({ original, history, changed }: {
     </>}
     <h3>Changes to this access</h3>
     {history.length === 0 ? <p>No consent history was recorded for this grant.</p> : <ul>{history.map(event => <li key={event.id}>
-      {fmtTime(event.occurredAt)}: {event.kind === "APPROVED" ? "Access approved" : event.kind === "SCOPE_REMOVED" ? `Permission removed: ${original?.capabilities.find(c => c.code === event.capability)?.name ?? event.capability ?? "unknown permission"}` : event.reason === "REPLACED_BY_NEW_APPROVAL" ? "Access removed when you approved a new request" : "Access removed"}.
+      {fmtTime(event.occurredAt)}: {event.kind === "APPROVED" ? "Access approved" : event.kind === "CONSTRAINTS_NARROWED" ? "Restrictions narrowed" : event.kind === "SCOPE_REMOVED" ? `Permission removed: ${original?.capabilities.find(c => c.code === event.capability)?.name ?? event.capability ?? "unknown permission"}` : event.reason === "REPLACED_BY_NEW_APPROVAL" ? "Access removed when you approved a new request" : "Access removed"}.
     </li>)}</ul>}
     <p>This is evidence of permission, separate from transaction receipts and outcomes. It does not prove that you approved every statement the assistant later made.</p>
   </section>;

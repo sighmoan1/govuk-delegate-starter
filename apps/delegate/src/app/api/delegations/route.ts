@@ -17,6 +17,7 @@ export async function POST(req: Request) {
     const b = await readJson(req);
     const { delegation, token: childToken } = await subDelegate({
       parent: presenter.kind === "agent" ? { kind: "agent", delegateId: presenter.delegateId } : presenter,
+      constraints: b.constraints,
       principalId: String(b.principal_id ?? ""),
       service: String(b.service ?? ""),
       capabilities: Array.isArray(b.capabilities) ? b.capabilities.map(String) : [],
@@ -29,6 +30,7 @@ export async function POST(req: Request) {
         mandate_id: delegation.mandateId,
         depth: delegation.depth,
         capabilities: delegation.capabilities,
+        constraints: delegation.constraints ?? {},
         token: childToken,
       },
       { status: 201 },

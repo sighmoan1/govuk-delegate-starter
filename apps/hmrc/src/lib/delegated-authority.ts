@@ -47,6 +47,7 @@ type Rc = { req: Request; async: boolean; trace: { lane?: "AUTHENTICATED_HUMAN" 
 
 
 const STATUS: Record<string, number> = {
+  MANDATE_CONSTRAINT_REFUSED:403, CONSTRAINTS_INVALID:403, CATALOGUE_INCOMPATIBLE:403,
   PERMISSION_MISSING: 403, AUTHORISATION_REVOKED: 403, AUTHORISATION_EXPIRED: 403, NO_AUTHORISATION: 403,
   STEP_UP_REQUIRED: 403, STEP_UP_NOT_APPROVED: 403, STEP_UP_IN_USE: 409, STEP_UP_ALREADY_USED: 409, IDEMPOTENCY_KEY_REQUIRED: 400, DELEGATION_DEPTH_EXCEEDED: 403, ASSURANCE_TOO_LOW: 403, AGENT_NOT_AUTHORISED: 403, AGENT_SESSION_NOT_BOUND: 401,
 };
@@ -159,7 +160,7 @@ async function actAsAgentChecked(token: string, principalId: string, capability:
   // High-risk changes: the person approves THIS change. Tell Delegate exactly what it is.
   const built = STEP_UP_CAPABILITIES.has(capability) ? buildProposal(capability, body, idempotencyKey) : null;
   const proposal = built?.ok ? built.proposal : undefined;
-  const check = await askDelegate({ agent_token: token, principal_id: principalId, capability, ...(proposal ? { proposal } : {}) });
+  const check = await askDelegate({ agent_token: token, principal_id: principalId, capability, constraint_context:body, ...(proposal ? { proposal } : {}) });
   const chainLog = check.chain
     ? { mandateId: check.chain.mandate_id, delegationId: check.chain.delegation_id, parentDelegationId: check.chain.parent_delegation_id, depth: check.chain.depth, agentLabel: check.chain.label, assurance: check.chain.assurance }
     : {};

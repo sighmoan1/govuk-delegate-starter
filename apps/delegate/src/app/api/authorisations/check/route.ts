@@ -55,6 +55,7 @@ export async function POST(req: Request) {
   const principal = principalId ? await prisma.principal.findUnique({ where: { id: principalId } }) : null;
   const result = await checkAuthority({
     principalId,
+    catalogueVersion: typeof b.catalogue_version === "number" ? b.catalogue_version : undefined,
     presenter: presenter.kind === "agent" ? { kind: "agent", delegateId: presenter.delegateId } : { kind: "delegation", delegationId: presenter.delegationId },
     service: slug,
     capability,
@@ -110,6 +111,8 @@ export async function POST(req: Request) {
     principal_id: principal!.id,
     // The join key: the same One Login subject the service saw when the person signed in.
     subject: principal!.oneLoginSubjectId,
+    constraints: result.constraints,
+    constraint_provenance: {mandate_id: result.chain.mandateId, delegation_id: result.chain.delegationId, catalogue: result.catalogue},
     delegate: delegateInfo,
     chain: chainJson,
     ...(result.stepUp ? { step_up: stepUpJson(result.stepUp) } : {}),

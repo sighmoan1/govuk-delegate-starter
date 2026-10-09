@@ -1,5 +1,6 @@
+import { validateConstraints, intersectConstraints, type Constraints } from "./constraints";
 import type { Assurance, AuthorisationStatus, Reason } from "@/generated/prisma";
-import type { CatalogueCapability } from "./catalogues";
+import { validateCatalogue, catalogueDigest, type CatalogueCapability } from "./catalogues";
 import { prisma } from "./db";
 import { stepUpGate, type ProposalInput, type StepUpInfo } from "./step-ups";
 
@@ -13,6 +14,7 @@ export type CheckInput = {
   presenter: Presenter;
   service: string; // slug
   capability: string;
+  catalogueVersion?: number;
   /** The change the service is about to make, for capabilities that need the person's approval of it. */
   proposal?: ProposalInput;
 };
@@ -34,7 +36,7 @@ export type DenyReason = Exclude<Reason, "VALID_AUTHORISATION" | "INVALID_AGENT_
 export type CheckResult =
   // `stepUp` is present for capabilities that need the person's approval of a specific change. A yes with a stepUp
   // means authority is sound; whether the change may proceed is stepUp.state (APPROVED only).
-  | { authorised: true; serviceId: string; chain: Chain; stepUp?: StepUpInfo }
+  | { authorised: true; serviceId: string; chain: Chain; constraints: Constraints; catalogue: {version:number;id:string;digest:string}|null; stepUp?: StepUpInfo }
   | {
       authorised: false;
       reason: DenyReason;
@@ -62,12 +64,13 @@ const assuranceFor = (identityType: string): Assurance =>
   identityType === "WEB_BOT_AUTH" ? "VERIFIED" : identityType === "DECLARED" ? "DECLARED" : "REGISTERED";
 
 /** The root delegation for a mandate: the agent the person approved directly. Created if missing (older mandates). */
-export async function rootDelegationFor(mandate: { id: string; delegateId: string; permissions: { capability: { code: string } }[] }) {
+export async function rootDelegationFor(mandate: { id: string; delegateId: string; constraints?: unknown; permissions: { capability: { code: string } }[] }) {
   const existing = await prisma.delegation.findFirst({ where: { mandateId: mandate.id, parentDelegationId: null }, include: { delegate: true } });
   if (existing) return existing;
   const delegate = await prisma.delegate.findUniqueOrThrow({ where: { id: mandate.delegateId } });
   return prisma.delegation.create({
     data: {
+      constraints: JSON.parse(JSON.stringify(mandate.constraints ?? {})),
       mandateId: mandate.id,
       delegateId: mandate.delegateId,
       depth: 0,
@@ -109,6 +112,22 @@ async function ancestorDenial(
   // The chain must end at the mandate's root (depth 0).
   if (child.depth !== 0) return { reason: "NO_AUTHORISATION", at: child.id };
   return null;
+}
+
+export async function effectiveConstraints(mandate: {constraints:unknown;permissions:{capability:{metadata:unknown;code:string}}[]}, delegation: {constraints:unknown;parentDelegationId:string|null}, capability: string): Promise<Constraints> {
+ const definitions=mandate.permissions.map(p=>p.capability.metadata as CatalogueCapability).filter(Boolean);
+ let effective=validateConstraints(mandate.constraints,definitions);
+ let node: typeof delegation|null=delegation;
+ const seen=new Set<string>();
+ while(node) {
+  effective=intersectConstraints(effective,validateConstraints(node.constraints,definitions),capability);
+  if(!node.parentDelegationId) break;
+  if(seen.has(node.parentDelegationId)) throw new Error("Invalid constraint ancestry");
+  seen.add(node.parentDelegationId);
+  node=await prisma.delegation.findUnique({where:{id:node.parentDelegationId}});
+  if(!node) throw new Error("Missing constraint ancestor");
+ }
+ return intersectConstraints(effective,{},capability);
 }
 
 /**
@@ -189,6 +208,16 @@ export async function checkAuthority(input: CheckInput, now = new Date()): Promi
     return { authorised: false, reason: denial.reason, ...base };
   }
 
+  let constraints: Constraints;
+  try { constraints=await effectiveConstraints(mandate,delegation,input.capability); }
+  catch { return {authorised:false,reason:"CONSTRAINTS_INVALID",...base}; }
+  const publication=capability.catalogueId ? await prisma.serviceCatalogue.findUnique({where:{id:capability.catalogueId}}) : null;
+  if(Object.keys(constraints).length && publication) {
+    try { const doc=validateCatalogue(publication.document,service.slug); if(doc.version!==publication.version || catalogueDigest(doc)!==publication.digest) throw new Error(); validateConstraints(constraints,doc.capabilities); }
+    catch { return {authorised:false,reason:"CONSTRAINTS_INVALID",...base}; }
+  }
+  if(Object.keys(constraints).length && (!publication || input.catalogueVersion!==publication.version)) return {authorised:false,reason:"CATALOGUE_INCOMPATIBLE",...base};
+
   // ── Sensitive actions need an agent whose identity is verified or registered.
   // Assurance decides WHAT an agent may do.
   const metadata = capability.metadata as unknown as CatalogueCapability | null;
@@ -206,5 +235,5 @@ export async function checkAuthority(input: CheckInput, now = new Date()): Promi
     if (gate.blocked) return { authorised: false, reason: "STEP_UP_REQUIRED", ...base, stepUp: gate.info };
     stepUp = gate.info;
   }
-  return { authorised: true, serviceId: service.id, chain, ...(stepUp ? { stepUp } : {}) };
+  return { authorised: true, serviceId: service.id, chain, constraints, catalogue: publication ? {id:publication.id,version:publication.version,digest:publication.digest} : null, ...(stepUp ? { stepUp } : {}) };
 }

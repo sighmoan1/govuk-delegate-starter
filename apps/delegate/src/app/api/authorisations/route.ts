@@ -20,6 +20,7 @@ export async function GET(req: Request) {
       service: a.service.slug,
       status: a.status,
       valid_until: a.validUntil,
+      constraints:a.constraints ?? {},
       capabilities: a.permissions.map((p) => p.capability.code),
     })),
   });

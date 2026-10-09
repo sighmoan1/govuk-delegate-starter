@@ -4,12 +4,12 @@ import { prisma } from './db';
 import { DomainError } from './requests';
 import { verifySecretCached } from './secrets';
 export type ApprovalField = {key:string;label:string;required:boolean;max:number;normalisation:"text"|"uppercase"|"digits"|"digit_groups";pattern?:string;group_size?:number;group_count?:number;display_last?:number};
-export type CatalogueCapability = {code:string;name:string;description:string;risk:'LOW'|'MEDIUM'|'HIGH';requires_step_up:boolean;minimum_assurance:'DECLARED'|'REGISTERED'|'VERIFIED';approval_fields?:ApprovalField[];operation:{method:'GET'|'POST';path:string};documentation_url?:string;supported_constraints?:Record<string,{type:'enum';values:string[]}>};
+export type CatalogueCapability = {code:string;name:string;description:string;risk:'LOW'|'MEDIUM'|'HIGH';requires_step_up:boolean;minimum_assurance:'DECLARED'|'REGISTERED'|'VERIFIED';approval_fields?:ApprovalField[];operation:{method:'GET'|'POST';path:string};documentation_url?:string;supported_constraints?:Record<string,{type:'enum';values:string[];label?:string}>};
 export type Catalogue = {schema_version:1;service:string;version:number;capabilities:CatalogueCapability[]};
 function bad(message:string):never {throw new DomainError('INVALID_CATALOGUE',message);}
 const record=(v:unknown):v is Record<string,unknown> => !!v && typeof v==='object' && !Array.isArray(v);
 const text=(v:unknown,max:number):v is string => typeof v==='string' && v.trim().length>0 && v.length<=max && !/[\u0000-\u001f<>]/.test(v);
-const code=(v:unknown):v is string => typeof v==='string' && /^[a-z][a-z0-9_-]{0,79}$/.test(v);
+const code=(v:unknown):v is string => typeof v==='string' && !['__proto__','constructor','prototype'].includes(v) && /^[a-z][a-z0-9_-]{0,79}$/.test(v);
 function only(v:Record<string,unknown>,keys:string[]) {if(Object.keys(v).some(k=>!keys.includes(k)))bad('Unsupported field');}
 export function validateCatalogue(value:unknown, service:string):Catalogue {
  if(!record(value) || new TextEncoder().encode(JSON.stringify(value)).byteLength>64*1024)bad('Catalogue must be an object under 64 KiB');
@@ -40,7 +40,7 @@ export function validateCatalogue(value:unknown, service:string):Catalogue {
   }
   if(c.supported_constraints!==undefined){
    if(!record(c.supported_constraints)||Object.keys(c.supported_constraints).length>8)bad('At most eight constraint fields');
-   for(const [key,rule] of Object.entries(c.supported_constraints)){if(!code(key)||!record(rule))bad('Invalid constraint');only(rule,['type','values']);if(rule.type!=='enum'||!Array.isArray(rule.values)||rule.values.length<1||rule.values.length>32||rule.values.some(v=>!text(v,100))||new Set(rule.values).size!==rule.values.length)bad('Only bounded enum constraints are supported');}
+   for(const [key,rule] of Object.entries(c.supported_constraints)){if(!code(key)||!record(rule))bad('Invalid constraint');only(rule,['type','values','label']);if(rule.label!==undefined&&!text(rule.label,160))bad('Invalid constraint label');if(rule.type!=='enum'||!Array.isArray(rule.values)||rule.values.length<1||rule.values.length>32||rule.values.some(v=>!text(v,100))||new Set(rule.values).size!==rule.values.length)bad('Only bounded enum constraints are supported');}
   }
  }
  return value as unknown as Catalogue;
