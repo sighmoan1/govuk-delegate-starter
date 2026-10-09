@@ -8,6 +8,8 @@ const MIN = 60_000;
 
 export async function seedDemo(prisma: PrismaClient) {
   await prisma.principalUsage.deleteMany();
+  await prisma.idempotencyRecord.deleteMany();
+  await prisma.transaction.deleteMany();
   await prisma.serviceEvent.deleteMany();
   await prisma.claim.deleteMany();
   await prisma.taxpayer.deleteMany();

@@ -83,14 +83,20 @@ x-service-key: <HMRC's own key>
         <h2>Limits belong to the person</h2>
         <p>
           Three things are kept apart. <strong>Identity</strong> is who is asking, and it can be faked or hidden. <strong>Authority</strong> is
-          what the person allowed, checked with GOV.UK Delegate on every request. <strong>Capacity</strong> is how much everyone using that
-          person’s authority may do together: tax-code checks per hour, one claim per tax year unless there’s new evidence, a cap on open
+          what the person allowed, checked with GOV.UK Delegate on every request. <strong>Business limits</strong> are how much everyone using that
+          person’s authority may do together, applied by HMRC when it does the work (asking Delegate whether an agent may act uses none of them): tax-code checks per hour, one claim per tax year unless there’s new evidence, a cap on open
           claims, and one change to the refund bank account a month.
         </p>
         <p>
-          Capacity is counted against the person’s One Login identifier, never against an agent or session. A person with a hundred agents,
+          The limits are counted against the person’s One Login identifier, never against an agent or session. A person with a hundred agents,
           or a hundred hidden sessions, gets the same as a person with one. An agent’s identity decides what it may do: sensitive changes
-          need an agent whose identity is verified or registered, plus the person’s fresh approval. It never adds capacity.
+          need an agent whose identity is verified or registered, plus the person’s fresh approval. It never raises the limits.
+        </p>
+        <p>
+          That is about one person’s claim, not about how many claims there are. A hundred claims from a hundred different people is not a swarm
+          beating a limit: it may be a hundred people’s legitimate demand, sent through one agent provider. HMRC receives them all and records them
+          gradually. What it slows, with a 429 that says when to come back, is traffic that costs it something, such as repeated polling. The
+          swarm page measures the two apart, and says which numbers are measured and which are simulated.
         </p>
         <p>
           Agents can pass part of their authority to sub-agents. Each one stays inside what its parent was given, down to a maximum depth,

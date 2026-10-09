@@ -1,9 +1,9 @@
-import { describe, it, expect, afterAll, beforeAll } from "vitest";
-import { prisma, newPrincipal, authorise, check, DELEGATE, SERVICE, demoAgent, createRequest, approveRequest } from "./helpers";
+import { describe, it, expect, afterAll } from "vitest";
+import { prisma, newPrincipal, authorise, check, DELEGATE, SERVICE, demoAgent, createRequest, approveRequest, approve, refundProposal, reserve, markDone } from "./helpers";
 
 afterAll(() => prisma.$disconnect());
 
-// Identify the agent. Authorise the mandate. Limit the principal.
+// Identify the agent. Authorise the mandate. (Limits on the person live in the service: see check-spends-nothing.test.ts.)
 // These tests talk to GOV.UK Delegate over HTTP; set-up reaches into its code.
 
 async function subDelegate(token: string, principalId: string, capabilities: string[], label?: string) {
@@ -118,86 +118,28 @@ describe("ancestors are checked on every use", () => {
   });
 });
 
-describe("capacity belongs to the principal, not to each agent", () => {
-  const LIMIT = 6;
-  let original = 300;
-  beforeAll(async () => {
-    const s = await prisma.service.findUniqueOrThrow({ where: { slug: SERVICE } });
-    original = s.principalActionsPerHour;
-    await prisma.service.update({ where: { slug: SERVICE }, data: { principalActionsPerHour: LIMIT } });
-  });
-  afterAll(async () => {
-    await prisma.service.update({ where: { slug: SERVICE }, data: { principalActionsPerHour: original } });
-  });
-
-  async function allowedOf(results: { body: { authorised: boolean } }[]) {
-    return results.filter((r) => r.body.authorised).length;
-  }
-
-  it("1 agent × 12 actions, 12 sub-agents × 1 action, and 2 separate mandates all share one budget", async () => {
-    // A: one agent, many actions
-    const a = await newPrincipal();
-    const { token: ta } = await authorise(a.id, ["view_tax_code"]);
-    const A = await Promise.all(Array.from({ length: 12 }, () => check({ agent_token: ta, principal_id: a.id })));
-    expect(await allowedOf(A)).toBe(LIMIT);
-    const refused = A.find((r) => !r.body.authorised)!;
-    expect(refused.body.reason).toBe("CAPACITY_EXCEEDED");
-    expect(refused.body.capacity).toMatchObject({ rule: "agent_actions_per_hour", limit: LIMIT, remaining: 0 });
-
-    // B: one person, many sub-agents, one action each
-    const b = await newPrincipal();
-    const { token: tb } = await authorise(b.id, ["view_tax_code"]);
-    const kids = await Promise.all(Array.from({ length: 12 }, (_, i) => subDelegate(tb, b.id, ["view_tax_code"], `worker ${i}`)));
-    const B = await Promise.all(kids.map((k) => check({ agent_token: k.body.token, principal_id: b.id })));
-    expect(await allowedOf(B)).toBe(LIMIT);
-
-    // B2: the same person grants two separate mandates (two agents); still one budget.
-    const c = await newPrincipal();
-    const { token: t1 } = await authorise(c.id, ["view_tax_code"]);
-    const ghostAgent = await prisma.delegate.create({
-      data: { name: "Second agent", type: "SOFTWARE_AGENT", provider: "Test", clientId: `second-${Date.now()}`, clientSecretHash: "x", redirectUris: [] },
-    });
-    const { signAgentToken } = await import("@/lib/agent-auth");
-    const t2 = await signAgentToken(ghostAgent.id, ghostAgent.clientId);
-    const req2 = await prisma.authorisationRequest.create({
-      data: {
-        delegateId: ghostAgent.id,
-        serviceId: (await prisma.service.findUniqueOrThrow({ where: { slug: SERVICE } })).id,
-        expiresAt: new Date(Date.now() + 86_400_000),
-        permissions: { create: [{ capabilityId: (await prisma.capability.findFirstOrThrow({ where: { code: "view_tax_code" } })).id }] },
-      },
-    });
-    await approveRequest(req2.id, c.id);
-    const C = await Promise.all(Array.from({ length: 12 }, (_, i) => check({ agent_token: i % 2 ? t1 : t2, principal_id: c.id })));
-    expect(await allowedOf(C)).toBe(LIMIT);
-  });
-
-  it("a different person has their own budget", async () => {
-    const people = await Promise.all(Array.from({ length: 3 }, () => newPrincipal()));
-    const results = await Promise.all(
-      people.map(async (p) => {
-        const { token } = await authorise(p.id, ["view_tax_code"]);
-        return check({ agent_token: token, principal_id: p.id });
-      }),
-    );
-    expect(results.every((r) => r.body.authorised)).toBe(true);
-  });
-});
-
 describe("step-up for consequential actions", () => {
-  it("changing the refund bank account needs the person's fresh approval each time, whoever asks", async () => {
+  it("changing the refund bank account needs the person's approval of that change; once it is used, the next change needs a new one", async () => {
     const sam = await newPrincipal();
     const { token } = await authorise(sam.id, ["change_refund_account"]);
-    const first = await check({ agent_token: token, principal_id: sam.id, capability: "change_refund_account" });
-    expect(first.body).toMatchObject({ authorised: false, reason: "STEP_UP_REQUIRED" });
+    const proposal = refundProposal();
+    const ask = (p = proposal) => check({ agent_token: token, principal_id: sam.id, capability: "change_refund_account", proposal: p });
+    const first = await ask();
+    expect(first.body).toMatchObject({ authorised: false, reason: "STEP_UP_REQUIRED", step_up: { state: "AWAITING_APPROVAL" } });
     expect(first.body.step_up.user_code).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
     expect(first.body.step_up.approve_url).toContain("/approve?code=");
 
-    // Sam approves once (as the approve page does).
-    await prisma.stepUp.update({ where: { userCode: first.body.step_up.user_code }, data: { status: "APPROVED", approvedAt: new Date() } });
-    expect((await check({ agent_token: token, principal_id: sam.id, capability: "change_refund_account" })).body.authorised).toBe(true);
-    // Used up: the next one needs approval again.
-    expect((await check({ agent_token: token, principal_id: sam.id, capability: "change_refund_account" })).body.reason).toBe("STEP_UP_REQUIRED");
+    // Sam approves it (as the approve page does). Asking does not use it up.
+    expect((await approve(first.body.step_up.user_code, sam.id)).ok).toBe(true);
+    for (let i = 0; i < 3; i++) expect((await ask()).body).toMatchObject({ authorised: true, step_up: { state: "APPROVED" } });
+
+    // The service reserves it for the change, makes the change, and reports it. Now it is spent.
+    const r = await reserve({ agent_token: token, principal_id: sam.id, proposal });
+    expect(r.body.reserved).toBe(true);
+    expect((await markDone({ proposal_id: first.body.step_up.proposal_id, reference: "BA-1" })).body).toMatchObject({ state: "USED" });
+    expect((await ask()).body).toMatchObject({ authorised: true, step_up: { state: "REDEEMED" } });
+    // Another change is a new proposal and needs its own approval.
+    expect((await ask(refundProposal())).body).toMatchObject({ authorised: false, reason: "STEP_UP_REQUIRED", step_up: { state: "AWAITING_APPROVAL" } });
   });
 });
 

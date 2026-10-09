@@ -3,7 +3,9 @@ import { config } from "@/lib/config";
 import { taxpayerFromRequest } from "@/lib/session";
 import { answerQuery, findOrCreateTaxpayer } from "@/lib/taxpayers";
 import { logEvent } from "@/lib/events";
-import { withPrincipalCapacity } from "@/lib/capacity";
+import { runOperation } from "@/lib/operation";
+import { refusalEventFields } from "@/lib/events";
+import { formKey } from "@/lib/idempotency";
 import { verifyAgentSignature } from "@/lib/agent-identity";
 import { agentSessionFromRequest } from "@/lib/agent-session";
 import { askDelegate, DelegateUnavailableError } from "@/lib/delegate-client";
@@ -72,11 +74,14 @@ async function reply(req: Request) {
     who = { subject: person.oneLoginSubject };
   }
 
-  const run = await withPrincipalCapacity(taxpayer, CAPABILITY, body, () => answerQuery(taxpayer, actor, body));
+  const run = await runOperation(taxpayer, CAPABILITY, body, (_admitted, db) => answerQuery(taxpayer, actor, body, db), {
+    idempotencyKey: formKey(form.get("submission_id")),
+    operator: actor.kind === "AGENT" ? { kind: "agent", key: actor.id } : { kind: "human", key: taxpayer.id },
+  });
   if (!run.ok) {
-    await logEvent({ ...evidence, ...who, lane, outcome: "REFUSED", reason: run.refusal.reason, rule: run.refusal.rule, latencyMs: Date.now() - started });
+    await logEvent({ ...evidence, ...who, lane, ...refusalEventFields(run.refusal, run.costClass), authorisedCheck: lane === "AUTHORISED_AGENT", latencyMs: Date.now() - started });
     return go(`/your-tax?replyError=${run.refusal.reason}`);
   }
-  await logEvent({ ...evidence, ...who, lane, outcome: "ALLOWED", reason: lane === "AUTHORISED_AGENT" ? "VALID_AUTHORISATION" : undefined, rule: run.admitted.rule, latencyMs: Date.now() - started });
+  await logEvent({ ...evidence, ...who, lane, outcome: "ALLOWED", costClass: run.costClass, authorisedCheck: lane === "AUTHORISED_AGENT", reason: run.replayed ? "IDEMPOTENT_REPLAY" : lane === "AUTHORISED_AGENT" ? "VALID_AUTHORISATION" : undefined, rule: run.admitted.rule, latencyMs: Date.now() - started });
   return go("/your-tax?replied=1");
 }

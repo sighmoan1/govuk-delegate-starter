@@ -116,6 +116,24 @@ services:
       ABOUT_URL: http://localhost:3304
       DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:-dev-demo-console-key}
 
+  # HMRC's queue worker: records claims HMRC has received (Prefer: respond-async) a little later.
+  # Same image and database as hmrc; run as many as you like (`docker compose up --scale hmrc-worker=3`).
+  hmrc-worker:
+    build:
+      context: .
+      dockerfile: apps/hmrc/Dockerfile
+    command: ["npx", "tsx", "scripts/worker.ts"]
+    depends_on:
+      db:
+        condition: service_healthy
+      hmrc:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://delegate:delegate@db:5432/hmrc
+      DELEGATE_INTERNAL_URL: http://delegate:3300
+      DELEGATE_SERVICE_SLUG: hmrc-personal-tax
+      HMRC_SERVICE_KEY: ${HMRC_SERVICE_KEY:-dev-hmrc-service-key}
+
   # Not part of the scenario: the prototype's own notes and demo console.
   about:
     build:

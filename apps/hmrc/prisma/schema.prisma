@@ -84,6 +84,8 @@ model ClaimQuery {
   answerWithdrawn   Boolean     @default(false) @map("answer_withdrawn")
   // Which submission of the answer this is; goes up when the person disputes one, so each gets its own receipt.
   answerVersion     Int         @default(0) @map("answer_version")
+  // Set on every state change (asked, answered, withdrawn and reopened); progress polling compares it with `since`.
+  stateChangedAt    DateTime    @default(now()) @map("state_changed_at")
 
   claim Claim @relation(fields: [claimId], references: [id], onDelete: Cascade)
 
@@ -130,6 +132,13 @@ model ServiceEvent {
   rule               String?
   capacityUsed       Int?     @map("capacity_used")
   capacityLimit      Int?     @map("capacity_limit")
+  // What kind of answer this was, so traffic and business are never conflated.
+  // outcome_class: UNIQUE_OPERATION | REPLAY | BUSINESS_REFUSAL | INVALID_REQUEST | TECHNICAL_THROTTLE | UNAVAILABLE | AUTHORITY_REFUSAL
+  outcomeClass       String?  @map("outcome_class")
+  costClass          String?  @map("cost_class")             // read | status_poll | write | expensive_query
+  throttleScope      String?  @map("throttle_scope")         // operator | principal | service (technical throttles only)
+  retryAfterSeconds  Int?     @map("retry_after_seconds")    // set on 429 and 503
+  authorisedCheck    Boolean  @default(false) @map("authorised_check") // GOV.UK Delegate's check authorised this request
   // Evidence about who or what was on the other end.
   userAgent          String?  @map("user_agent")
   signatureAgent     String?  @map("signature_agent")
@@ -151,4 +160,81 @@ model PrincipalUsage {
 
   @@index([subject, rule, at])
   @@map("principal_usage")
+}
+
+// A client's retry of one mutating operation. Written in the same database
+// transaction as the claim or answer it describes, so there is never a record
+// without its business effect, or a business effect without its record. There
+// is deliberately no PENDING status: an attempt that crashes or times out rolls
+// back and leaves nothing, so a retry with the same key is simply a first try.
+enum IdempotencyStatus {
+  COMPLETED
+}
+
+model IdempotencyRecord {
+  id            String            @id @default(uuid())
+  subject       String // the person's One Login subject, whoever acted
+  operation     String // the capability, e.g. claim_job_expenses
+  key           String // the client's Idempotency-Key, or form:<id> for a website form
+  payloadDigest String            @map("payload_digest") // sha256 of the normalised payload
+  status        IdempotencyStatus @default(COMPLETED)
+  reference     String? // claim or change reference, or the query id
+  response      Json // what the first attempt returned: replayed verbatim
+  admitted      Json // the capacity position at the time, for the replayed response
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  @@unique([subject, operation, key])
+  @@index([createdAt])
+  @@map("idempotency_record")
+}
+
+// A submission HMRC has durably received and will process later (issue #21).
+// One row is both the receipt (what the client is told, and can look up) and the
+// work item (what the worker claims), so "receipt committed" and "job committed"
+// are one write, in the same database transaction as the idempotency record.
+// Status is about taking the claim in, never about its merits: COMPLETED means
+// HMRC has recorded the claim and will review it, not that it is approved.
+enum TransactionStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Transaction {
+  id        String            @id // opaque and unguessable: tx_ + 128 random bits
+  subject   String // the person (One Login subject): authorisation, fairness and ordering are all keyed to it
+  operation String // only claim_job_expenses for now
+  status    TransactionStatus @default(QUEUED)
+  // The claim this will become. Reserved at receipt and unique on the claim, so a
+  // second attempt at the same work cannot create a second claim.
+  claimReference      String  @unique @map("claim_reference")
+  evidenceFingerprint String? @map("evidence_fingerprint")
+  // Who sent it, kept so history survives a later revocation.
+  submittedBy     SubmittedBy @map("submitted_by")
+  agentName       String?     @map("agent_name")
+  agentId         String?     @map("agent_id")
+  mandateId       String?     @map("mandate_id")
+  delegationId    String?     @map("delegation_id")
+  delegateCheckId String?     @map("delegate_check_id")
+  // The prototype's receipt time. NOT a statutory filing date.
+  receivedAt DateTime @default(now()) @map("received_at")
+  // The queue.
+  attempts       Int       @default(0)
+  maxAttempts    Int       @default(5) @map("max_attempts")
+  nextAttemptAt  DateTime  @default(now()) @map("next_attempt_at")
+  leaseToken     String?   @map("lease_token")
+  leaseExpiresAt DateTime? @map("lease_expires_at")
+  startedAt      DateTime? @map("started_at") // when a worker last took it: the fairness clock for the person
+  completedAt    DateTime? @map("completed_at")
+  failedAt       DateTime? @map("failed_at")
+  lastError      String?   @map("last_error") // for operators; never shown to the client
+  // Whether GOV.UK Delegate has been told the final outcome (agent submissions only).
+  outcomeReported Boolean @default(false) @map("outcome_reported")
+
+  @@index([subject, status])
+  @@index([subject, startedAt])
+  @@index([status, nextAttemptAt])
+  @@map("transaction")
 }

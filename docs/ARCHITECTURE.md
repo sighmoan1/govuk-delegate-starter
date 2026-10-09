@@ -226,7 +226,7 @@ Make Delegate generic by implementing: (1) service-owned catalogue registration 
 ### Related documents
 
 - [Product case](PRODUCT_CASE.md)
-- [Architectural decisions](DECISIONS.md) (Decision 21)
+- [Architectural decisions](DECISIONS.md) (Decision 28)
 - [Where authority lives: central, federated or hybrid?](FEDERATED_AUTHORITY.md) — **open decision**
 - [Original build specification](BUILD_SPEC.md) (historical brief)
 - [RFC 9396 — OAuth 2.0 Rich Authorization Requests](https://www.rfc-editor.org/rfc/rfc9396)

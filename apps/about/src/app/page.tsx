@@ -25,7 +25,7 @@ const SCENARIOS = [
     href: "/swarm",
     n: 4,
     title: "Can a swarm beat the system?",
-    text: "One person authorising a hundred agents, or running a hundred hidden sessions, gets no more than one person with one agent.",
+    text: "A hundred requests for one claim are one claim, however many agents, sessions or retries carry them. A hundred claims from a hundred people may be legitimate demand: they are received and recorded gradually. Technical load and outcomes are measured apart.",
   },
 ];
 
@@ -59,7 +59,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
           <tbody>
             <tr><th scope="row">Identity</th><td>Who or what is making the request?</td><td>A signature, registered credentials, or self-declaration</td><td>Yes. An agent in Sam’s own browser looks like Sam.</td></tr>
             <tr><th scope="row">Authority</th><td>What has the person allowed it to do?</td><td>GOV.UK Delegate, checked on every request</td><td>No</td></tr>
-            <tr><th scope="row">Capacity</th><td>How much may everyone using this person’s authority do, together?</td><td>Limits on the person, at Delegate and the service</td><td>No. It follows the person, however many actors there are.</td></tr>
+            <tr><th scope="row">Business limits</th><td>How much may everyone using this person’s authority do, together?</td><td>Limits on the person, applied by the service doing the work</td><td>No. They follow the person, however many actors there are.</td></tr>
           </tbody>
         </table>
       </div>
