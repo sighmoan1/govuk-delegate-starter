@@ -1,0 +1,64 @@
+name: E2 controlled technical comparison
+on:
+  pull_request:
+    paths:
+      - scripts/e2/**
+      - docs/experiments/E2_HARNESS.md
+      - .github/workflows/e2.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  comparison:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      COMPOSE_PROJECT_NAME: e2-${{ github.run_id }}-${{ github.run_attempt }}
+      E2_SOURCE_SHA: ${{ github.sha }}
+      E2_CONFIG_ID: e2-host-production-default-hmrc-worker-v1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Prepare isolated synthetic configuration
+        run: |
+          cp apps/delegate/.env.example apps/delegate/.env
+          cp apps/hmrc/.env.example apps/hmrc/.env
+          mkdir -p e2-artifacts
+          docker compose up -d db
+          for i in {1..60}; do
+            docker compose exec -T db pg_isready -U delegate && break
+            sleep 1
+          done
+          docker compose exec -T db pg_isready -U delegate
+      - run: npm ci
+      - name: Generate, migrate and seed isolated databases
+        run: |
+          npm exec -w apps/delegate -- prisma generate
+          npm exec -w apps/hmrc -- prisma generate
+          npm run db:migrate -w apps/delegate
+          npm run db:migrate -w apps/hmrc
+          npm run db:seed -w apps/delegate
+          npm run db:seed -w apps/hmrc
+      - name: Build identical service implementation once
+        run: |
+          npm run build -w apps/delegate > e2-artifacts/delegate-build.log 2>&1
+          npm run build -w apps/hmrc > e2-artifacts/hmrc-build.log 2>&1
+      - name: Comparator regression and counterbalanced actual API runs
+        run: |
+          node --test scripts/e2/local-authority.test.mjs | tee e2-artifacts/comparator-tests.log
+          bash scripts/e2/ci-run.sh
+      - name: Preserve complete evidence, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2-${{ github.run_id }}-${{ github.run_attempt }}
+          path: e2-artifacts/
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Delete isolated fixture volume
+        if: always()
+        run: docker compose down --volumes --remove-orphans

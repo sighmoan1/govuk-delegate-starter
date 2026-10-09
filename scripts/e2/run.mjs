@@ -53,7 +53,9 @@ try {
       } catch (e) { const a = { request_id: requestId, intent_id: `${seed}:${i}:${task}`, task, status: 0, ms: performance.now() - started, error: e.message }; record.attempts.push(a); return a; }
     };
     const check = (name, ok) => record.checks.push({ repeat: i, name, ok: Boolean(ok) });
-    const read = await send('read', '/api/claims'); check('authorised status read', read.status === 200);
+    const read = await send('read', '/api/claims');
+    const before = await hmrcDb.claim.count({ where: { taxpayer: { oneLoginSubject: subject } } });
+    check('authorised status read', read.status === 200 && Array.isArray(read.response?.result?.claims) && read.response.result.claims.length === before);
     const key = `e2-${seed}-${i}-claim`;
     const submission = await send('claim', '/api/job-expenses', {}, { prefer: 'respond-async', 'idempotency-key': key });
     let tx = await hmrcDb.transaction.findFirst({ where: { subject } });
@@ -91,7 +93,7 @@ try {
 finally {
   record.finished_at = new Date().toISOString();
   const ms = record.attempts.map(a => a.ms).sort((a,b) => a-b);
-  record.summary = { planned_distinct_legitimate_intents: repeats * 3, attempted_distinct_legitimate_intents: new Set(record.attempts.filter(a => ['read','claim','retry','followup'].includes(a.task)).map(a => a.intent_id)).size, correctly_completed_fixture_groups: record.state.filter(s => record.checks.filter(c => c.repeat === s.repeat).every(c => c.ok)).length,
+  record.summary = { planned_distinct_legitimate_intents: repeats * 3, attempted_distinct_legitimate_intents: new Set(record.attempts.filter(a => ['read','claim','retry','followup'].includes(a.task)).map(a => a.intent_id)).size, durably_accepted_legitimate_claim_intents: record.checks.filter(c => c.name === 'durable submission verified independently' && c.ok).length, correctly_completed_legitimate_intents: record.checks.filter(c => ['authorised status read','one completed business claim','follow-up independently recorded with receipt'].includes(c.name) && c.ok).length, unauthorised_business_effects: record.state.reduce((n,s) => n + s.claims.filter(c => c.kind !== 'job_expenses').length + Math.max(0,s.transactions.length-1),0), duplicate_claim_effects: record.state.reduce((n,s) => n + Math.max(0,s.claims.filter(c => c.kind === 'job_expenses').length-1),0), business_effect_verification_complete: record.state.length === repeats, correctly_completed_fixture_groups: record.state.filter(s => record.checks.filter(c => c.repeat === s.repeat).every(c => c.ok)).length,
     requests: record.attempts.length, p50_request_ms: ms.length ? ms[Math.ceil(ms.length*.5)-1] : null, p95_request_ms: ms.length ? ms[Math.ceil(ms.length*.95)-1] : null,
     technical_work_proxy: 'Raw HTTP attempts, ServiceEvent costClass and authority event counts; not financial costs' };
   const raw = JSON.stringify(record, null, 2); writeFileSync(resolve(out, 'run.json'), raw); writeFileSync(resolve(out, 'SHA256SUMS'), `${hash(raw)}  run.json\n`);

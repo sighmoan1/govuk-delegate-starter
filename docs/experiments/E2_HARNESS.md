@@ -53,6 +53,10 @@ After review, redact/check raw synthetic records, preserve *both* arms including
 
 - Execute and review the full stack B/C runner; only the comparator regression suite has been executed at this checkpoint.
 - Record configuration equality, counterbalanced repeats and actual resource deployment. Latency requires topology controls before causal interpretation.
-- Refine per-intent outcome accounting and include support/drop-off evidence through a real consent/handoff study; direct fixture effort is unmeasured.
+- Include support/drop-off evidence through a real consent/handoff study; direct fixture effort is unmeasured. The runner reports individual legitimate-intent completion, durable claim admission, verified unauthorised effects and duplicate effects with explicit planned/attempted denominators.
 - Add provider handoff and any expanded safeguards symmetrically; do not generalise this narrow capability comparator to all existing Delegate features.
 - Publish immutable run records, complete evidence ledger entry and honest About link. Do not close #47 on merging this harness checkpoint.
+
+## Automated execution
+
+`.github/workflows/e2.yml` builds Delegate and HMRC once, starts an isolated PostgreSQL fixture volume and runs B,C,C,B sequentially against the same host production HMRC build, restarting HMRC/worker before each arm. `scripts/e2/ci-run.sh` records each arm separately, compares both pairs and retains complete artifacts including failures. The workflow uses no model or browser and never measures human consent friction. Its run artifacts are technical evidence for reviewer inspection; a successful workflow does not automatically establish product benefit or update the public evidence register.
