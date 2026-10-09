@@ -9,7 +9,7 @@ export function readVerifiedTrace(path, expected) {
   let bytes = readFileSync(path); if (path.endsWith('.gz')) bytes = gunzipSync(bytes);
   if (digest(bytes) !== expected) throw new Error('TRACE_DIGEST_MISMATCH');
   const record = JSON.parse(bytes);
-  if (record.model !== 'deterministic HTTP fixture, no model' || record.status !== 'completed' || !record.checks?.every(c => c.ok)) throw new Error('NOT_A_VERIFIED_SCRIPTED_E2_TRACE');
+  if (record.model !== 'deterministic HTTP fixture, no model' || record.status !== 'completed' || !record.checks?.length || !record.checks.every(c => c.ok) || !record.state?.length || !record.service_events?.length) throw new Error('NOT_A_VERIFIED_SCRIPTED_E2_TRACE');
   // Independently verify actual durable/business effects before counting them or attesting execution.
   for (const state of record.state) {
     if (state.claims.length !== 1 || state.claims[0].kind !== 'job_expenses' || state.transactions.length !== 1 || state.transactions[0].status !== 'COMPLETED' || state.transactions[0].claimReference !== state.claims[0].reference || !state.queries.some(q => q.status === 'ANSWERED' && q.confirmedByPerson && q.receiptId)) throw new Error('INDEPENDENT_BUSINESS_STATE_INVALID');

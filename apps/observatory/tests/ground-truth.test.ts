@@ -56,7 +56,7 @@ describe('truth isolation and provenance', () => {
     const retry={...first,sourceEventId:randomUUID(),effectClass:'REPLAY'};
     const read={...first,sourceEventId:randomUUID(),operationId:null,effectClass:'REQUEST_ONLY'};
     const delegate={...read,sourceService:'delegate',sourceEventId:randomUUID()};
-    expect(counts([first,first,retry,read,delegate])).toEqual({requests:3,unique_service_operations:1,replays:1,refusals:0});
+    expect(counts([first,first,retry,read,delegate,{...read,sourceEventId:'sensor:'+randomUUID(),eventKind:'browser_sensor'}])).toEqual({requests:3,unique_service_operations:1,replays:1,refusals:0});
   });
   it('requires an ingested source class and independent effect evidence, without turning signatures into truth', () => {
     const id=randomUUID(); const data=bindingInput({attempt_id:randomUUID(),source_service:'hmrc',source_event_id:id,effect_class:'UNIQUE_OPERATION',operation_id:randomUUID(),effect_evidence_digest:trace.trace_digest});

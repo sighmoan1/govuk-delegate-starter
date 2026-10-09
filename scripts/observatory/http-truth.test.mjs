@@ -8,6 +8,7 @@ const api=async(path,body)=>{const r=await request(path,body);assert.equal(r.sta
 assert.equal((await request('/api/evaluation/runs',undefined,collection,'collection')).status,401);
 const outputs=[];
 for(const dir of readdirSync('docs/evidence/raw').filter(x=>x.startsWith('RUN-20261009-E2-'))){const path=join('docs/evidence/raw',dir);const expected=readFileSync(join(path,'SHA256SUMS'),'utf8').split(/\s+/)[0];const record=readVerifiedTrace(join(path,'run.json.gz'),expected);outputs.push(await importTrace(record,expected,api,'ci-synthetic-replay'));}
+const replayDir=readdirSync('docs/evidence/raw').find(x=>x.startsWith('RUN-20261009-E2-'));const replayPath=join('docs/evidence/raw',replayDir);const replayDigest=readFileSync(join(replayPath,'SHA256SUMS'),'utf8').split(/\s+/)[0];assert.equal((await importTrace(readVerifiedTrace(join(replayPath,'run.json.gz'),replayDigest),replayDigest,api,'ci-synthetic-replay')).replayed,true);
 assert.equal(outputs.length,4);assert.ok(outputs.every(x=>x.attempts===25));
 const before=await api('/api/evaluation/runs');
 assert.equal(before.length,4);assert.ok(before.every(r=>r.status==='COMPLETED'&&r.attempts.length===25&&r.attempts.every(a=>a.executionClass==='SCRIPTED_AUTOMATION')));
