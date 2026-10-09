@@ -17,7 +17,7 @@ const EXPERIMENTS = [
     id: "E2",
     title: "What does Delegate add beyond a good API?",
     comparison: "Same service API + service-local delegated access versus API + Delegate",
-    status: "Not yet run — highest priority",
+    status: "Bounded technical comparison recorded; citizen-effort and benefit study still outstanding",
   },
   {
     id: "E3",
@@ -129,6 +129,12 @@ export default function EvidencePage() {
           <strong>Technical:</strong> <Link href="/swarm">the swarm scenario</Link> and repository tests exercise
           synthetic principal-level business limits and transaction integrity. They do not themselves establish
           whether Delegate reduces overall cost or prevents real-world fraud.
+        </p>
+        <p>
+          <strong>Controlled technical comparison:</strong> a fixed synthetic workload completed through both service-local
+          authorisation and Delegate, with no tested unauthorised or duplicate business effects. It found no incremental
+          outcome advantage for Delegate in that workload. <a href={repoDoc("evidence/RUN-20261009-E2-01.md")}>Read the pinned run and raw evidence</a>.
+          Citizen consent effort and financial costs were unmeasured.
         </p>
         <p>
           <strong>Still unproven:</strong> how much easier real agents find Delegate, what it adds beyond a good API,
