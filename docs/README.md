@@ -13,9 +13,17 @@ The current prototype uses synthetic One Login, Delegate and mock HMRC, with an 
 | [Decision backlog](DECISION_BACKLOG.md) / [dispositions](DECISION_DISPOSITIONS.md) | Unresolved national questions, owners and reopening triggers |
 | [Validation](VALIDATION.md) | Experimental protocol and fair comparator |
 | [Evidence](EVIDENCE.md) | Recorded evidence and limits on claims |
-| [Observatory research protocol](observatory/RESEARCH_PROTOCOL.md) | Proposed labels, ground truth, evaluation and measurement boundaries; no study results yet |
+| [Observatory research protocol](observatory/RESEARCH_PROTOCOL.md) | Preregistered labels, ground truth and measurement boundaries; actual participant study remains open |
 | [Demo guide](DEMO_GUIDE.md) | Stakeholder walkthrough and defensible claims |
 | [Federated authority](FEDERATED_AUTHORITY.md) | Open central/federated/hybrid authority question |
 | [Build specification](BUILD_SPEC.md) / [prototype content](PROTOTYPE_CONTENT.md) | Preserved original briefs; superseded examples are not current requirements |
 
 The About site at http://localhost:3304 presents these ideas to visitors. `/project-status` explains delivery status, `/how-it-works` describes the implementation, `/delegate-orchestrate` explains the architecture boundary, and `/evidence` distinguishes observations from proof. The root README documents setup, updates and test commands.
+
+## Delivery contracts
+
+- [Consent evidence](CONSENT_EVIDENCE.md): immutable original approval, later history and prototype retention/erasure.
+- [Mandate restrictions](MANDATE_CONSTRAINTS.md): bounded service-owned types and enforcement.
+- [Independent council service](SECOND_SERVICE.md): service-neutral integration and simulator identity limits.
+- [Research feeds](observatory/FEEDS.md), [protected ground truth](observatory/GROUND_TRUTH.md) and [optional Fingerprint sensor](observatory/FINGERPRINT_SENSOR.md): observed coverage is separate from execution truth.
+- [Bounded B/C technical comparison](evidence/RUN-20261009-E2-01.md): reproducible outcome parity; no measured human-effort or economic benefit.
