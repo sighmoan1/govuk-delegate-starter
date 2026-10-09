@@ -27,7 +27,7 @@ export async function seedDemo(prisma: PrismaClient, opts: SeedOptions = {}): Pr
   await prisma.authorisationRequest.deleteMany();
   await prisma.authorisation.deleteMany();
   await prisma.capability.deleteMany();
-  await prisma.service.deleteMany();
+  // Service identities and immutable catalogue publications survive a citizen demo reset.
   await prisma.delegate.deleteMany();
   await prisma.principal.deleteMany();
 
@@ -47,8 +47,10 @@ export async function seedDemo(prisma: PrismaClient, opts: SeedOptions = {}): Pr
   });
 
   // HMRC registers once: a name, a slug and a key it will present to the check API.
-  const service = await prisma.service.create({
-    data: {
+  const service = await prisma.service.upsert({
+    where: { slug: "hmrc-personal-tax" },
+    update: {},
+    create: {
       name: "HMRC",
       slug: "hmrc-personal-tax",
       apiKeyHash: hash(process.env.HMRC_SERVICE_KEY ?? "dev-hmrc-service-key"),
