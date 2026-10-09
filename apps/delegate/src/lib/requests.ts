@@ -2,7 +2,7 @@ import { validateConstraints, narrowConstraints, selectConstraints, type Constra
 import type { CatalogueCapability } from "./catalogues";
 import { approvalEvidence } from "./consent-evidence";
 import { consentPresentation } from "./consent-presentation";
-import { currentCapabilities } from "./catalogues";
+import { catalogueDigest, currentCapabilities } from "./catalogues";
 import { prisma } from "./db";
 import { AUTHORISATION_DAYS, REQUEST_DAYS } from "./config";
 
@@ -38,6 +38,14 @@ export async function createRequest(input: {
   const caps = available.filter((c) => wanted.includes(c.code));
   if (caps.length !== wanted.length) throw new DomainError("UNKNOWN_CAPABILITY", "Unknown capability for this service");
 
+  if(publication) {
+    const latest=await currentCapabilities(service.id);
+    const digest=(definition:CatalogueCapability)=>catalogueDigest({schema_version:1,service:service.slug,version:1,capabilities:[definition]});
+    for(const cap of caps) {
+      const current=latest.find(c=>c.code===cap.code);
+      if(!current || !cap.metadata || !current.metadata || digest(cap.metadata as unknown as CatalogueCapability)!==digest(current.metadata as unknown as CatalogueCapability)) throw new DomainError("CATALOGUE_INCOMPATIBLE","Requested definitions no longer match the service's current publication");
+    }
+  }
   const constraints = validateConstraints(input.constraints, caps.map(c=>c.metadata as unknown as CatalogueCapability));
   return prisma.authorisationRequest.create({
     data: {

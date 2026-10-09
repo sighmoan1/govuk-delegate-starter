@@ -9,6 +9,8 @@ import { checkAuthority } from "@/lib/authority";
 import { subDelegate } from "@/lib/delegations";
 import { narrowMandateConstraints } from "@/lib/constraint-narrowing";
 import { loadConsentHistory } from "@/lib/consent-evidence";
+import {publishCatalogue} from "@/lib/catalogues";
+import {hashSecret} from "@/lib/secrets";
 import { consentPresentation } from "@/lib/consent-presentation";
 import { demoAgent, HMRC } from "./helpers";
 const hmrc=new HmrcClient({datasourceUrl:process.env.HMRC_DATABASE_URL ?? parseEnv(readFileSync("apps/hmrc/.env","utf8")).DATABASE_URL});
@@ -70,4 +72,15 @@ it("unknown inputs fail closed; plain old grants acquire no default restrictions
  for(const constraints of [{[cap]:{tax_year:["2099 to 2100"]}},{[cap]:{script:["allow"]}},{unknown:{tax_year:[year]}}]) await expect(createRequest({delegateId,service:"hmrc-personal-tax",capabilities:[cap],constraints})).rejects.toMatchObject({code:"CONSTRAINTS_INVALID"});
  const req=await createRequest({delegateId,service:"hmrc-personal-tax",capabilities:[cap]});await approveRequest(req.id,principal.id,[cap]);
  expect(await checkAuthority({principalId:principal.id,presenter:{kind:"agent",delegateId},service:"hmrc-personal-tax",capability:cap})).toMatchObject({authorised:true,constraints:{}});
+});
+
+it("explicit historical publication cannot downgrade changed current security declarations",async()=>{
+ const {delegateId}=await demoAgent();
+ const service=await prisma.service.create({data:{slug:"constraints-version-"+randomUUID(),name:"Version fixture",apiKeyHash:hashSecret("fixture")}});
+ const capability={code:"view_case",name:"View case",description:"Synthetic case",risk:"LOW" as const,requires_step_up:false,minimum_assurance:"DECLARED" as const,operation:{method:"GET" as const,path:"/api/case"}};
+ await publishCatalogue(service.id,{schema_version:1,service:service.slug,version:1,capabilities:[capability]});
+ await publishCatalogue(service.id,{schema_version:1,service:service.slug,version:2,capabilities:[{...capability,minimum_assurance:"VERIFIED"}]});
+ await expect(createRequest({delegateId,service:service.slug,capabilities:[capability.code],catalogueVersion:1})).rejects.toMatchObject({code:"CATALOGUE_INCOMPATIBLE"});
+ await publishCatalogue(service.id,{schema_version:1,service:service.slug,version:3,capabilities:[capability]});
+ expect((await createRequest({delegateId,service:service.slug,capabilities:[capability.code],catalogueVersion:1})).permissions[0].capability.catalogue?.version).toBe(1);
 });
