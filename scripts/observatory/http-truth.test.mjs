@@ -15,6 +15,19 @@ assert.equal(before.length,4);assert.ok(before.every(r=>r.status==='COMPLETED'&&
 const monitoring=await request('/api/monitoring/runs',undefined,collection,'collection');assert.equal(monitoring.status,200);
 assert.ok(monitoring.body.every(r=>r.requests===30&&r.unique_service_operations===10&&r.replays===5&&r.refusals===10));
 assert.doesNotMatch(JSON.stringify(monitoring.body),/SCRIPTED|executionClass|provenance|studyOwner|seed|sourceCommit/);
+// Exercise monitoring using an original archived service observation, without execution truth.
+const original=readVerifiedTrace(join(replayPath,'run.json.gz'),replayDigest);
+const archived=before.find(r=>r.evidenceDigest===replayDigest);
+const remove=async id=>{const r=await fetch(base+'/api/evaluation/runs/'+id,{method:'DELETE',headers:{'x-evaluation-key':evaluation}});assert.equal(r.status,200);};
+await remove(archived.id);
+const unlabelled=await api('/api/evaluation/runs',{mode:'MONITORING',protocol_version:'test',source_commit:original.source_sha,seed:'test',study_owner:'synthetic-monitoring-test'});
+const unlabelledAttempt=await api('/api/evaluation/attempts',{run_id:unlabelled.id});assert.equal(unlabelledAttempt.status,'UNLABELLED');
+const read=original.service_events.find(e=>e.capability==='view_claim_status');
+await api('/api/evaluation/bindings',{attempt_id:unlabelledAttempt.id,source_service:'hmrc',source_event_id:read.id,effect_class:'REQUEST_ONLY'});
+assert.equal((await request('/api/evaluation/attempts/'+unlabelledAttempt.id+'/verify',{origin:'CONTROLLED_RUNNER',execution_class:'SCRIPTED_AUTOMATION',trace_digest:replayDigest,source_commit:original.source_sha,runner:'test',observed_at:original.finished_at})).status,409);
+await api('/api/evaluation/runs/'+unlabelled.id+'/complete',{expected_attempts:1});
+const monitorRun=(await api('/api/evaluation/runs')).find(r=>r.id===unlabelled.id);assert.equal(monitorRun.attempts[0].executionClass,null);
+await remove(unlabelled.id);await importTrace(original,replayDigest,api,'ci-synthetic-replay');
 const run=await api('/api/evaluation/runs',{mode:'CONTROLLED',protocol_version:'test',source_commit:'a'.repeat(40),seed:'test',study_owner:'synthetic-enrollment-test'});
 const attempt=await api('/api/evaluation/attempts',{run_id:run.id});
 const token=await api('/api/evaluation/enrolments',{attempt_id:attempt.id});
