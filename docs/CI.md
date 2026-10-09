@@ -10,7 +10,8 @@ Readiness probes wait for One Login discovery, Delegate's seeded HMRC catalogue,
 HMRC and About. Tests run sequentially because they share and reset fixtures:
 
 1. HMRC database tests run before the queue worker is started.
-2. The queue worker starts for root HTTP/API and swarm tests.
+2. The queue worker starts without recreating its already-ready dependencies;
+   readiness is checked again before root HTTP/API and swarm tests.
 3. Chromium browser tests reset fixtures and verify the cross-app journeys.
 
 Failure diagnostics include console output, JUnit reports, redacted container

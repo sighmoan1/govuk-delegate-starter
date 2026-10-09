@@ -53,8 +53,11 @@ jobs:
         run: npm test -w apps/hmrc -- --reporter=default --reporter=junit --outputFile="$PWD/ci-artifacts/hmrc-junit.xml" 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/hmrc-tests.log
       - name: Start queue worker for HTTP and browser journeys
         run: |
-          docker compose up -d hmrc-worker
+          # Dependencies are already migrated and ready. Recreating them here
+          # races the first HTTP test file against application bootstrap.
+          docker compose up -d --no-deps hmrc-worker
           test -n "$(docker compose ps --status running -q hmrc-worker)"
+          bash scripts/ci-wait.sh
       - name: Run root API and swarm regression
         run: npx vitest run --reporter=default --reporter=junit --outputFile=ci-artifacts/api-junit.xml 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/api-tests.log
       - name: Run browser regression from clean fixtures
