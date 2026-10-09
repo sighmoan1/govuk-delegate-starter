@@ -118,9 +118,9 @@ x-service-key: <HMRC's own key>
         <p>Sensitive changes bind approval to the proposal, normalised payload, person, service, capability, key and expiry. The default window is 10 minutes from proposal creation; checks do not consume approval. Bank and address details are synthetic and only shape-validated.</p>
         <h2>What this prototype simplifies</h2>
         <ul>
-          <li><strong>A stand-in for One Login.</strong> The sign-in screens are a lookalike. Behind them, the official GOV.UK One Login simulator does the real OpenID Connect work: codes, signed tokens, keys and userinfo. On public URLs it’s strict, with a real password and a code “sent to Sam’s phone”. Locally, any password is accepted.</li>
+          <li><strong>A stand-in for One Login.</strong> The sign-in screens are a lookalike. Behind them, the official GOV.UK One Login simulator does the real OpenID Connect work: codes, signed tokens, keys and userinfo. On public URLs it’s strict, with a real password and a code “sent to Sam’s phone”. Locally, any nonempty password is accepted.</li>
           <li><strong>One sign-in client.</strong> The One Login simulator supports one client, so GOV.UK Delegate and HMRC share it. In production they would be separate.</li>
-          <li><strong>The same person ID in both places.</strong> Real One Login gives each service a different identifier for the same person. Production would need GOV.UK Delegate and services to share one, or Delegate to hold a mapping.</li>
+          <li><strong>The same person ID in both places.</strong> Separate relying parties may receive different identifiers for the same person. The shared identifier here is a synthetic shortcut; trusted service-scoped mapping and production integration policy remain unresolved (#35).</li>
           <li><strong>Friction stand-ins.</strong> The rate limit, delay and checkbox challenge only show the incentive. A real service would choose its own proportionate controls.</li>
           <li><strong>Synthetic data.</strong> Nothing connects to real One Login, HMRC or anyone’s records.</li>
         </ul>
