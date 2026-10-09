@@ -387,3 +387,8 @@ A citizen-facing **Who can act for me?** service may combine:
 This is distinct from Decision 28's settled Delegate/Orchestrate responsibility boundary. Central, federated and hybrid authority-storage models all remain possible. A **hybrid hypothesis** deserves a bounded synthetic experiment: show two differently sourced relationships, prove source-specific revocation and denial, and avoid misleading answers when the external issuer is unavailable.
 
 **Decision criteria:** legal origin, service recognition, reliability, privacy, revocation guarantees, provenance, citizen comprehension and feasible cross-service identity matching. See [Federated authority options and experiment](FEDERATED_AUTHORITY.md). Do not add generic external-authority ALLOW decisions before the trust and evidence model has been tested.
+
+
+## Capacity principle (9 October 2026) — project-level, service-specific policy outstanding
+
+The prototype adopts **regulate processing demand, not citizens' rights** as a guiding distinction: separate lawful citizen intents and substantive domain requirements from HTTP retries, costly lookups, throttling and queue scheduling. This is **not** a production law/policy determination and does not guarantee acceptance during service outage. [Read the scoped decision record](decisions/2026-10-09-capacity-and-rights.md); [DB-04 / #51](https://github.com/sighmoan1/govuk-delegate-starter/issues/51) remains open for service-owned limits, priority rules and deadlines. Kept outside the numbered Decision sequence as a scoped project principle; Decision 28 records the architecture boundary.

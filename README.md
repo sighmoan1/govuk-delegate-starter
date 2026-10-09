@@ -24,6 +24,12 @@ The pattern copies HMRC's agent authorisation: an agent asks, the person approve
 
 **Current limitation:** Delegate's demo seed and UI still hard-code some HMRC capability definitions. The target is that each service publishes a versioned catalogue and Delegate renders/checks it generically. This is tracked as follow-up engineering work; the documentation is not a claim that the feature exists.
 
+## What still needs deciding
+
+**[Decision backlog — `docs/DECISION_BACKLOG.md`](docs/DECISION_BACKLOG.md)** is the canonical index of unresolved product, legal, security and architecture choices. It links to twelve individual `[decision]` issues, with priorities, owner roles, alternative options, evidence needed and clear triggers for an actual decision. It distinguishes what this synthetic prototype **implements** from what participating government services would still have to **approve**.
+
+Start with **DB-01 (legal authority)** and **DB-02 (when the person must approve the precise action)**. Keep settled/historical decisions in [DECISIONS.md](docs/DECISIONS.md), and treat the evaluation protocol in [PR #46](https://github.com/sighmoan1/govuk-delegate-starter/pull/46) as a separate evidence programme.
+
 ## Four apps
 
 The three systems in the scenario are mock-ups of real services. They carry no explanation of the demo, only a "Prototype · About this prototype" line. Everything explanatory lives on the about site.
