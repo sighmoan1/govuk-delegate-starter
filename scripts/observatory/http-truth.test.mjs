@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { readVerifiedTrace, importTrace } from './import-e2.mjs';
+const base='http://127.0.0.1:3303', evaluation=process.env.OBSERVATORY_EVALUATION_KEY, collection=process.env.OBSERVATORY_COLLECTION_KEY;
+const request=async(path,body,key=evaluation,kind='evaluation')=>{const r=await fetch(base+path,{method:body===undefined?'GET':'POST',headers:{'content-type':'application/json',[`x-${kind}-key`]:key},...(body===undefined?{}:{body:JSON.stringify(body)})});return{status:r.status,body:await r.json()};};
+const api=async(path,body)=>{const r=await request(path,body);assert.equal(r.status,200,JSON.stringify(r));return r.body;};
+assert.equal((await request('/api/evaluation/runs',undefined,collection,'collection')).status,401);
+const outputs=[];
+for(const dir of readdirSync('docs/evidence/raw').filter(x=>x.startsWith('RUN-20261009-E2-'))){const path=join('docs/evidence/raw',dir);const expected=readFileSync(join(path,'SHA256SUMS'),'utf8').split(/\s+/)[0];const record=readVerifiedTrace(join(path,'run.json.gz'),expected);outputs.push(await importTrace(record,expected,api,'ci-synthetic-replay'));}
+assert.equal(outputs.length,4);assert.ok(outputs.every(x=>x.attempts===25));
+const before=await api('/api/evaluation/runs');
+assert.equal(before.length,4);assert.ok(before.every(r=>r.status==='COMPLETED'&&r.attempts.length===25&&r.attempts.every(a=>a.executionClass==='SCRIPTED_AUTOMATION')));
+const monitoring=await request('/api/monitoring/runs',undefined,collection,'collection');assert.equal(monitoring.status,200);
+assert.ok(monitoring.body.every(r=>r.requests===30&&r.unique_service_operations===10&&r.replays===5&&r.refusals===10));
+assert.doesNotMatch(JSON.stringify(monitoring.body),/SCRIPTED|executionClass|provenance|studyOwner|seed|sourceCommit/);
+const run=await api('/api/evaluation/runs',{mode:'CONTROLLED',protocol_version:'test',source_commit:'a'.repeat(40),seed:'test',study_owner:'synthetic-enrollment-test'});
+const attempt=await api('/api/evaluation/attempts',{run_id:run.id});
+const token=await api('/api/evaluation/enrolments',{attempt_id:attempt.id});
+const claims=await Promise.all([1,2].map(()=>request('/api/research/enrolments/claim',{enrollment_token:token.enrollment_token},collection,'collection')));
+assert.deepEqual(claims.map(x=>x.status).sort(),[200,409]);const session=claims.find(x=>x.status===200).body;
+assert.deepEqual(Object.keys(session).sort(),['attempt_id','expires_at','run_id','session_id']);assert.equal(session.attempt_id,attempt.id);
+assert.equal((await request('/api/research/sessions/'+session.session_id,undefined,collection,'collection')).status,200);
+const missing=await request('/api/evaluation/bindings',{attempt_id:attempt.id,source_service:'hmrc',source_event_id:crypto.randomUUID(),effect_class:'REQUEST_ONLY'});assert.equal(missing.status,409);
+const deleted=await fetch(base+'/api/evaluation/runs/'+run.id,{method:'DELETE',headers:{'x-evaluation-key':evaluation}});assert.equal(deleted.status,200);
+assert.equal((await request('/api/research/sessions/'+session.session_id,undefined,collection,'collection')).status,404);
+console.log(JSON.stringify({status:'passed',archive_runs:4,scripted_attempts:100,requests:120,unique_service_operations:40,replays:20,refusals:40,human_runs:0,assertions:'source trace/digest, provenance, isolation, one-use concurrency, withdrawal'},null,2));
