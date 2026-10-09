@@ -415,3 +415,28 @@ describe("private, no-store: nothing personal is served from or kept in a shared
     expect(r.body.result.version).toBeUndefined();
   });
 });
+
+// Integration regression: a poll already holds a transaction and the person's lock.
+// Reading through the global client here starves even a small connection pool.
+describe("concurrent progress polls alongside a bystander", () => {
+  it("finishes a 40-poll burst without pool starvation and keeps the bystander's state isolated", async () => {
+    const a = await claimed();
+    const b = await claimed();
+    const first = await poll(a.token, a.t);
+    const responses = await Promise.all([
+      ...Array.from({ length: 40 }, () => poll(a.token, a.t, { "if-none-match": etag(first) })),
+      poll(b.token, b.t),
+    ]);
+    expect(responses.slice(0, 40).every((r) => [304, 429].includes(r.status))).toBe(true);
+    expect(responses.slice(0, 40).filter((r) => r.status === 304)).toHaveLength(3);
+    const other = responses[40];
+    expect(other.status).toBe(200);
+    expect(other.body.result.claims).toHaveLength(1);
+    expect(other.text).not.toContain(a.queryId);
+    expect(await prisma.claim.count({ where: { taxpayerId: a.t.id } })).toBe(1);
+    for (const r of responses.filter((r) => r.status === 429)) {
+      expect(r.body.entitlement_affected).toBe(false);
+      expect(Number(r.headers.get("retry-after"))).toBeGreaterThan(0);
+    }
+  });
+});

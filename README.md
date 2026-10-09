@@ -54,7 +54,7 @@ Open http://localhost:3304. Each scenario has its own page, and each page resets
 2. **Government prioritises people and authorised agents.** HMRC treats signed-in people, authorised agents and unidentified traffic differently. The page sends bursts of traffic as a bot and as an anonymous visitor, and shows who got through.
 
 3. **Which route do agents choose?** Findings from live runs with real agents (ChatGPT with TinyFish so far), from HMRC's own logs: what HMRC could see, and which route each took.
-4. **Can a swarm beat the system?** The same workload run four ways: one person with one agent, with 100 sub-agents, with 100 hidden sessions, and 100 people with one agent each. Business limits belong to the person and are applied by the service (HMRC), so the first three match. Delegate's check never spends them.
+4. **Can a swarm beat the system?** Seven scenarios through the real services, counting technical load (requests, authority checks, 429 and 503 answers, back-end work) apart from service outcomes (claims received, queued, recorded, duplicates absorbed, waiting and worker time). One person with one agent, 100 sub-agents or 100 hidden sessions is one claim, however many requests. 100 people through one agent is 100 claims, received at once and recorded gradually. A burst, a retry storm and a status-poll flood are added, and a labelled, seeded simulation compares an agent-level throttle, a person-level throttle and fair scheduling. Every number is marked measured, depends on a demo-only limit, or simulated. Decision 27.
 
 The core idea, in one line: **identify the agent, authorise the mandate, limit the principal at the service** (Decision 16 in `docs/DECISIONS.md`).
 
@@ -65,7 +65,8 @@ The core idea, in one line: **identify the agent, authorise the mandate, limit t
 With the stack running:
 
 ```bash
-npm test            # Vitest: HMRC database-backed idempotency/atomicity tests (apps/hmrc/tests), then over HTTP: scenarios A–F at Delegate's check API and again through HMRC;
+npm test            # Vitest: HMRC database-backed idempotency/atomicity/queue tests (apps/hmrc/tests), then over HTTP: scenarios A–F at Delegate's check API and again through HMRC;
+                    # the swarm experiments (tests/swarm.test.ts: seven scenarios measured, then a seeded simulation; needs the queue worker running);
                     # one event per attempt in both logs; untrusted-lane friction; lifecycle; return URLs
 npm run test:e2e    # Playwright: the scenarios (each started from its UI reset) across all apps, each system alone, a check
                     # that the services carry no demo copy, skip link, 320px reflow. Resets demo data first.

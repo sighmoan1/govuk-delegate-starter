@@ -85,6 +85,12 @@ x-service-key: <HMRC's own key>
           need an agent whose identity is verified or registered, plus the person’s fresh approval. It never raises the limits.
         </p>
         <p>
+          That is about one person’s claim, not about how many claims there are. A hundred claims from a hundred different people is not a swarm
+          beating a limit: it may be a hundred people’s legitimate demand, sent through one agent provider. HMRC receives them all and records them
+          gradually. What it slows, with a 429 that says when to come back, is traffic that costs it something, such as repeated polling. The
+          swarm page measures the two apart, and says which numbers are measured and which are simulated.
+        </p>
+        <p>
           Agents can pass part of their authority to sub-agents. Each one stays inside what its parent was given, down to a maximum depth,
           and everything traces back to the person. <Link href="/swarm">Scenario 4</Link> runs it.
         </p>

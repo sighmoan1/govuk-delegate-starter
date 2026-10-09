@@ -25,7 +25,7 @@ const SCENARIOS = [
     href: "/swarm",
     n: 4,
     title: "Can a swarm beat the system?",
-    text: "One person authorising a hundred agents, or running a hundred hidden sessions, gets no more than one person with one agent.",
+    text: "A hundred requests for one claim are one claim, however many agents, sessions or retries carry them. A hundred claims from a hundred people may be legitimate demand: they are received and recorded gradually. Technical load and outcomes are measured apart.",
   },
 ];
 

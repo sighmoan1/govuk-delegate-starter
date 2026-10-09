@@ -75,13 +75,13 @@ export const HMRC_QUESTION = "Please confirm what your employer’s working-from
  * If Delegate can't say, answers are left as they are and the result says so
  * (`checked: false`): "couldn't ask" is never reported as "nobody disputed".
  */
-export async function reopenDisputedAnswers(taxpayerId: string): Promise<{ checked: boolean }> {
-  const answered = await prisma.claimQuery.findMany({ where: { status: "ANSWERED", answeredBy: "AGENT", receiptId: { not: null }, claim: { taxpayerId } } });
+export async function reopenDisputedAnswers(taxpayerId: string, db: Tx = prisma): Promise<{ checked: boolean }> {
+  const answered = await db.claimQuery.findMany({ where: { status: "ANSWERED", answeredBy: "AGENT", receiptId: { not: null }, claim: { taxpayerId } } });
   if (answered.length === 0) return { checked: true };
   const result = await disputedReceipts(answered.map((q) => q.receiptId!));
   if (!result.ok) return { checked: false };
   for (const q of answered.filter((q) => result.disputed.includes(q.receiptId!))) {
-    await prisma.claimQuery.update({
+    await db.claimQuery.update({
       where: { id: q.id },
       data: { status: "OPEN", answer: null, answeredAt: null, answeredBy: null, answeredByName: null, confirmedByPerson: false, mandateId: null, delegationId: null, receiptId: null, answerWithdrawn: true, answerVersion: { increment: 1 }, stateChangedAt: new Date() },
     });
@@ -100,9 +100,9 @@ const claimJson = (c: { reference: string; summary: string; kind: string; create
 };
 
 /** The person's claims as they stand now, after any disputed answers have been reopened. */
-async function loadClaimState(taxpayer: Taxpayer) {
-  const { checked } = await reopenDisputedAnswers(taxpayer.id);
-  const claims = await prisma.claim.findMany({ where: { taxpayerId: taxpayer.id }, include: { queries: true }, orderBy: { createdAt: "desc" } });
+async function loadClaimState(taxpayer: Taxpayer, db: Tx = prisma) {
+  const { checked } = await reopenDisputedAnswers(taxpayer.id, db);
+  const claims = await db.claim.findMany({ where: { taxpayerId: taxpayer.id }, include: { queries: true }, orderBy: { createdAt: "desc" } });
   return { checked, claims };
 }
 
@@ -113,8 +113,8 @@ const statusBody = (taxpayer: Taxpayer, state: Awaited<ReturnType<typeof loadCla
 });
 
 /** The person's claims, each with its status and anything HMRC has asked. */
-export async function claimStatus(taxpayer: Taxpayer) {
-  return statusBody(taxpayer, await loadClaimState(taxpayer));
+export async function claimStatus(taxpayer: Taxpayer, db: Tx = prisma) {
+  return statusBody(taxpayer, await loadClaimState(taxpayer, db));
 }
 
 /**
@@ -140,11 +140,11 @@ export function pollingGuidance() {
  * `version` is the ETag value (progress-version.ts). It changes whenever anything in
  * the status changes and does not depend on `since`, so a caller holding it has seen this state.
  */
-export async function claimProgress(taxpayer: Taxpayer, body: Record<string, unknown>) {
-  const state = await loadClaimState(taxpayer);
+export async function claimProgress(taxpayer: Taxpayer, body: Record<string, unknown>, db: Tx = prisma) {
+  const state = await loadClaimState(taxpayer, db);
   const since = typeof body.since === "string" ? new Date(body.since) : null;
   const changed = since && !Number.isNaN(+since)
-    ? await prisma.claim.count({ where: { taxpayerId: taxpayer.id, OR: [{ createdAt: { gt: since } }, { queries: { some: { OR: [{ askedAt: { gt: since } }, { answeredAt: { gt: since } }, { stateChangedAt: { gt: since } }] } } }] } })
+    ? await db.claim.count({ where: { taxpayerId: taxpayer.id, OR: [{ createdAt: { gt: since } }, { queries: { some: { OR: [{ askedAt: { gt: since } }, { answeredAt: { gt: since } }, { stateChangedAt: { gt: since } }] } } }] } })
     : null;
   const observedAt = new Date().toISOString();
   return {
