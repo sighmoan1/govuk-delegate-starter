@@ -42,10 +42,13 @@ export async function importTrace(record, expected, api, owner) {
     const page = sourcePage(record, source); if (page.events.length) await api('/api/evaluation/source-replay', { trace_digest: expected, page });
   }
   let attempts=0, bindings=0;
-  for (const state of record.state) {
-    const mine = record.service_events.filter(e => e.subject === state.subject);
+  for (const [index, state] of record.state.entries()) {
+    // Refused events deliberately omit subject. Bind through the runner response check ID, never source subjects.
+    const runnerRequests = record.attempts.filter(a => a.request_id.startsWith(`${record.run_id}:${index}:`));
     for (const task of ['read','claim','followup','forbidden','revoked']) {
-      const events = mine.filter(e => taskOf(e) === task); if (!events.length) throw new Error('MISSING_SOURCE_TASK');
+      const requests = runnerRequests.filter(a => (a.task === 'retry' ? 'claim' : a.task) === task);
+      const events = requests.map(a => { const matches = record.service_events.filter(e => e.delegateCheckId === a.response?.delegate_check_id); if (matches.length !== 1) throw new Error('SOURCE_CHECK_JOIN_NOT_UNIQUE'); return matches[0]; });
+      if (!events.length || events.some(e => taskOf(e) !== task)) throw new Error('MISSING_OR_MISMATCHED_SOURCE_TASK');
       const attempt = await api('/api/evaluation/attempts', { run_id: run.id }); attempts++;
       await api(`/api/evaluation/attempts/${attempt.id}/verify`, { origin: 'CONTROLLED_RUNNER', execution_class: 'SCRIPTED_AUTOMATION', trace_digest: expected, source_commit: record.source_sha, runner: 'e2-fixed-http-v1', observed_at: record.finished_at });
       const operation = randomUUID();

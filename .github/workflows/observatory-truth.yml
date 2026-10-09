@@ -3,6 +3,9 @@ on:
   pull_request:
   push:
     branches: [main]
+defaults:
+  run:
+    shell: bash
 permissions:
   contents: read
 jobs:
@@ -36,13 +39,16 @@ jobs:
       - run: npm run build -w apps/observatory
       - name: HTTP ledger, archive audit and concurrent enrollment
         run: |
+          set -euo pipefail
           mkdir -p truth-report
           npm run start -w apps/observatory > truth-report/server.log 2>&1 &
           for i in $(seq 1 60); do
             if curl -sf http://127.0.0.1:3303/api/health >/dev/null; then break; fi
             sleep 1
           done
-          node scripts/observatory/http-truth.test.mjs | tee truth-report/result.json
+          node scripts/observatory/http-truth.test.mjs > truth-report/result.json
+          test -s truth-report/result.json
+          cat truth-report/result.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
