@@ -4,6 +4,7 @@ import Link from "next/link";
 import { config } from "@/lib/config";
 import { requireViewer, viewerCan } from "@/lib/guard";
 import { claimsFor, reopenDisputedAnswers } from "@/lib/taxpayers";
+import { STATUS_TEXT, transactionsFor } from "@/lib/transactions";
 import { prisma } from "@/lib/db";
 import { runOperation } from "@/lib/operation";
 import { fmt } from "@/lib/format";
@@ -25,7 +26,9 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
   const claims = canClaims ? await claimsFor(taxpayer.id) : [];
   const { checked: disputesChecked } = canQueries ? await reopenDisputedAnswers(taxpayer.id) : { checked: true };
   const openQueries = canQueries ? await prisma.claimQuery.findMany({ where: { status: "OPEN", claim: { taxpayerId: taxpayer.id } }, include: { claim: true }, orderBy: { askedAt: "asc" } }) : [];
-  const hasWfh = claims.some((c) => c.kind === "job_expenses");
+  // Claims HMRC has received and is still taking in (or could not): the claim itself does not exist until it is recorded.
+  const received = canClaims ? (await transactionsFor(taxpayer.oneLoginSubject)).filter((t) => t.status !== "COMPLETED") : [];
+  const hasWfh = claims.some((c) => c.kind === "job_expenses") || received.some((t) => t.status !== "FAILED");
 
   return (
     <div>
@@ -92,6 +95,21 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
               <button className="button" type="submit">Send answer</button>
             </form>
           ))}
+        </>
+      )}
+
+      {received.length > 0 && (
+        <>
+          <h2>Claims being recorded</h2>
+          <ul className="claims">
+            {received.map((t) => (
+              <li key={t.id}>
+                <strong>Working-from-home claim: {STATUS_TEXT[t.status].heading.toLowerCase()}.</strong>{" "}
+                <span>Received {fmt(t.receivedAt)}. </span>
+                <Link href={`/transactions/${t.id}`}>See where it has got to</Link>
+              </li>
+            ))}
+          </ul>
         </>
       )}
 

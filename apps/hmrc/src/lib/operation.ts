@@ -25,7 +25,7 @@ export type { Admitted, Tx };
 
 export type RequestRefusal = {
   kind: "REQUEST_ERROR";
-  reason: "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY";
+  reason: "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "IDEMPOTENCY_KEY_REQUIRED";
   rule: "idempotency_key";
   limit: number;
   used: number;
@@ -39,6 +39,7 @@ export const REFUSAL_STATUS: Record<string, number> = {
   ...DOMAIN_STATUS,
   IDEMPOTENCY_KEY_REUSED: 409,
   INVALID_IDEMPOTENCY_KEY: 400,
+  IDEMPOTENCY_KEY_REQUIRED: 400,
   RATE_LIMITED: 429,
   SERVICE_UNAVAILABLE: 503,
 };
@@ -49,6 +50,8 @@ export type OperationOptions = {
   idempotencyKey?: string | null;
   /** Who is sending the traffic: an agent provider or a signed-in person. Omit for pages where only the person's own limits apply. */
   operator?: Operator | null;
+  /** Refuse (400) a request that carries no Idempotency-Key. For the asynchronous path, where a client must be able to retry an answer it never saw. */
+  requireKey?: boolean;
 };
 
 export type OperationResult<T> =
@@ -63,10 +66,13 @@ export async function runOperation<T>(
   capability: string,
   body: Record<string, unknown>,
   run: (admitted: Admitted, tx: Tx) => Promise<T>,
-  { now = new Date(), idempotencyKey = null, operator = null }: OperationOptions = {},
+  { now = new Date(), idempotencyKey = null, operator = null, requireKey = false }: OperationOptions = {},
 ): Promise<OperationResult<T>> {
   const nominalClass = costClassOf(capability);
   const keyed = idempotencyKey != null && IDEMPOTENT_CAPABILITIES.has(capability);
+  if (requireKey && !keyed) {
+    return { ok: false, costClass: nominalClass, refusal: keyRefusal("IDEMPOTENCY_KEY_REQUIRED", 0, "Send an Idempotency-Key header (1 to 128 visible characters) with a request to be processed later, so that a retry can never make a second claim.", 128) };
+  }
   if (keyed && !isValidKey(idempotencyKey.startsWith("form:") ? idempotencyKey.slice(5) : idempotencyKey)) {
     return { ok: false, costClass: nominalClass, refusal: keyRefusal("INVALID_IDEMPOTENCY_KEY", 0, "Idempotency-Key must be 1 to 128 visible characters with no spaces.", 128) };
   }
