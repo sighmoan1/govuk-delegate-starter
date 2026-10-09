@@ -77,7 +77,7 @@ export default function WhichRoute() {
           <li><strong>Agents’ fallback is to ask for your login.</strong> When the proper route wasn’t found, wasn’t finished, or wasn’t trusted, every run ended with the agent asking the user to share a signed-in session. The route has to be both obvious and workable, or the fallback wins.</li>
           <li><strong>Page text isn’t enough to steer an agent.</strong> A plain “don’t sign in, ask for permission” was ignored once. Agents may rightly treat page text as untrusted. A signature, which a service can verify, is stronger.</li>
           <li><strong>The handoff is the hard part.</strong> A code that a person must approve needs an agent that can wait, tell the person, and come back. A one-shot agent loses its place.</li>
-          <li><strong>So the controls on the person’s side matter.</strong> If an agent can’t be identified, the defence is that its person’s limits are the same however many agents they use. That is <Link href="/swarm">Scenario 5</Link>.</li>
+          <li><strong>So the controls on the person’s side matter.</strong> If an agent can’t be identified, the defence is that its person’s limits are the same however many agents they use. That is <Link href="/swarm">Scenario 4</Link>.</li>
         </ul>
 
         <h2>What we changed because of it</h2>

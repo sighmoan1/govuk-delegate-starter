@@ -1,3 +1,4 @@
+const ONELOGIN = process.env.ONELOGIN_URL ?? "http://localhost:3301";
 import { test, expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { signRequest, type Directory } from "../packages/web-bot-auth/src/index";
@@ -23,7 +24,7 @@ async function signedContext(browser: Browser): Promise<BrowserContext> {
 async function signAndForward(route: import("@playwright/test").Route) {
   const r = route.request();
   const url = new URL(r.url());
-  if (!/^localhost:33\d\d$/.test(url.host)) return route.continue();
+  if (![DELEGATE, HMRC, ABOUT, ONELOGIN].some(base => new URL(base).origin === url.origin)) return route.continue();
   const headers = { ...r.headers(), ...signRequest({ method: r.method(), authority: url.host, path: url.pathname + url.search }, KEY) };
   // In-page fetches (Next's router, server actions) follow redirects transparently, as fetch does.
   if (!r.isNavigationRequest()) return route.fulfill({ response: await route.fetch({ headers }) });
@@ -41,7 +42,7 @@ async function signAndForward(route: import("@playwright/test").Route) {
 }
 
 async function signIn(page: Page, email?: string) {
-  if (!/localhost:3301/.test(page.url())) return;
+  if (new URL(page.url()).origin !== new URL(ONELOGIN).origin) return;
   if (email) await page.getByLabel("Email address").fill(email);
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("heading", { name: "Enter your password" })).toBeVisible();
