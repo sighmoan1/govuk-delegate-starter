@@ -18,8 +18,7 @@ export default function ProjectStatus() {
         <li>Authority checks spend no citizen allowance. HMRC separates illustrative business rules from traffic throttles and supports conditional progress polling.</li>
         <li>Registered services can publish validated, immutable catalogue versions. Safe public discovery is available; publication creates no authority.</li>
       </ul>
-      <h2>In review</h2>
-      <p>HMRC still uses the centrally seeded permission fixture. <a href="https://github.com/sighmoan1/govuk-delegate-starter/pull/86">PR #86</a> moves those definitions into an HMRC-owned catalogue and registers them during setup. It is not part of this delivery snapshot.</p>
+      <p>HMRC owns its versioned capability catalogue and registers it during setup. Catalogue changes preserve historical grants and pending consent; demo reset retains catalogue history.</p>
       <h2>Still to build or investigate</h2>
       <p>Generic catalogue-driven consent, immutable consent snapshots, richer enforceable mandate constraints and a second independent mock department remain separate engineering work. Grouped cross-service consent and recognition of externally issued authority are proposals.</p>
       <p>Orchestrate is hypothetical. This prototype provides no agent planner, scheduler, push subscription or webhook. National questions about lawful authority, assurance, privacy, liability, inclusion and service policy are deferred with owner roles and reopening triggers.</p>

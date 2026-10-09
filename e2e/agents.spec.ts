@@ -195,7 +195,7 @@ test("a browser agent answers HMRC's question for Sam without being blocked; Sam
 
   await sam.goto(`${DELEGATE}/account/delegates`);
   await expect(sam.getByText("Something was done in your name.")).toBeVisible();
-  await sam.getByRole("link", { name: /Answer HMRC question/ }).first().click();
+  await sam.getByRole("link", { name: /Answer HMRC’s questions about your claim/ }).first().click();
   await expect(sam.locator("blockquote")).toContainText("My employer required it, from about 2022.");
   await expect(sam.getByText("did not say whether you had agreed")).toBeVisible();
   await samCtx.close();

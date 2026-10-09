@@ -12,9 +12,9 @@ Eight capabilities are seeded. The browser request form offers seven, omitting `
 
 ## Service catalogues
 
-A registered service can publish bounded catalogue documents with its own credential. Delegate retains immutable, version-addressable history and exposes safe public discovery. Publication is idempotent for identical content and rejects version conflicts, malformed metadata and weak high-risk declarations. It creates no citizen authority and changes no existing permission row or grant.
+A registered service can publish bounded catalogue documents with its own credential. Delegate retains immutable, version-addressable history and exposes safe public discovery. Publication is idempotent for identical content and rejects version conflicts, malformed metadata and weak high-risk declarations. It creates no citizen authority. Catalogue adoption preserves historical permission IDs, names and security settings; equivalent legacy rows receive presentation metadata on first registration.
 
-The current HMRC fixture remains the operational consent/check source. Its migration to an HMRC-owned catalogue is under review in PR #86; generic consent (#30), immutable consent snapshots (#31), richer enforceable constraints (#32) and a second mock service (#33) remain separate work. See [SERVICE_CATALOGUES.md](SERVICE_CATALOGUES.md).
+HMRC definitions are owned by its versioned catalogue and registered through the authenticated publication handler during bootstrap. New requests use the latest publication; pending consent and grants retain their existing capability IDs. Citizen reset preserves all catalogue history; generic consent (#30), immutable consent snapshots (#31), richer enforceable constraints (#32) and a second mock service (#33) remain separate work. See [SERVICE_CATALOGUES.md](SERVICE_CATALOGUES.md).
 
 ## Approval, answers and revocation
 

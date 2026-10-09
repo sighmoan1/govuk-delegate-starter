@@ -65,7 +65,7 @@ x-service-key: <HMRC's own key>
         <p>
           Registered services can publish immutable, versioned lists of permissions with authenticated credentials.
           Delegate validates the list and makes safe metadata discoverable. Publication grants nobody access.
-          HMRC still uses the central demo fixture; its catalogue migration is in review.
+          HMRC owns its capability catalogue and registers it during setup; historical grants keep their original definitions.
           <Link href="/project-status"> See the current delivery status</Link>.
         </p>
 

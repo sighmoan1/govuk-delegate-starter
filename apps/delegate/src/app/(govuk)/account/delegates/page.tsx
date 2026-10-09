@@ -27,7 +27,7 @@ export default async function Delegates({ searchParams }: { searchParams: Promis
       orderBy: { createdAt: "desc" },
     }),
   ]);
-  const unseen = await prisma.receipt.findMany({ where: { principalId: principal.id, seenAt: null, status: "RECORDED" }, orderBy: { createdAt: "desc" } });
+  const unseen = await prisma.receipt.findMany({ where: { principalId: principal.id, seenAt: null, status: "RECORDED" }, include: { mandate: { include: { permissions: { include: { capability: true } } } } }, orderBy: { createdAt: "desc" } });
   const active = auths.filter((a) => a.status === "ACTIVE");
   const ended = auths.filter((a) => a.status !== "ACTIVE");
   const sorted = (a: (typeof auths)[number]) => a.permissions.map((p) => p.capability).sort((x, y) => x.sortOrder - y.sortOrder);
@@ -39,7 +39,7 @@ export default async function Delegates({ searchParams }: { searchParams: Promis
       {unseen.length > 0 && (
         <div className="inset-text" role="status">
           <p><strong>{unseen.length === 1 ? "Something was done in your name." : `${unseen.length} things were done in your name.`}</strong> Check you agreed to {unseen.length === 1 ? "it" : "them"}:</p>
-          <ul>{unseen.map((r) => <li key={r.id}><Link href={`/account/delegates/${r.mandateId}`}>{capabilityLabel(r.capability)}</Link></li>)}</ul>
+          <ul>{unseen.map((r) => <li key={r.id}><Link href={`/account/delegates/${r.mandateId}`}>{r.mandate.permissions.find(p => p.capability.code === r.capability)?.capability.name ?? capabilityLabel(r.capability)}</Link></li>)}</ul>
         </div>
       )}
       {rejected && <div className="inset-text"><p>You rejected the request. Nothing was granted.</p></div>}
@@ -52,7 +52,7 @@ export default async function Delegates({ searchParams }: { searchParams: Promis
             <div key={r.id} className="delegate-card delegate-card--pending">
               <h3>{r.delegate.name}</h3>
               <p>{r.service.name}</p>
-              <p>Asking to: {r.permissions.map((p) => capabilityLabel(p.capability.code).toLowerCase()).join(", ")}.</p>
+              <p>Asking to: {r.permissions.map((p) => p.capability.name.toLowerCase()).join(", ")}.</p>
               <p>Status: <span className="status status--pending">Waiting for your decision</span></p>
               <Link className="button" href={`/consent/${r.id}`}>Review request<span className="visually-hidden"> from {r.delegate.name}</span></Link>
             </div>
@@ -68,7 +68,7 @@ export default async function Delegates({ searchParams }: { searchParams: Promis
             <h3>{a.delegate.name}</h3>
             <p>{a.service.name}</p>
             <p>Can:</p>
-            <ul className="plain">{sorted(a).map((c) => <li key={c.id}>{capabilityLabel(c.code).toLowerCase()}</li>)}</ul>
+            <ul className="plain">{sorted(a).map((c) => <li key={c.id}>{c.name.toLowerCase()}</li>)}</ul>
             <p>Status: <span className="status status--active">Active</span> until {fmtDate(a.validUntil)}</p>
             <div className="button-row">
               <Link className="button button--secondary" href={`/account/delegates/${a.id}`}>View<span className="visually-hidden"> for {a.delegate.name}</span></Link>
