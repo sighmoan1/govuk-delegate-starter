@@ -6,6 +6,8 @@ import { currentPrincipal } from "@/lib/session";
 import { expireDueAuthorisations } from "@/lib/authority";
 import { capabilityLabel } from "@/lib/capabilities";
 import { fmt, fmtTime } from "@/lib/format";
+import { ConsentHistory } from "@/components/consent-history";
+import { loadConsentHistory, type ApprovalEvidence } from "@/lib/consent-evidence";
 import { outcomeLabel, reasonLabel } from "@/lib/outcomes";
 import { narrowAction, disputeAction } from "../../../actions";
 
@@ -28,7 +30,12 @@ export default async function AuthorisationDetail({
     include: { delegate: true, service: true, permissions: { include: { capability: true } } },
   });
   if (!a || a.principalId !== principal.id) notFound();
-  const all = await prisma.capability.findMany({ where: { serviceId: a.serviceId, catalogueId: a.permissions[0]?.capability.catalogueId ?? null }, orderBy: { sortOrder: "asc" } });
+  const consentHistory = await loadConsentHistory(a.id, principal.id);
+  const approval = consentHistory.find(e => e.kind === "APPROVED");
+  const original = approval ? approval.payload as unknown as ApprovalEvidence : null;
+  const latestCatalogue = await prisma.serviceCatalogue.findFirst({ where: { serviceId: a.serviceId }, orderBy: { version: "desc" }, select: { digest: true } });
+  const catalogueChanged = Boolean(original && latestCatalogue && original.catalogue.digest !== latestCatalogue.digest);
+  const all = await prisma.capability.findMany({ where: { serviceId: a.serviceId, catalogueId: original?.catalogue.id ?? a.permissions[0]?.capability.catalogueId ?? null }, orderBy: { sortOrder: "asc" } });
   const capabilityName = (code: string) => a.permissions.find(p => p.capability.code === code)?.capability.name ?? all.find(c => c.code === code)?.name ?? capabilityLabel(code);
   const allowed = all.filter((c) => a.permissions.some((p) => p.capabilityId === c.id));
   const notAllowed = all.filter((c) => !allowed.includes(c));
@@ -48,7 +55,7 @@ export default async function AuthorisationDetail({
     <div>
       <Link className="back-link" href="/account/delegates">Back</Link>
       {removed && (
-        <div className="confirmation-panel"><h1>Access removed</h1><p>{a.delegate.name} can no longer act for you with {a.service.name}. HMRC will refuse anything it tries from now on.</p></div>
+        <div className="confirmation-panel"><h1>Access removed</h1><p>{a.delegate.name} can no longer act for you with {a.service.name}. {a.service.name} will refuse anything it tries from now on.</p></div>
       )}
       {narrowed && <div className="inset-text"><p>That permission has been taken away. The rest still applies.</p></div>}
       {disputed && <div className="inset-text"><p>Marked as not agreed. {a.delegate.name} can no longer do that, and {a.service.name} will discover the dispute when it next checks the receipt and then treat the answer as not given. This is not an immediate notification.</p></div>}
@@ -57,7 +64,7 @@ export default async function AuthorisationDetail({
         <div><dt>Status</dt><dd><span className={`status status--${a.status.toLowerCase()}`}>{label}</span></dd><dd /></div>
         <div><dt>Delegate</dt><dd>{a.delegate.name} ({a.delegate.type.replace("_", " ").toLowerCase()}), provided by {a.delegate.provider}</dd><dd /></div>
         <div><dt>Government service</dt><dd>{a.service.name}</dd><dd /></div>
-        <div><dt>Allowed to</dt><dd>{allowed.map((c) => (
+        <div><dt>{a.status === "ACTIVE" ? "Allowed to" : "Previously selected permissions"}</dt><dd>{allowed.map((c) => (
           <span key={c.id}>
             {c.name}
             {a.status === "ACTIVE" && (
@@ -75,6 +82,11 @@ export default async function AuthorisationDetail({
         <div><dt>{a.status === "REVOKED" ? "Removed" : "Valid until"}</dt><dd>{fmt(a.status === "REVOKED" && a.revokedAt ? a.revokedAt : a.validUntil)}</dd><dd /></div>
       </dl>
       {a.status === "ACTIVE" && <Link className="button" href={`/account/delegates/${a.id}/remove`}>Remove access</Link>}
+
+      <ConsentHistory original={original} changed={catalogueChanged} history={consentHistory.map(event => {
+        const payload = event.payload as { capability?: string; reason?: string };
+        return { id: event.id, kind: event.kind, occurredAt: event.occurredAt, capability: payload.capability, reason: payload.reason };
+      })} />
 
       {receipts.length > 0 && (
         <section aria-labelledby="said-h">

@@ -11,7 +11,14 @@ export async function narrowAuthorisation(authorisationId: string, principalId: 
   const perm = a.permissions.find((p) => p.capability.code === capabilityCode);
   if (!perm) return;
   await prisma.$transaction(async (tx) => {
-    await tx.authorisationPermission.delete({ where: { authorisationId_capabilityId: { authorisationId, capabilityId: perm.capabilityId } } });
+    // Serialise scope removal with revocation/replacement of this relationship.
+    await tx.$queryRaw`SELECT id FROM authorisation WHERE id = ${authorisationId} FOR UPDATE`;
+    const current = await tx.authorisation.findUnique({ where: { id: authorisationId }, select: { status: true, principalId: true } });
+    if (!current || current.principalId !== principalId) throw new DomainError("NOT_FOUND", "Authority not found.", 404);
+    if (current.status !== "ACTIVE") throw new DomainError("NOT_ACTIVE", "That access has already ended.", 409);
+    const removed = await tx.authorisationPermission.deleteMany({ where: { authorisationId, capabilityId: perm.capabilityId } });
+    if (removed.count === 0) return;
+    await tx.consentEvidence.create({ data: { authorisationId, kind: "SCOPE_REMOVED", payload: { principal_ref: principalId, capability: capabilityCode } } });
     const ds = await tx.delegation.findMany({ where: { mandateId: authorisationId } });
     for (const d of ds) {
       await tx.delegation.update({ where: { id: d.id }, data: { capabilities: d.capabilities.filter((c) => c !== capabilityCode) } });

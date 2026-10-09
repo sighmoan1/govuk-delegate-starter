@@ -36,7 +36,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const decision = String(form.get("decision"));
   try {
     if (decision === "approve") {
-      await approveRequest(id, principal.id, form.getAll("c").map(String));
+      await approveRequest(id, principal.id, form.getAll("c").map(String), "CITIZEN_BROWSER");
     } else if (decision === "reject") {
       await rejectRequest(id, principal.id);
     } else {
