@@ -29,7 +29,7 @@ export default async function AuthorisationDetail({
   });
   if (!a || a.principalId !== principal.id) notFound();
   const all = await prisma.capability.findMany({ where: { serviceId: a.serviceId, catalogueId: a.permissions[0]?.capability.catalogueId ?? null }, orderBy: { sortOrder: "asc" } });
-  const label = (code: string) => a.permissions.find(p => p.capability.code === code)?.capability.name ?? all.find(c => c.code === code)?.name ?? capabilityLabel(code);
+  const capabilityName = (code: string) => a.permissions.find(p => p.capability.code === code)?.capability.name ?? all.find(c => c.code === code)?.name ?? capabilityLabel(code);
   const allowed = all.filter((c) => a.permissions.some((p) => p.capabilityId === c.id));
   const notAllowed = all.filter((c) => !allowed.includes(c));
   const events = await prisma.activityEvent.findMany({
@@ -82,7 +82,7 @@ export default async function AuthorisationDetail({
           <p>{a.service.name} recorded these in your name. If you did not agree to one, say so and {a.delegate.name} loses that permission.</p>
           {receipts.map((r) => (
             <div key={r.id} className={`delegate-card${r.status === "DISPUTED" ? " delegate-card--ended" : ""}`}>
-              <p><strong>{label(r.capability)}</strong>, {fmtTime(r.createdAt)}</p>
+              <p><strong>{capabilityName(r.capability)}</strong>, {fmtTime(r.createdAt)}</p>
               <blockquote>{r.text}</blockquote>
               <p>{r.agentConfirmed ? `${a.delegate.name} told ${a.service.name} that you agreed.` : <strong>{a.delegate.name} sent this and did not say whether you had agreed.</strong>}</p>
               {r.status === "DISPUTED" ? <p><strong>You said you did not agree to this.</strong></p> : (
@@ -106,7 +106,7 @@ export default async function AuthorisationDetail({
               {outcomes.map((o) => (
                 <tr key={o.id}>
                   <td>{fmtTime(o.occurredAt)}</td>
-                  <td>{label(o.capability)}</td>
+                  <td>{capabilityName(o.capability)}</td>
                   <td><span className={`decision decision--${o.status === "FAILED" ? "deny" : "allow"}`}>{outcomeLabel[o.status]}</span>{reasonLabel(o.reason) && <><br />{reasonLabel(o.reason)}</>}</td>
                   <td className="mono">{o.reference ?? "—"}</td>
                 </tr>
@@ -128,7 +128,7 @@ export default async function AuthorisationDetail({
                 return (
                   <tr key={e.id}>
                     <td>{fmtTime(e.timestamp)}</td>
-                    <td>{e.capability ? label(e.capability) : "—"}</td>
+                    <td>{e.capability ? capabilityName(e.capability) : "—"}</td>
                     <td><span className={`decision decision--${e.decision.toLowerCase()}`}>{e.decision === "ALLOW" ? "Allowed" : "Refused"}</span>{e.decision === "DENY" && <> <span className="mono">{e.reason}</span></>}</td>
                     <td>{e.decision === "DENY" ? "Nothing done" : o ? outcomeLabel[o.status] : "Not reported yet"}</td>
                   </tr>
