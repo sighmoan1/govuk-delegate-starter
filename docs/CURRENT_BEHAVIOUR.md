@@ -10,6 +10,12 @@ HMRC's full integration includes authority checks; agent-request creation/pollin
 
 Eight capabilities are seeded. The browser request form offers seven, omitting `change_address`; the registered-agent API supports address changes. No unsupported action is implied by this difference.
 
+## Service catalogues
+
+A registered service can publish bounded catalogue documents with its own credential. Delegate retains immutable, version-addressable history and exposes safe public discovery. Publication is idempotent for identical content and rejects version conflicts, malformed metadata and weak high-risk declarations. It creates no citizen authority and changes no existing permission row or grant.
+
+The current HMRC fixture remains the operational consent/check source. Its migration to an HMRC-owned catalogue is under review in PR #86; generic consent (#30), immutable consent snapshots (#31), richer enforceable constraints (#32) and a second mock service (#33) remain separate work. See [SERVICE_CATALOGUES.md](SERVICE_CATALOGUES.md).
+
 ## Approval, answers and revocation
 
 An authorised agent with `respond_to_query` may send an answer without declaring agreement. `confirmed_by_person` is optional and records the agent's assertion; it is not verified evidence of agreement. HMRC returns `person_approval` as `PERSON_SUBMITTED`, `AGENT_ASSERTED` or `NOT_DECLARED`. The person can inspect and dispute the receipt.

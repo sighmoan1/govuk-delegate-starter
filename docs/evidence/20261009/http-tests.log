@@ -1,0 +1,76 @@
+
+ RUN  v3.2.7 <repo>
+
+ ❯ tests/step-up.test.ts (36 tests | 36 failed) 2569ms
+   × the approval is a read until the service reserves it > repeated checks do not use an approval, and each is logged 342ms
+     → Unexpected end of JSON input
+   × the approval is a read until the service reserves it > with no proposal, a high-risk capability reports PROPOSAL_REQUIRED and opens nothing for the person to approve 367ms
+     → Request not found
+   × the approval is a read until the service reserves it > a malformed proposal (missing field) is PROPOSAL_INVALID and opens nothing 261ms
+     → Request not found
+   × the approval is a read until the service reserves it > a malformed proposal (bad account number) is PROPOSAL_INVALID and opens nothing 49ms
+     → Request not found
+   × the approval is a read until the service reserves it > a malformed proposal (unexpected field) is PROPOSAL_INVALID and opens nothing 49ms
+     → Request not found
+   × the approval is a read until the service reserves it > the person is shown the change with the account number masked, and the reference binds mandate, principal, service, capability, content, key and expiry 47ms
+     → Request not found
+   × the approval is a read until the service reserves it > the validity window is the single named config value (default 10 minutes, invalid values ignored): a proposal expires that long after it is made 49ms
+     → Request not found
+   × the approval is a read until the service reserves it > the boundary is inclusive (kept from #41): exactly at the deadline still counts, a moment after does not 49ms
+     → Request not found
+   × one approval covers one proposed change > changed content needs a new approval, even under the same key; the original approval is untouched 52ms
+     → Request not found
+   × one approval covers one proposed change > a different key, capability or principal needs its own approval 51ms
+     → Request not found
+   × one approval covers one proposed change > content that differs only in formatting is the same proposal 49ms
+     → Request not found
+   × one approval covers one proposed change > a declined proposal stays declined for that key and content: asking again opens nothing new 48ms
+     → Request not found
+   × one approval covers one proposed change > ten agents proposing the same change at once open exactly one request 51ms
+     → Request not found
+   × expiry > an approval past its window cannot be reserved, and the check says so and opens a fresh request 52ms
+     → Request not found
+   × expiry > the window closing between a check and the reserve still refuses (the reserve is its own conditional step) 51ms
+     → Request not found
+   × expiry > an unapproved request cannot be approved after it expires 47ms
+     → Request not found
+   × expiry > an in-flight reservation may finish after the window closes: completing is recorded, not refused 47ms
+     → Request not found
+   × expiry > an expired mandate cannot authorise a new operation 46ms
+     → Request not found
+   × revocation > a revoked mandate can neither be asked about nor reserve an approval it was given; the approval stays unspent 52ms
+     → Request not found
+   × revocation > the person cannot approve a request once the mandate has been removed 48ms
+     → Request not found
+   × revocation > revoking after the reservation does not undo a change already in flight: it can be recorded, and nothing new can start 49ms
+     → Request not found
+   × concurrent redemption > many racing reservations: exactly one wins, the rest are told it is in use and when to retry 45ms
+     → Request not found
+   × concurrent redemption > re-delivering the same reservation (a lost reply) is recognised, not refused 44ms
+     → Request not found
+   × concurrent redemption > two different approved changes are independent: both can be reserved 45ms
+     → Request not found
+   × crashes and duplicate callbacks > a service that reserves and never reports back loses nothing: the lease lapses and the same change can be reserved again; the stale holder cannot disturb the new one 48ms
+     → Request not found
+   × crashes and duplicate callbacks > releasing hands the approval back, and it can be reserved again 50ms
+     → Request not found
+   × crashes and duplicate callbacks > completing is idempotent; afterwards the approval is spent: it cannot be reserved, a check reports REDEEMED, and the key is taken 49ms
+     → Request not found
+   × crashes and duplicate callbacks > a service that crashed after making the change can still report it later, even after the lease lapsed 45ms
+     → Request not found
+   × crashes and duplicate callbacks > an approval the person never gave cannot be reported as used, and only its own service can report it 45ms
+     → Request not found
+   × HMRC: from request to committed change > ask, approve, make the change once, answer a retry from the stored result without spending another approval 45ms
+     → Request not found
+   × HMRC: from request to committed change > approved, but HMRC's own rules turn the change down: the approval is not spent 44ms
+     → Request not found
+   × HMRC: from request to committed change > racing retries of one approved change: exactly one change is made, every response is the same change 46ms
+     → Request not found
+   × HMRC: from request to committed change > one approval cannot admit two different changes racing each other 52ms
+     → Request not found
+   × HMRC: from request to committed change > asks for an Idempotency-Key and well-formed details before it will put anything to the person 50ms
+     → Request not found
+   × HMRC: from request to committed change > expired and revoked approvals are refused at HMRC with the reason 49ms
+     → Request not found
+   × HMRC: from request to committed change > a person is not asked to approve anything for a capability they never gave the agent 51ms
+     → Request not found

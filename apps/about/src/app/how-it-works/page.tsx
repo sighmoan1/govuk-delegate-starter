@@ -57,8 +57,16 @@ x-service-key: <HMRC's own key>
 → { "authorised": true, "subject": "<Sam's One Login id>", "delegate": { "name": "<the agent>" } }
 → { "authorised": false, "reason": "PERMISSION_MISSING" }   // or AUTHORISATION_REVOKED, NO_AUTHORISATION, …`}</pre>
         <p>
-          Delegate checks the agent’s identity itself, so HMRC never has to manage agent credentials. If the answer is yes, Delegate tells
+          Delegate verifies registered-agent credentials for the check; HMRC also verifies browser-agent signatures and binds agent sessions. If the answer is yes, Delegate tells
           HMRC who the person is: the same One Login identifier HMRC saw when Sam signed in herself.
+        </p>
+
+        <h2>Service-owned permissions</h2>
+        <p>
+          Registered services can publish immutable, versioned lists of permissions with authenticated credentials.
+          Delegate validates the list and makes safe metadata discoverable. Publication grants nobody access.
+          HMRC still uses the central demo fixture; its catalogue migration is in review.
+          <Link href="/project-status"> See the current delivery status</Link>.
         </p>
 
         <h2>Two things an agent can do that need more care</h2>
@@ -89,13 +97,13 @@ x-service-key: <HMRC's own key>
         </p>
         <p>
           Business limits are counted against the person’s One Login identifier. Technical throughput limits are separate and may follow the operator, person or whole service; tax-code lookups and progress polls are technical load. A person with a hundred agents,
-          or a hundred hidden sessions, gets the same as a person with one. An agent’s identity decides what it may do: sensitive changes
+          or a hundred hidden sessions, cannot multiply the same claim. Traffic timings and throttles may differ between routes. An agent’s identity decides what it may do: sensitive changes
           need an agent whose identity is verified or registered, plus the person’s fresh approval. It never raises the limits.
         </p>
         <p>
           That is about one person’s claim, not about how many claims there are. A hundred claims from a hundred different people is not a swarm
-          beating a limit: it may be a hundred people’s legitimate demand, sent through one agent provider. HMRC receives them all and records them
-          gradually. What it slows, with a 429 that says when to come back, is traffic that costs it something, such as repeated polling. The
+          beating a limit: it may be a hundred people’s legitimate demand, sent through one agent provider. In the bounded experiment, cooperating clients follow retry guidance and HMRC receives their claims and records them
+          gradually. This is not a guarantee under arbitrary load or outage. What it slows, with a 429 that says when to come back, is traffic that costs it something, such as repeated polling. The
           swarm page measures the two apart, and says which numbers are measured and which are simulated.
         </p>
         <p>

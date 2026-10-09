@@ -73,7 +73,9 @@ For a portable, readable view of the architecture, see the About site's **Delega
 
 **Target:** departments publish their own versioned catalogue through a trusted service registration process. Delegate validates, stores and renders a generic representation; it does not author tax-specific permissions or invent permissions on the fly from agent prose.
 
-Minimal illustrative catalogue (not an existing implemented endpoint):
+The publication/discovery foundation is implemented: a registered service publishes bounded, immutable versions with its own credential. See [the implemented protocol](SERVICE_CATALOGUES.md) for the actual schema and endpoints. HMRC catalogue-backed bootstrap is under review in [PR #86](https://github.com/sighmoan1/govuk-delegate-starter/pull/86); generic consent and consent snapshots remain follow-up work (#30–31).
+
+The following is a target-model illustration, **not valid input to the implemented publication API**:
 
 ```json
 {
@@ -207,19 +209,20 @@ The central registry, fully federated and hybrid alternatives—including privac
 | Capability | Current independent prototype | Target / separate idea |
 |---|---|---|
 | One Login + Delegate consent lifecycle | **Implemented** with simulator and synthetic identities | Real relying-party integration and identity correlation |
-| HMRC delegation permissions | **Implemented**, but seeded centrally in Delegate | **Service-owned, authenticated, versioned catalogue** |
+| Service catalogue publication/discovery | **Implemented**: authenticated publication, immutable history, bounded schema, public discovery | Governed catalogue lifecycle and service adoption |
+| HMRC delegation permissions | **Implemented**, still using the central fixture; HMRC-owned migration under review (#86) | Catalogue-backed bootstrap and generic consent (#29–31) |
 | Rich structured constraints | **Not implemented**; mostly flat capability codes | Structured grant/mandate constraints |
 | User-facing task purpose | **Not a structured consent object** | Human-readable label, not an authorisation bypass |
 | HMRC authority checks and revocation | **Implemented** | Generic, service-neutral check plus structured grants |
 | Cross-service bundles | **Not implemented** | Optional grouped consent, never blanket implicit authority |
-| Citizen-visible receipts/outcomes | **Partially implemented** | Reliable, privacy-conscious audit with actual transaction states |
+| Citizen-visible receipts/outcomes | **Implemented**: service outcomes, receipt retries, disputes and freshness reporting; limited recent-history views | Retention, pagination, notification and production resilience policy |
 | Orchestrate service | **Not built** | **Hypothetical, not in Delegate scope** |
 
-The prototype's earlier decision "Identify the agent. Authorise the mandate. Limit the principal" describes its original demo design. Our target clarifies that Delegate owns **authority**, while the receiving service owns **transaction integrity and throughput**. The unfinished capacity issues #17–#23 are tracked separately from this architecture work.
+The prototype's earlier decision "Identify the agent. Authorise the mandate. Limit the principal" describes its original demo design. Our target clarifies that Delegate owns **authority**, while the receiving service owns **transaction integrity and throughput**. The engineering work in #17–#23 is merged: authority checks spend no citizen allowance; HMRC separates business constraints from technical throttles, handles idempotent submissions, processes durable claims through a fair queue, and supports conditional progress polling. Numerical limits remain illustrative; service policy and legal decisions are deferred (DB-04).
 
 ## 11. What to build next
 
-Make Delegate generic by implementing: (1) service-owned catalogue registration and versioning; (2) dynamic generic consent rendering; (3) structured enforceable mandates with a stable check contract; (4) an independent second mock department as a decoupling proof; (5) optional grouped consent and grant-template portability. These are distinct implementation phases.
+Build on the merged catalogue publication foundation by completing: (1) HMRC-owned catalogue bootstrap (under review, #86); (2) dynamic generic consent rendering; (3) structured enforceable mandates with a stable check contract; (4) an independent second mock department as a decoupling proof; (5) optional grouped consent and grant-template portability. These are distinct implementation phases.
 
 **Acceptance test for the architectural boundary:** a new government service can publish its own capability catalogue, offer consent, check mandates and receive an enforceable result **without adding a service-specific capability or endpoint to Delegate's application code**.
 

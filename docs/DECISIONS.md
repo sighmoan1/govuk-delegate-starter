@@ -412,3 +412,7 @@ An already registered service publishes with its own credential. Publication can
 Publication history is immutable and version-addressable. Existing capability rows/grants are untouched. Changed meanings and enlarged scope require fresh consent, never silent migration. Catalogue-backed bootstrap, consent and evidence follow in #29–31; until then the current HMRC fixture remains operational. Citizen demo resets preserve service identities and publications.
 
 Evidence: authenticated isolation, concurrent publication, immutable database history, rejected malformed metadata, unchanged existing capability rows, and reset preservation are tested. Remaining dissent/governance questions concern semantic approval, emergency withdrawal and national security floors; reopening trigger and responsible roles remain in DB-09.
+
+## Current-state reading note — 9 October 2026
+
+Earlier decisions preserve the behaviour at the time they were made. The publication gap described in Decision 28 is partly closed by Decision 29: authenticated immutable catalogue publication/discovery is implemented. HMRC catalogue adoption is under review in PR #86; generic consent and consent evidence snapshots are still pending. Decisions 16–20 describe historical capacity/approval behaviour superseded by the later transaction-integrity, step-up and polling decisions. Use [CURRENT_BEHAVIOUR.md](CURRENT_BEHAVIOUR.md) for the current integration contract and [REPOSITORY_STATUS.md](REPOSITORY_STATUS.md) for the dated branch audit.
