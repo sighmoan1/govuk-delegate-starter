@@ -1,8 +1,8 @@
-# GOV.UK Delegate prototype: four services, so the boundaries are real.
+# GOV.UK Delegate prototype: six applications, so the boundaries are real.
 #   docker compose up --build            everything
 #   docker compose up -d db simulator    just the dependencies, for `npm run dev`
 #   npm run public / npm run public:stop  the same stack on temporary public URLs (see scripts/public.mjs)
-# Ports: Delegate 3300 · One Login 3301 (simulator behind it on 3399) · HMRC 3302 · About 3304 · Postgres 5433
+# Ports: Delegate 3300 · One Login 3301 (simulator behind it on 3399) · HMRC 3302 · Observatory 3303 · About 3304 · Council 3305 · Postgres 5433
 services:
   db:
     image: postgres:16-alpine
@@ -155,6 +155,24 @@ services:
       DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:-dev-demo-console-key}
       HMRC_MIDDLEWARE_FILE: ../hmrc/src/lib/delegated-authority.ts
 
+  # Local research only: no inbound dependency from existing applications.
+  observatory:
+    build:
+      context: .
+      dockerfile: apps/observatory/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3303:3303"
+    environment:
+      DATABASE_URL: postgresql://observatory:observatory@db:5432/observatory?connect_timeout=3&pool_timeout=3
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3303/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
   # Registration is configuration; Delegate contains no council-specific code.
   council-register:
     build:

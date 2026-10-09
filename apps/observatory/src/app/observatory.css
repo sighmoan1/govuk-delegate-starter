@@ -1,0 +1,7 @@
+.caption { color: var(--muted); margin-bottom: .75rem; }
+.research-notice { max-width: 66ch; padding: 1.25rem; border-left: 5px solid var(--teal); background: var(--soft-aqua); }
+.research-notice p { margin: .75rem 0 0; }
+.research-status { max-width: 66ch; }
+.research-status > div { padding: 1rem 0; border-bottom: 1px solid var(--border-soft); }
+.research-status dt { font-weight: 700; }
+.research-status dd { margin: .4rem 0 0; }

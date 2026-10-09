@@ -234,3 +234,9 @@ Build on the merged catalogue publication foundation by completing: (1) dynamic 
 - [Original build specification](BUILD_SPEC.md) (historical brief)
 - [RFC 9396 — OAuth 2.0 Rich Authorization Requests](https://www.rfc-editor.org/rfc/rfc9396)
 - [RFC 8707 — Resource Indicators for OAuth 2.0](https://www.rfc-editor.org/rfc/rfc8707)
+
+## Observatory research boundary
+
+`apps/observatory` is independently built and served on local port 3303. It owns database `observatory`, a separate database login and generated Prisma client. It is a read-only research scaffold with no event feeds, classifiers or operational decision hooks. No HMRC or Delegate startup dependency points to it. Stopping Observatory leaves their authority, queue and service journeys running.
+
+See [research protocol](observatory/RESEARCH_PROTOCOL.md) and [setup and verification](observatory/SETUP.md). It is not GOV.UK Orchestrate or the unimplemented historical Example AI app.

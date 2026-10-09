@@ -1,6 +1,6 @@
 # Evidence register — what we know, what we have tested, and what remains unproven
 
-> **Status at 9 October 2026:** This is the **evidence ledger**, not a marketing scorecard. No comparative or real-world financial/outcome results have been entered yet. Protocols and possible thresholds live in [VALIDATION.md](VALIDATION.md).
+> **Status at 9 October 2026:** This is the **evidence ledger**, not a marketing scorecard. One bounded technical E2 comparison is recorded below; no citizen-effort, financial or real-world benefit has been established. Protocols and possible thresholds live in [VALIDATION.md](VALIDATION.md).
 >
 > **Rule:** Every result must link to a repeatable run, date, commit SHA, protocol, exact workload, raw artefacts and independent outcome verification. Record negative, null and failed runs.
 
@@ -23,7 +23,7 @@ A repository test that *exists* is not automatically a verified passing test run
 | **OBS-ROUTE-001** | E1 | **O** | Existing exploratory observation | [Scenario 3 route-choice page](../apps/about/src/app/which-route/page.tsx) contains individual agent runs observed from HMRC logs | Non-randomised, changing environment, heterogeneous agent abilities, no adoption rate or cost effect can be estimated |
 | **SRC-SWARM-001** | E3/E4 | **Not yet a recorded T run** | Source present | [Synthetic swarm tests](../tests/swarm.test.ts) and [swarm scenario](../apps/about/src/app/swarm/page.tsx) exercise multiple principals, agents and sessions | Demonstrate *intended business limits* and code paths; not an API-only comparison, throughput benefit or measured costs |
 | **SRC-IDEMP-001** | E4 | **Not yet a recorded T run** | Source present | [HTTP idempotency tests](../tests/idempotency.test.ts) specify retry and concurrent-agent invariants | Source code, not a linked run log; idempotency is mainly a receiving-service mechanism, not incremental Delegate value |
-| **PLAN-E2-001** | E2 | **P** | Not run | [Incremental value of Delegate](VALIDATION.md#e2--incremental-value-of-delegate-highest-priority) | API-only/service-native delegated-auth comparison does not yet exist |
+| **RUN-20261009-E2-01** | E2 | **T** | Narrow technical comparison completed | [Pinned B,C,C,B run with permanent raw records](evidence/RUN-20261009-E2-01.md) | Both paths completed the fixed tasks; no incremental outcome advantage observed. Direct fixture consent, different authority runtimes, no human effort/cost evidence |
 | **PLAN-E5-001** | E5 | **P** | Not run | [Citizen-control research protocol](VALIDATION.md#e5--citizen-comprehension-burden-and-redress) | No real participant evidence |
 | **PLAN-E6-001** | E6 | **P** | Not run | [Service integration protocol](VALIDATION.md#e6--integration-effort-and-portability) | Second service not yet implemented |
 | **PLAN-E7-001** | E7 | **P** | Not run | [Outage protocol](VALIDATION.md#e7--availability-and-failure-semantics) | No comparative outage run recorded |
@@ -38,7 +38,7 @@ A repository test that *exists* is not automatically a verified passing test run
 
 ## Recorded experimental runs
 
-**None published yet.** Do not fill tables with assumed numbers or sample data and label them results.
+**[RUN-20261009-E2-01](evidence/RUN-20261009-E2-01.md)** records the first bounded technical B/C comparison: both authorisation paths completed all fixed synthetic legitimate intents and prevented the tested unauthorised effects. This is T evidence; no citizen-effort, financial or field benefit was measured. Permanent raw records and hashes are linked from the run.
 
 When one is ready, add an immutable record at `docs/evidence/RUN-YYYYMMDD-E[1-7]-NN.md` using this template (avoid personal or operational secrets in Git):
 
