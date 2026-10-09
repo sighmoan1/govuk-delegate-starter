@@ -139,6 +139,7 @@ model Service {
   slug       String @unique
   apiKeyHash String @map("api_key_hash")
 
+  catalogues     ServiceCatalogue[]
   capabilities   Capability[]
   requests       AuthorisationRequest[]
   authorisations Authorisation[]
@@ -387,4 +388,18 @@ model TransactionOutcome {
   @@index([checkId])
   @@index([mandateId, occurredAt])
   @@map("transaction_outcome")
+}
+
+// Immutable publication. Existing grants keep their original capability rows.
+// Catalogue-backed consent/registration is migrated separately in #29–31.
+model ServiceCatalogue {
+  id        String @id @default(uuid())
+  serviceId String @map("service_id")
+  version   Int
+  digest    String
+  document  Json
+  createdAt DateTime @default(now()) @map("created_at")
+  service   Service @relation(fields: [serviceId], references: [id])
+  @@unique([serviceId, version])
+  @@map("service_catalogue")
 }
