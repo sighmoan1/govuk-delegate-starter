@@ -1,0 +1,13 @@
+# Observatory dashboard
+
+Open the loopback-only Observatory at http://localhost:3303. A visible prototype banner and research notice apply throughout. Monitoring requires the collection key; research requires the separate evaluation key. Each key must have at least 32 characters and the keys must differ. Keys are entered into a password input, sent only as the appropriate request header, and held only in page memory. Changing views clears the key, evidence and filters for protected cohorts. Public mode disables both read routes.
+
+Run an HMRC scenario through the existing About controls. Then run `npm run ingest -w apps/observatory` with configured opt-in feed credentials, and select **Load or refresh events**. There is no automatic ingestion or polling: this documented manual refresh is the demonstration cadence. No service action is performed by the dashboard.
+
+The dashboard reads the latest 500 events, ordered by source time and ID. It explicitly reports truncation and invalid snapshot counts. Filters and counts apply only to this bounded window. Run tags are caller claims, sometimes pseudonymised; a protected ledger binding supplies a verified research run association. A missing binding makes verified operation/replay counts incomplete. Sensor observations are counted independently of service requests and do not represent unique people.
+
+Select an event to inspect minimised source evidence, signature verification, session and Fingerprint pseudonyms, sensor status and provenance. Unidentified does not mean bot. Sensor `not_run` means not observed; errors remain errors. Source event labels describe what the service recorded, not verified human execution. The raw source envelope retains missingness and provenance.
+
+Research view adds the independently verified execution label, status and experiment provenance. Monitoring neither queries nor returns those fields, and cannot filter on execution cohort. Detector results, when the #72 adapter is available, are fetched from a separately gated read route and correlated by source-service/event ID; their configuration, frozen input digest and results remain separate from ground truth. An absent detector route/results is shown as not observed or not configured without an invented score.
+
+Browser tests include synthetic intercepted responses to exercise evidence presentation; these are UI test fixtures, not actual vendor or participant evidence. The CI full-stack route also exercises the access screen from the real Observatory app.
