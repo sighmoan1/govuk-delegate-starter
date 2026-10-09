@@ -13,6 +13,8 @@ COPY styles ./styles
 COPY dev ./dev
 COPY apps/hmrc ./apps/hmrc
 WORKDIR /repo/apps/hmrc
+ARG NEXT_PUBLIC_FINGERPRINT_API_KEY=""
+ENV NEXT_PUBLIC_FINGERPRINT_API_KEY=$NEXT_PUBLIC_FINGERPRINT_API_KEY
 RUN npm run build
 ENV NODE_ENV=production
 EXPOSE 3302

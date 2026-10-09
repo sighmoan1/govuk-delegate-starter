@@ -73,6 +73,8 @@ jobs:
         run: npx vitest run --reporter=default --reporter=junit --outputFile=ci-artifacts/api-junit.xml 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/api-tests.log
       - name: Run browser regression from clean fixtures
         run: npx playwright test --reporter=list,html 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/browser-tests.log
+      - name: Verify enabled sensor with missing vendor key makes no vendor calls
+        run: bash scripts/ci-fingerprint-missing.sh 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/fingerprint-missing-browser.log
       - name: Restart Observatory and verify UI and schema readiness
         run: |
           docker compose start observatory
