@@ -70,7 +70,7 @@ An explicit real-vendor check is available separately from ordinary CI:
 Run it only against an isolated configured stack with
 `FINGERPRINT_VENDOR_TEST=true`, `TEST_HMRC_URL`, `TEST_OBSERVATORY_URL`,
 `RESEARCH_SOURCE_COMMIT` (the deployed 40-character commit),
-`OBSERVATORY_EVALUATION_KEY`, `RESEARCH_PSEUDONYM_KEY`, and `DATABASE_URL`
+`OBSERVATORY_EVALUATION_KEY`, `RESEARCH_PSEUDONYM_KEY`, `RESEARCH_FEED_KEY`, and `DATABASE_URL`
 pointing to that stack's Observatory database. Configure the public key only in
 the HMRC build environment, enable the study and research collection at runtime,
 and leave the server verification secret unset for this unverified-claim check.
