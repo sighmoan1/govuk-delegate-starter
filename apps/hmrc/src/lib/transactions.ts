@@ -60,8 +60,8 @@ export async function freshReceipt(stored: ReturnType<typeof receiptJson>) {
 }
 
 /** Only the person the claim is for, however they or an agent for them ask. Someone else's id is the same as no id. */
-export const transactionFor = (subject: string, id: string) =>
-  prisma.transaction.findFirst({ where: { id, subject } });
+export const transactionFor = (subject: string, id: string, db: Pick<Tx, "transaction"> = prisma) =>
+  db.transaction.findFirst({ where: { id, subject } });
 
 /** The person's claims HMRC has received but not finished, and any that failed: for their page. */
 export const transactionsFor = (subject: string) =>
@@ -88,9 +88,14 @@ export async function receiveClaim(taxpayer: Taxpayer, actor: Actor, admitted: A
   return receiptJson(row);
 }
 
-/** The status lookup. The domain rules have already checked it is this person's; a missing row here is a race with a reset. */
-export async function transactionStatus(subject: string, id: string) {
-  const t = await transactionFor(subject, id);
+/**
+ * The status lookup. The domain rules have already checked it is this person's; a missing row here is a race with a reset.
+ * It reads through the caller's transaction (`db`), not a second connection: the request already holds one and the
+ * person's lock, so asking the pool for another let a poll flood on one claim take every connection and answer 500
+ * (found by the status-poll experiment, issue #22).
+ */
+export async function transactionStatus(subject: string, id: string, db: Pick<Tx, "transaction"> = prisma) {
+  const t = await transactionFor(subject, id, db);
   if (!t) throw new Error("transaction vanished between admission and lookup");
   return transactionJson(t);
 }
