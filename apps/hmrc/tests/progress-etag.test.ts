@@ -114,7 +114,11 @@ describe("ETag and conditional requests", () => {
       expect((await poll(token, t, { "if-none-match": header })).status, header).toBe(304);
       await newDay(t); // not what is under test here: stay inside the allowance
     }
-    for (const header of ['W/"0000"', `${e.slice(0, -2)}0"`, "", "garbage"]) {
+    // The digest can already end in 0: always flip, rather than occasionally
+    // resending the matching tag and incorrectly expecting a full response.
+    const different = `${e.slice(0, -2)}${e.at(-2) === "0" ? "1" : "0"}"`;
+    expect(different).not.toBe(e);
+    for (const header of ['W/"0000"', different, "", "garbage"]) {
       expect((await poll(token, t, { "if-none-match": header })).status, header).toBe(200);
       await newDay(t);
     }
