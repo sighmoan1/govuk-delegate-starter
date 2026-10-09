@@ -392,3 +392,7 @@ This is distinct from Decision 28's settled Delegate/Orchestrate responsibility 
 ## Capacity principle (9 October 2026) — project-level, service-specific policy outstanding
 
 The prototype adopts **regulate processing demand, not citizens' rights** as a guiding distinction: separate lawful citizen intents and substantive domain requirements from HTTP retries, costly lookups, throttling and queue scheduling. This is **not** a production law/policy determination and does not guarantee acceptance during service outage. [Read the scoped decision record](decisions/2026-10-09-capacity-and-rights.md); [DB-04 / #51](https://github.com/sighmoan1/govuk-delegate-starter/issues/51) remains open for service-owned limits, priority rules and deadlines. Kept outside the numbered Decision sequence as a scoped project principle; Decision 28 records the architecture boundary.
+
+## National decision disposition — 9 October 2026
+
+DB-01–DB-12 are DEFERRED at national/production scope. Their [dated dispositions](DECISION_DISPOSITIONS.md) record reasons, responsible roles and reopening triggers. Existing synthetic ADRs remain scoped to the prototype; no legal authority, sign-off, liability, retention or national benefits conclusion is inferred. This disposition adds no conflicting numbered decision.
