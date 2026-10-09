@@ -232,6 +232,8 @@ test("removing access ends the agent's session, and a copied session doesn't wor
   await sam.goto(`${DELEGATE}/account/delegates`);
   await sam.getByRole("link", { name: /Remove access/ }).first().click();
   await sam.getByRole("button", { name: "Remove access" }).click();
+  // The other browser must wait until the citizen revocation has committed.
+  await expect(sam.getByRole("heading", { name: "Access removed", exact: true })).toBeVisible();
   await agent.goto(`${HMRC}/your-tax`);
   await expect(agent.getByText("The person has removed your permission.")).toBeVisible();
   await samCtx.close();
