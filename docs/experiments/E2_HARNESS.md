@@ -2,7 +2,7 @@
 
 Related: #47, [fixed protocol](../VALIDATION.md), [evidence register](../EVIDENCE.md).
 
-**E2 remains Not run.** This checkpoint implements the service-local comparator and a runner; it is not published comparative evidence. The full issue remains open until a reviewer reproduces and publishes actual B/C runs and resolves the acceptance gaps below.
+**A bounded technical E2 run is published:** [RUN-20261009-E2-01](../evidence/RUN-20261009-E2-01.md). It is T evidence, not a measured citizen-effort or product-benefit finding. The full issue remains open until a reviewer reproduces and publishes actual B/C runs and resolves the acceptance gaps below.
 
 ## Comparator and isolation
 
@@ -47,15 +47,15 @@ Each repeat has three distinct legitimate intents: read existing status, lodge o
 
 Each run writes `run.json`, `SHA256SUMS`, and B's local authority DB into a unique output directory; failure also produces a run record and a nonzero exit. Output defaults to `.e2-runs` (scratch, not a public deliverable). Counts and request p50/p95 are descriptive; raw cost classes are technical-work proxies, never financial savings. The summary's planned intent denominator is not a completion rate; fixture-group checks are reported separately from individual-intent completion.
 
-After review, redact/check raw synthetic records, preserve *both* arms including failed/null runs, and write the permanent `docs/evidence/RUN-...md` record following EVIDENCE.md. Include protocol, configuration, arm order, hashes, independent DB evidence, owner/reviewer and limitations. Only then update the evidence register and About-site link. This checkpoint deliberately changes neither page's Not run status.
+After review, redact/check raw synthetic records, preserve *both* arms including failed/null runs, and write the permanent `docs/evidence/RUN-...md` record following EVIDENCE.md. Include protocol, configuration, arm order, hashes, independent DB evidence, owner/reviewer and limitations. Only then update the evidence register and About-site link. The first recorded run is linked above; future runs must append records rather than overwrite it.
 
 ## Remaining acceptance gaps
 
-- Execute and review the full stack B/C runner; only the comparator regression suite has been executed at this checkpoint.
+- Full B,C,C,B stack execution passed in Actions; independently review the pinned raw records before merging.
 - Record configuration equality, counterbalanced repeats and actual resource deployment. Latency requires topology controls before causal interpretation.
 - Include support/drop-off evidence through a real consent/handoff study; direct fixture effort is unmeasured. The runner reports individual legitimate-intent completion, durable claim admission, verified unauthorised effects and duplicate effects with explicit planned/attempted denominators.
 - Add provider handoff and any expanded safeguards symmetrically; do not generalise this narrow capability comparator to all existing Delegate features.
-- Publish immutable run records, complete evidence ledger entry and honest About link. Do not close #47 on merging this harness checkpoint.
+- Immutable run records, ledger entry and About link are included; the research gaps above remain. Do not close #47 on merging this harness checkpoint.
 
 ## Automated execution
 

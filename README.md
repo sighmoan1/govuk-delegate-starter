@@ -113,7 +113,7 @@ The core idea, in one line: **identify the agent, authorise the mandate, limit t
 - [Demo and claims guide](docs/DEMO_GUIDE.md) — a seven-minute walkthrough and defensible language for stakeholders.
 - [About-site evidence page](apps/about/src/app/evidence/page.tsx) — readable explanation at `/evidence` when deployed.
 
-**No comparative or real-world economic result has yet been published in the register.** Existing route-choice observations and synthetic swarm tests are useful starting points, not proof of national-scale benefit. Keep further architecture debates in the relevant ADRs, not in experiment results.
+**A [bounded technical B/C comparison](docs/evidence/RUN-20261009-E2-01.md) is recorded; no citizen-effort, economic or real-world product-benefit result has been established.** Existing route-choice observations and synthetic swarm tests are useful starting points, not proof of national-scale benefit. Keep further architecture debates in the relevant ADRs, not in experiment results.
 
 ## Tests
 
