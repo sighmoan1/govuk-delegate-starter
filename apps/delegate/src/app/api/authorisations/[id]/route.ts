@@ -21,6 +21,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     valid_from: a.validFrom,
     valid_until: a.validUntil,
     revoked_at: a.revokedAt,
+    constraints:a.constraints ?? {},
     capabilities: a.permissions.map((p) => p.capability.code),
   });
 }

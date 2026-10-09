@@ -65,6 +65,8 @@ enum Reason {
   CAPACITY_EXCEEDED // legacy: kept so old activity rows read; Delegate no longer issues it
   STEP_UP_REQUIRED
   DELEGATION_DEPTH_EXCEEDED
+  CONSTRAINTS_INVALID
+  CATALOGUE_INCOMPATIBLE
   ASSURANCE_TOO_LOW
 }
 
@@ -169,6 +171,8 @@ model Capability {
 }
 
 model AuthorisationRequest {
+  constraints Json?
+
   id              String        @id @default(uuid())
   principalHint   String?       @map("principal_hint")
   principalId     String?       @map("principal_id")
@@ -207,6 +211,8 @@ model AuthorisationRequestPermission {
 }
 
 model Authorisation {
+  constraints Json?
+
   id         String              @id @default(uuid())
   principalId String             @map("principal_id")
   delegateId String              @map("delegate_id")
@@ -287,6 +293,8 @@ model ActivityEvent {
 // root (depth 0); agents may pass a subset of their authority to sub-agents.
 // Every delegation inherits the mandate, and so the root principal.
 model Delegation {
+  constraints Json?
+
   id                 String           @id @default(uuid())
   mandateId          String           @map("mandate_id")
   delegateId         String           @map("delegate_id")

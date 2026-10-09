@@ -1,3 +1,4 @@
+import type { Constraints } from "./constraints";
 import { prisma } from "./db";
 import { DomainError } from "./requests";
 import { consentPresentation, freshApprovalExplanation, riskExplanation } from "./consent-presentation";
@@ -5,6 +6,7 @@ import { consentPresentation, freshApprovalExplanation, riskExplanation } from "
 export function approvalEvidence(input: {
   presentation: ReturnType<typeof consentPresentation>;
   selected: string[];
+  constraints?: Constraints;
   principalRef: string;
   delegateId: string;
   serviceId: string;
@@ -25,11 +27,10 @@ export function approvalEvidence(input: {
     approval_method: input.method,
     purpose: presentation.purpose,
     conditions: presentation.conditions,
-    // No constraint values exist in the current request contract (#32).
-    restrictions: [],
+    restrictions: Object.entries(input.constraints ?? {}).flatMap(([capability, fields])=>Object.entries(fields).map(([field, values])=>({capability, field, values: [...values]}))),
     authorisation_days: presentation.authorisation_days,
     request_expires_at: presentation.request_expires_at,
-    capabilities: presentation.capabilities.filter(c => input.selected.includes(c.code)).map(c => ({ ...c,
+    capabilities: presentation.capabilities.filter(c => input.selected.includes(c.code)).map(c => ({ ...c, restrictions: input.constraints?.[c.code] ?? c.restrictions,
       risk_explanation: riskExplanation(c.risk),
       fresh_approval_explanation: freshApprovalExplanation(c.requires_step_up),
       identity_explanation: `The assistant must have ${c.minimum_assurance === "VERIFIED" ? "a verified identity" : c.minimum_assurance === "REGISTERED" ? "a registered identity" : "a declared identity"} to use this permission.`,

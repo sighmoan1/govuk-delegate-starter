@@ -159,7 +159,7 @@ async function actAsAgentChecked(token: string, principalId: string, capability:
   // High-risk changes: the person approves THIS change. Tell Delegate exactly what it is.
   const built = STEP_UP_CAPABILITIES.has(capability) ? buildProposal(capability, body, idempotencyKey) : null;
   const proposal = built?.ok ? built.proposal : undefined;
-  const check = await askDelegate({ agent_token: token, principal_id: principalId, capability, ...(proposal ? { proposal } : {}) });
+  const check = await askDelegate({ agent_token: token, principal_id: principalId, capability, constraint_context:body, ...(proposal ? { proposal } : {}) });
   const chainLog = check.chain
     ? { mandateId: check.chain.mandate_id, delegationId: check.chain.delegation_id, parentDelegationId: check.chain.parent_delegation_id, depth: check.chain.depth, agentLabel: check.chain.label, assurance: check.chain.assurance }
     : {};

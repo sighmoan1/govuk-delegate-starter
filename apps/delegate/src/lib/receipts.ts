@@ -1,5 +1,6 @@
 // Receipts: what a service says an agent did in a person's name, and the
 // person's two answers to it: "that's fine", or "I didn't agree to that".
+import { selectConstraints, type Constraints } from "./constraints";
 import { prisma } from "./db";
 import { DomainError } from "./requests";
 
@@ -13,15 +14,17 @@ export async function narrowAuthorisation(authorisationId: string, principalId: 
   await prisma.$transaction(async (tx) => {
     // Serialise scope removal with revocation/replacement of this relationship.
     await tx.$queryRaw`SELECT id FROM authorisation WHERE id = ${authorisationId} FOR UPDATE`;
-    const current = await tx.authorisation.findUnique({ where: { id: authorisationId }, select: { status: true, principalId: true } });
+    const current = await tx.authorisation.findUnique({ where: { id: authorisationId }, select: { status: true, principalId: true, constraints:true } });
     if (!current || current.principalId !== principalId) throw new DomainError("NOT_FOUND", "Authority not found.", 404);
     if (current.status !== "ACTIVE") throw new DomainError("NOT_ACTIVE", "That access has already ended.", 409);
     const removed = await tx.authorisationPermission.deleteMany({ where: { authorisationId, capabilityId: perm.capabilityId } });
     if (removed.count === 0) return;
+    const remaining=a.permissions.filter(p=>p.capability.code!==capabilityCode).map(p=>p.capability.code);
+    await tx.authorisation.update({where:{id:authorisationId},data:{constraints:JSON.parse(JSON.stringify(selectConstraints((current.constraints ?? {}) as Constraints,remaining)))}});
     await tx.consentEvidence.create({ data: { authorisationId, kind: "SCOPE_REMOVED", payload: { principal_ref: principalId, capability: capabilityCode } } });
     const ds = await tx.delegation.findMany({ where: { mandateId: authorisationId } });
     for (const d of ds) {
-      await tx.delegation.update({ where: { id: d.id }, data: { capabilities: d.capabilities.filter((c) => c !== capabilityCode) } });
+      await tx.delegation.update({ where: { id: d.id }, data: { capabilities: d.capabilities.filter((c) => c !== capabilityCode), constraints: JSON.parse(JSON.stringify(selectConstraints((d.constraints ?? {}) as Constraints,remaining))) } });
     }
   });
 }

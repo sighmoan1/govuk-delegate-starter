@@ -1,3 +1,4 @@
+import { constraintsFromForm, type Constraints } from "@/lib/constraints";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -15,7 +16,7 @@ export default async function Check({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ c?: string | string[] }>;
+  searchParams: Promise<Record<string,string|string[]|undefined>>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -32,6 +33,11 @@ export default async function Check({
   let allowed;
   try { allowed = narrowConsent(presentation.capabilities, picked); }
   catch { redirect(`/consent/${id}?error=NO_PERMISSIONS`); }
+  const requestedRestrictions: Constraints=Object.fromEntries(presentation.capabilities.filter(c=>c.restrictions).map(c=>[c.code,c.restrictions!]));
+  let restrictions: Constraints;
+  try { restrictions=constraintsFromForm({getAll:(key)=>([] as string[]).concat(sp[key] ?? [])},requestedRestrictions,picked); }
+  catch { redirect(`/consent/${id}?error=CONSTRAINTS_INVALID`); }
+  allowed=allowed.map(c=>({...c,restrictions:restrictions[c.code]}));
   const notAllowed = presentation.capabilities.filter(c => !allowed.some(a => a.id === c.id));
   const qs = new URLSearchParams();
   for (const c of allowed) qs.append("c", c.code);
@@ -57,6 +63,7 @@ export default async function Check({
         <input type="hidden" name="decision" value="approve" />
         <input type="hidden" name="csrf" value={csrf} />
                 {allowed.map((c) => <input key={c.id} type="hidden" name="c" value={c.code} />)}
+        {Object.entries(restrictions).flatMap(([cap,fields])=>Object.entries(fields).flatMap(([key,values])=>values.map(value=><input key={`${cap}:${key}:${value}`} type="hidden" name={`restriction:${cap}:${key}`} value={value} />)))}
         <button className="button" type="submit">Allow</button>
       </form>
     </div>

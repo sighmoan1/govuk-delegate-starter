@@ -79,6 +79,7 @@ export default async function RequestPage({
                     <PermissionDescription capability={c} />
                   </span>
                 </label>
+                {Object.entries(c.restrictions ?? {}).map(([key,values])=><fieldset key={key}><legend>{c.constraint_labels?.[key] ?? key} for {c.name}</legend><p>Remove values to restrict this permission further. Keep at least one if you allow the permission.</p>{values.map(value=><div className="choice-item" key={value}><input type="checkbox" id={`restriction-${c.code}-${key}-${value}`} name={`restriction:${c.code}:${key}`} value={value} defaultChecked /><label htmlFor={`restriction-${c.code}-${key}-${value}`}>{value}</label></div>)}</fieldset>)}
               </div>
             ))}
           </fieldset>

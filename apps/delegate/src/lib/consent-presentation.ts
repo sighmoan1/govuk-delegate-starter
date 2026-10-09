@@ -1,12 +1,14 @@
+import { validateConstraints, type Constraints } from "./constraints";
 import { catalogueDigest, validateCatalogue, type CatalogueCapability } from "./catalogues";
 import { AUTHORISATION_DAYS } from "./config";
 import { DomainError } from "./requests";
 
 // Plain JSON interface for the evidence snapshot in #31. Resolve ONLY the
 // immutable publication pinned by this request, never today's latest catalogue.
-export type ConsentCapability = Pick<CatalogueCapability, "code" | "name" | "description" | "risk" | "requires_step_up" | "minimum_assurance"> & { id: string };
+export type ConsentCapability = Pick<CatalogueCapability, "code" | "name" | "description" | "risk" | "requires_step_up" | "minimum_assurance"> & { id: string; restrictions?: Record<string,string[]>; constraint_labels?:Record<string,string> };
 type Publication = { id: string; serviceId: string; version: number; digest: string; document: unknown };
 type ConsentRequest = {
+  constraints?: unknown;
   serviceId: string;
   service: { slug: string; name: string };
   delegate: { name: string; provider: string };
@@ -30,6 +32,8 @@ export function consentPresentation(req: ConsentRequest) {
   let catalogue;
   try { catalogue = validateCatalogue(publication.document, req.service.slug); } catch { return unavailable(); }
   if (catalogue.version !== publication.version || catalogueDigest(catalogue) !== publication.digest) return unavailable();
+  const restrictions = validateConstraints(req.constraints, catalogue.capabilities);
+  if(Object.keys(restrictions).some(code=>!req.permissions.some(p=>p.capability.code===code))) return unavailable();
   const seen = new Set<string>();
   const capabilities: ConsentCapability[] = req.permissions.map(({ capability: row }) => {
     const definition = catalogue.capabilities.find(c => c.code === row.code);
@@ -39,6 +43,7 @@ export function consentPresentation(req: ConsentRequest) {
         (row.metadata as Record<string, unknown>).minimum_assurance !== definition.minimum_assurance || row.name !== definition.name || row.riskLevel !== definition.risk || row.requiresStepUp !== definition.requires_step_up) return unavailable();
     seen.add(row.code);
     return { id: row.id, code: definition.code, name: definition.name, description: definition.description, risk: definition.risk,
+      restrictions: restrictions[row.code], constraint_labels: Object.fromEntries(Object.entries(definition.supported_constraints ?? {}).map(([key,rule])=>[key,rule.label ?? key])),
       requires_step_up: definition.requires_step_up, minimum_assurance: definition.minimum_assurance };
   });
   return {

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "service": "hmrc-personal-tax",
-  "version": 1,
+  "version": 2,
   "capabilities": [
     {
       "code": "view_tax_code",
@@ -13,6 +13,16 @@
       "operation": {
         "method": "GET",
         "path": "/api/tax-code"
+      },
+      "supported_constraints": {
+        "tax_year": {
+          "type": "enum",
+          "values": [
+            "2025 to 2026",
+            "2026 to 2027"
+          ],
+          "label": "Tax year"
+        }
       }
     },
     {
@@ -25,6 +35,16 @@
       "operation": {
         "method": "POST",
         "path": "/api/job-expenses"
+      },
+      "supported_constraints": {
+        "tax_year": {
+          "type": "enum",
+          "values": [
+            "2025 to 2026",
+            "2026 to 2027"
+          ],
+          "label": "Tax year"
+        }
       }
     },
     {
@@ -136,8 +156,8 @@
     },
     {
       "code": "respond_to_query",
-      "name": "Answer HMRC’s questions about your claim",
-      "description": "Answer HMRC’s questions about your claim. Synthetic HMRC prototype data only.",
+      "name": "Answer HMRC\u2019s questions about your claim",
+      "description": "Answer HMRC\u2019s questions about your claim. Synthetic HMRC prototype data only.",
       "risk": "MEDIUM",
       "requires_step_up": false,
       "minimum_assurance": "DECLARED",
