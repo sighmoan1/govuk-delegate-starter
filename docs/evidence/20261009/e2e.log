@@ -1,0 +1,42 @@
+
+Running 34 tests using 1 worker
+
+(node:63969) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 e2e/agents.spec.ts:74:5 › a verified agent is shown the proper route, Sam approves on her own device, and the agent's claim is attributed to it (5.6s)
+  ✓   2 e2e/agents.spec.ts:106:5 › an agent can't approve itself, even with Sam's sign-in (1.3s)
+  ✓   3 e2e/agents.spec.ts:125:5 › an agent using Sam's password is still the agent: it's sent to the proper route (994ms)
+  ✓   4 e2e/agents.spec.ts:149:5 › a declared agent (unsigned, in a browser) can be given permission, but not for sensitive changes (5.0s)
+  ✓   5 e2e/agents.spec.ts:172:5 › a browser agent answers HMRC's question for Sam without being blocked; Sam then sees what it sent on GOV.UK (5.5s)
+  ✓   6 e2e/agents.spec.ts:205:5 › removing access ends the agent's session, and a copied session doesn't work for another agent (5.4s)
+  ✓   7 e2e/agents.spec.ts:235:5 › discovery: agents can find the proper route (156ms)
+  ✓   8 e2e/delegate.spec.ts:32:5 › consent: sign in with One Login, narrow the request, allow; then remove access (758ms)
+  ✓   9 e2e/delegate.spec.ts:54:5 › the person sees what an agent said they agreed to, can say they didn't, and can stop one permission (861ms)
+  ✓  10 e2e/delegate.spec.ts:85:5 › Delegate has no front page of its own: the root goes to the account (135ms)
+  ✓  11 e2e/delegate.spec.ts:90:5 › internal operations view lists agent checks (176ms)
+  ✓  12 e2e/delegate.spec.ts:96:5 › keyboard: skip link is first focusable (184ms)
+  ✓  13 e2e/delegate.spec.ts:102:5 › reflow at 320px: no horizontal page scroll (478ms)
+  ✓  14 e2e/demo.spec.ts:28:5 › scenario 1: Sam manages who can act for her (844ms)
+  ✓  15 e2e/demo.spec.ts:46:5 › scenario 2: government prioritises people and authorised agents (2.5s)
+  ✓  16 e2e/demo.spec.ts:59:5 › reset everything from the overview (536ms)
+  ✓  17 e2e/demo.spec.ts:68:5 › the services carry no demo explanation; the about site does (686ms)
+  ✓  18 e2e/demo.spec.ts:85:5 › reflow at 320px on the about site (397ms)
+  ✓  19 e2e/hmrc.spec.ts:8:5 › without a session, everyone is asked who they are: sign in yourself, or ask permission to act for someone (203ms)
+  ✓  20 e2e/hmrc.spec.ts:17:5 › a person signs in, claims relief herself, and the claim is attributed to her (938ms)
+  ✓  21 e2e/hmrc.spec.ts:53:5 › operations view shows traffic by lane and the lane policy (155ms)
+  ✓  22 e2e/hmrc.spec.ts:60:5 › anonymous hammering of a signed-in page meets the challenge page; a person can pass it (375ms)
+  ✓  23 e2e/hmrc.spec.ts:78:5 › reflow at 320px on HMRC pages (182ms)
+  ✓  24 e2e/onelogin.spec.ts:7:5 › an email in the wrong format is caught, then sign-in completes (408ms)
+  ✓  25 e2e/onelogin.spec.ts:20:5 › OIDC discovery and keys still come from the official simulator (20ms)
+  ✓  26 e2e/onelogin.spec.ts:28:5 › a sign-in page without a pending request says to start again (136ms)
+  ✓  27 e2e/onelogin.spec.ts:33:5 › reflow at 320px on the sign-in screens (201ms)
+  -  28 e2e/public.spec.ts:24:5 › public: a self-declared agent gets permission from Sam, through the tunnels
+  -  29 e2e/public.spec.ts:50:5 › public: an agent told to wait for approval is asked to pass the code on; heading for the sign-in is logged as giving up
+  -  30 e2e/public.spec.ts:62:5 › public: an agent that can't be identified is asked to get permission, not to sign in
+  -  31 e2e/public.spec.ts:70:5 › public: Sam signs in to HMRC herself
+  -  32 e2e/public.spec.ts:79:5 › public: sign-in can't be done by clicking through: nothing pre-filled, wrong password and wrong code refused
+  -  33 e2e/public.spec.ts:103:5 › public: demo tooling and simulator config are not reachable; test agent isn't trusted; discovery uses public URLs
+  ✓  34 e2e/swarm.spec.ts:8:5 › the swarm page keeps technical load apart from service outcomes, and labels what is measured and what is simulated (8.6s)
+
+  6 skipped
+  28 passed (43.6s)

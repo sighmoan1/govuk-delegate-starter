@@ -1,0 +1,195 @@
+
+> @prototype/hmrc@0.2.0 test
+> vitest run
+
+
+ RUN  v3.2.7 <repo>/apps/hmrc
+
+ ❯ tests/queue.test.ts (32 tests | 4 failed) 4551ms
+   ✓ accepting: 202 only for work that is stored > answers 202 with a receipt, a Location and QUEUED, and has recorded no claim yet 59ms
+   ✓ accepting: 202 only for work that is stored > is a signed-in person's choice too, and stays synchronous for anyone who does not ask 27ms
+   ✓ accepting: 202 only for work that is stored > requires an Idempotency-Key, so a client that never saw the answer can always retry safely 8ms
+   ✓ accepting: 202 only for work that is stored > a retry with the same Idempotency-Key gets the same receipt and never queues a second job 22ms
+   ✓ accepting: 202 only for work that is stored > 50 concurrent retries of one key make exactly one job, and all get the same receipt 146ms
+   ✓ accepting: 202 only for work that is stored > claims already waiting count against the person's rules: the same evidence under a new key is a duplicate, and three open claims is the most 47ms
+   ✓ accepting: 202 only for work that is stored > 40 concurrent different-key submissions of one claim by one person are one claim, not forty 149ms
+   ✓ accepting: 202 only for work that is stored > accepts concurrent submissions from 200 different people without losing or merging any 252ms
+   ✓ accepting: 202 only for work that is stored > when HMRC cannot store the claim it is 503 with Retry-After, nothing is kept, and the retry works 38ms
+   ✓ accepting: 202 only for work that is stored > a database that is unreachable is the same 503, not a 500 18ms
+   ✓ accepting: 202 only for work that is stored > every attempt is in HMRC's log and GOV.UK Delegate is told ACCEPTED, with the receipt as the reference 19ms
+   × the worker: durable, safe across workers, bounded > hundreds accepted while no worker runs all stay queued; a worker that starts later records every one exactly once 388ms
+     → expected 298 to be 300 // Object.is equality
+   × the worker: durable, safe across workers, bounded > stopping lets the item in hand finish and leaves the rest queued; the next worker carries on 241ms
+     → expected 4 to be 1 // Object.is equality
+   × the worker: durable, safe across workers, bounded > six workers at once never take the same item, and no one is recorded twice 322ms
+     → expected 97 to be 100 // Object.is equality
+   ✓ the worker: durable, safe across workers, bounded > one worker never has more items in hand than its concurrency 263ms
+   ✓ the worker: durable, safe across workers, bounded > a worker that dies holding an item: after its lease runs out another worker records it, once 24ms
+   ✓ the worker: durable, safe across workers, bounded > a worker whose lease was taken over cannot change anything when it comes back 24ms
+   ✓ the worker: durable, safe across workers, bounded > a worker holding a stale lease that tries first changes nothing either 26ms
+   ✓ retry, backoff and giving up > a failed attempt is retried after a growing delay, then FAILED and inspectable, never retried by itself again 59ms
+   ✓ retry, backoff and giving up > an attempt that wrote some things and then failed leaves nothing behind; the retry makes the claim once 38ms
+   ✓ retry, backoff and giving up > an item whose worker dies on every allowed attempt becomes FAILED instead of looping 13ms
+   ✓ retry, backoff and giving up > backs off exponentially up to a cap 2ms
+   × fairness: by person, in order received, whoever sent it > one person with a long backlog cannot keep others waiting: each person gets a turn in turn 62ms
+     → expected [ Array(1) ] to deeply equal [ …(3) ]
+   ✓ fairness: by person, in order received, whoever sent it > someone who arrives while a backlog is being worked goes next, not last 109ms
+   ✓ fairness: by person, in order received, whoever sent it > a person's own claims are recorded in the order received, one at a time 40ms
+   ✓ fairness: by person, in order received, whoever sent it > several workers still handle only one item per person at a time 235ms
+   ✓ the status endpoint > shows QUEUED, PROCESSING and COMPLETED to the person and to their agent, and the claim reference only once it exists 72ms
+   ✓ the status endpoint > is only for the person it is about: other people, other people's agents and strangers learn nothing, not even that it exists  1556ms
+   ✓ the status endpoint > an agent needs permission to view claims, and a revoked one is refused 22ms
+   ✓ the status endpoint > looking at status is a cheap read: it does not use the person's few scheduled progress checks 182ms
+   ✓ revocation after acceptance (chosen mock behaviour: received claims are still recorded) > stops new submissions and status reads by the agent, keeps what was already received, and records who sent it 44ms
+   ✓ outcome reporting to GOV.UK Delegate > a report that could not be delivered is sent on a later sweep, once 43ms
+ ✓ tests/progress-etag.test.ts (21 tests) 4099ms
+   ✓ one person's ETag exposes nothing of another's > an unidentified caller presenting an ETag gets a refusal, not a 304 and not an ETag  1523ms
+   ✓ private, no-store: nothing personal is served from or kept in a shared cache > every kind of response from the progress endpoint says private, no-store and varies on the credentials  1553ms
+ ✓ tests/throughput.test.ts (18 tests) 774ms
+ ❯ tests/idempotency.test.ts (24 tests | 1 failed) 1344ms
+   ✓ same attempt: Idempotency-Key > 100 concurrent identical retries create exactly one claim; every success references it 204ms
+   ✓ same attempt: Idempotency-Key > treats evidence that differs only in case and spacing as the same request 12ms
+   ✓ same attempt: Idempotency-Key > answers a lost response: the same key later returns the original outcome, without running again 10ms
+   ✓ same attempt: Idempotency-Key > refuses a key reused for different content, and overwrites nothing 14ms
+   ✓ same attempt: Idempotency-Key > rejects a malformed key without running anything 2ms
+   ✓ same attempt: Idempotency-Key > scopes keys to the person: two people can use the same key 16ms
+   ✓ same attempt: Idempotency-Key > ignores the key for operations that don't support it yet 9ms
+   ✓ equivalent claim, different key: HMRC's business rules still apply > two agents racing for one person, each with its own key, make one claim 178ms
+   ✓ equivalent claim, different key: HMRC's business rules still apply > a second claim without new evidence is refused under a new key; with new evidence it is an amendment 23ms
+   ✓ equivalent claim, different key: HMRC's business rules still apply > racing answers to one question under different keys: one answer 63ms
+   ✓ answering HMRC's question: Idempotency-Key > 100 concurrent identical answers record one answer 127ms
+   ✓ answering HMRC's question: Idempotency-Key > refuses the same key with a different answer; the first answer stands 17ms
+   ✓ failure injection: no success without a durable record, no stuck PENDING > a crash inside the handler rolls back the claim, the tax code change and the record; the retry is a clean first try 20ms
+   ✓ failure injection: no success without a durable record, no stuck PENDING > a failure while writing the record (duplicate key slipped past the lock) rolls the business write back too 18ms
+   ✓ failure injection: no success without a durable record, no stuck PENDING > a timed-out attempt leaves nothing behind: the lock and the transaction are released  337ms
+   ✓ failure injection: no success without a durable record, no stuck PENDING > the table cannot represent a PENDING record 11ms
+   ✓ human and API paths share the protection > a claim form submitted many times with one submission id is one claim, and every response says so 101ms
+   ✓ human and API paths share the protection > a second form with a fresh submission id is a new attempt, so HMRC's one-claim rule refuses it 17ms
+   ✓ human and API paths share the protection > a form without a submission id still works (and is covered by HMRC's business rules) 8ms
+   × human and API paths share the protection > an answer form submitted twice with one submission id records one answer 28ms
+     → expected Set{ 'http://localhost:3412/your-tax…' } to deeply equal Set{ 'http://localhost:3302/your-tax…' }
+   ✓ human and API paths share the protection > the JSON API honours Idempotency-Key for a signed-in person: 50 retries, one claim, replayed flag and header set 72ms
+   ✓ human and API paths share the protection > the JSON API answers 409 IDEMPOTENCY_KEY_REUSED for the same key with different content, and 400 for a bad key 19ms
+   ✓ human and API paths share the protection > the form path and the API path for one person cannot both make the claim 12ms
+   ✓ human and API paths share the protection > respond API: lost response is retrievable with the same key 25ms
+stderr | tests/step-up.test.ts > service failure > the report of completion is lost: the caller still gets the change that was made, and the next retry finishes the report
+[step-up] could not record the use of step-1; a retry with the same Idempotency-Key will
+
+ ✓ tests/step-up.test.ts (16 tests) 317ms
+ ✓ tests/transaction-ui.test.tsx (7 tests) 37ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/idempotency.test.ts > human and API paths share the protection > an answer form submitted twice with one submission id records one answer
+AssertionError: expected Set{ 'http://localhost:3412/your-tax…' } to deeply equal Set{ 'http://localhost:3302/your-tax…' }
+
+- Expected
++ Received
+
+  Set {
+-   "http://localhost:3302/your-tax?replied=1",
++   "http://localhost:3412/your-tax?replied=1",
+  }
+
+ ❯ tests/idempotency.test.ts:271:37
+    269|     const id = randomUUID();
+    270|     const res = await Promise.all([1, 2, 3, 4, 5].map(async () => repl…
+    271|     expect(new Set(res.map(where))).toEqual(new Set(["http://localhost…
+       |                                     ^
+    272|     expect(await recordsOf(t, RESPOND)).toBe(1);
+    273|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  tests/queue.test.ts > the worker: durable, safe across workers, bounded > hundreds accepted while no worker runs all stay queued; a worker that starts later records every one exactly once
+AssertionError: expected 298 to be 300 // Object.is equality
+
+- Expected
++ Received
+
+- 300
++ 298
+
+ ❯ tests/queue.test.ts:285:77
+    283|       expect(rs.every((r) => r.status === 202)).toBe(true);
+    284|     }
+    285|     expect(await prisma.transaction.count({ where: { status: "QUEUED" …
+       |                                                                             ^
+    286|     expect(await prisma.claim.count({ where: { taxpayerId: { in: peopl…
+    287|     await sleep(300); // time passes with nobody working: nothing is l…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  tests/queue.test.ts > the worker: durable, safe across workers, bounded > stopping lets the item in hand finish and leaves the rest queued; the next worker carries on
+AssertionError: expected 4 to be 1 // Object.is equality
+
+- Expected
++ Received
+
+- 1
++ 4
+
+ ❯ tests/queue.test.ts:323:80
+    321|     await first;
+    322|     expect(began).toHaveLength(1);
+    323|     expect(await prisma.transaction.count({ where: { status: "COMPLETE…
+       |                                                                                ^
+    324|     expect(await prisma.transaction.count({ where: { status: "QUEUED" …
+    325| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  tests/queue.test.ts > the worker: durable, safe across workers, bounded > six workers at once never take the same item, and no one is recorded twice
+AssertionError: expected 97 to be 100 // Object.is equality
+
+- Expected
++ Received
+
+- 100
++ 97
+
+ ❯ tests/queue.test.ts:344:23
+    342|     stop.abort();
+    343|     await Promise.all(workers);
+    344|     expect(seen.size).toBe(100);
+       |                       ^
+    345|     expect([...seen.values()].every((n) => n === 1)).toBe(true);
+    346|     expect(await prisma.claim.count({ where: { taxpayerId: { in: peopl…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  tests/queue.test.ts > fairness: by person, in order received, whoever sent it > one person with a long backlog cannot keep others waiting: each person gets a turn in turn
+AssertionError: expected [ Array(1) ] to deeply equal [ …(3) ]
+
+- Expected
++ Received
+
+  [
+-   "urn:test:550262a8-53c0-422d-b750-273e075dbbe3",
+-   "urn:test:0089b1b3-fe06-4e3c-8cbd-b55eda694af9",
+    "urn:test:8c92cc55-b156-4f9a-ae82-69787f6d3165",
+  ]
+
+ ❯ tests/queue.test.ts:506:32
+    504|     await queue(c, new Date(t0 + 101), "c-0");
+    505|     const served = await order(14);
+    506|     expect(served.slice(0, 3)).toEqual([a, b, c].map((p) => p.oneLogin…
+       |                                ^
+    507|     expect(served.indexOf(b.oneLoginSubject)).toBeLessThan(3);
+    508|     expect(served.indexOf(c.oneLoginSubject)).toBeLessThan(3);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+ Test Files  2 failed | 4 passed (6)
+      Tests  5 failed | 113 passed (118)
+   Start at  17:07:12
+   Duration  13.19s (transform 220ms, setup 15ms, collect 917ms, tests 11.12s, environment 1ms, prepare 204ms)
+
+npm error Lifecycle script `test` failed with error:
+npm error code 1
+npm error path <repo>/apps/hmrc
+npm error workspace @prototype/hmrc@0.2.0
+npm error location <repo>/apps/hmrc
+npm error command failed
+npm error command sh -c vitest run
