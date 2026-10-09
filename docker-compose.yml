@@ -173,6 +173,7 @@ services:
       - "127.0.0.1:3303:3303"
     environment:
       DATABASE_URL: postgresql://observatory:observatory@db:5432/observatory?connect_timeout=3&pool_timeout=3
+      PUBLIC_MODE: ${PUBLIC_MODE:-false}
       RESEARCH_INGEST_ENABLED: ${RESEARCH_INGEST_ENABLED:-false}
       OBSERVATORY_COLLECTION_KEY: ${OBSERVATORY_COLLECTION_KEY:-dev-observatory-collection-key}
       HMRC_RESEARCH_FEED_URL: http://hmrc:3302/api/research/events
