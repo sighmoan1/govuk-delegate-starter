@@ -10,6 +10,6 @@ const idOf = (req: Request) => decodeURIComponent(new URL(req.url).pathname.spli
 // person it is for; anyone else's id gets the same 404 as an id that does not exist.
 export const GET = requireDelegatedAuthority(
   "view_claim_status",
-  ({ taxpayer, body }) => transactionStatus(taxpayer.oneLoginSubject, String(body.transaction_id)),
+  ({ taxpayer, body, db }) => transactionStatus(taxpayer.oneLoginSubject, String(body.transaction_id), db),
   { extraBody: (req) => ({ transaction_id: idOf(req) }) },
 );
