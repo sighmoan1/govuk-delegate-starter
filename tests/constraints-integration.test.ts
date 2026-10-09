@@ -83,4 +83,6 @@ it("explicit historical publication cannot downgrade changed current security de
  await expect(createRequest({delegateId,service:service.slug,capabilities:[capability.code],catalogueVersion:1})).rejects.toMatchObject({code:"CATALOGUE_INCOMPATIBLE"});
  await publishCatalogue(service.id,{schema_version:1,service:service.slug,version:3,capabilities:[capability]});
  expect((await createRequest({delegateId,service:service.slug,capabilities:[capability.code],catalogueVersion:1})).permissions[0].capability.catalogue?.version).toBe(1);
+ await publishCatalogue(service.id,{schema_version:1,service:service.slug,version:4,capabilities:[{...capability,code:"read_other_case"}]});
+ await expect(createRequest({delegateId,service:service.slug,capabilities:[capability.code],catalogueVersion:1})).rejects.toMatchObject({code:"CATALOGUE_INCOMPATIBLE"});
 });
