@@ -4,6 +4,7 @@ import { opsSummary, capacityByPerson } from "@/lib/events";
 import { LANE_LIMITS, UNTRUSTED_DELAY_MS } from "@/lib/config";
 import { PRINCIPAL_WINDOWS, currentLimits, type CostClass } from "@/lib/throughput";
 import { fmtTime } from "@/lib/format";
+import { prisma } from "@/lib/db";
 
 const COST_CLASSES: CostClass[] = ["read", "status_poll", "write", "expensive_query"];
 const COST_LABEL: Record<CostClass, string> = { read: "Read", status_poll: "Status poll", write: "Write", expensive_query: "Expensive query" };
@@ -79,6 +80,11 @@ export default async function Ops({ searchParams }: { searchParams: Promise<{ li
   const { live } = await searchParams;
   const [s, people] = await Promise.all([opsSummary(), capacityByPerson()]);
   const lim = currentLimits();
+  // The queue of claims received for later processing (issue #21): how many in each state, and anything that failed.
+  const queueCounts = await prisma.transaction.groupBy({ by: ["status"], _count: { _all: true } });
+  const queued = (st: string) => queueCounts.find((c) => c.status === st)?._count._all ?? 0;
+  const oldestWaiting = await prisma.transaction.findFirst({ where: { status: "QUEUED" }, orderBy: { receivedAt: "asc" }, select: { receivedAt: true } });
+  const failed = await prisma.transaction.findMany({ where: { status: "FAILED" }, orderBy: { failedAt: "desc" }, take: 20 });
   return (
     <div>
       {live && <meta httpEquiv="refresh" content="3" />}
@@ -154,6 +160,29 @@ export default async function Ops({ searchParams }: { searchParams: Promise<{ li
           </tbody>
         </table>
       </div>
+
+      <h2>Claims received for later processing</h2>
+      <p>HMRC stores these before answering 202, and a worker records them. A failed claim is kept here with the reason; the person is only told it could not be recorded.</p>
+      <div className="table-container">
+        <table>
+          <caption className="visually-hidden">Received claims by state</caption>
+          <thead><tr><th scope="col">Queued</th><th scope="col">Processing</th><th scope="col">Completed</th><th scope="col">Failed</th><th scope="col">Oldest waiting since</th></tr></thead>
+          <tbody><tr><td>{queued("QUEUED")}</td><td>{queued("PROCESSING")}</td><td>{queued("COMPLETED")}</td><td>{queued("FAILED")}</td><td>{oldestWaiting ? fmtTime(oldestWaiting.receivedAt) : "—"}</td></tr></tbody>
+        </table>
+      </div>
+      {failed.length > 0 && (
+        <div className="table-container">
+          <table>
+            <caption className="visually-hidden">Failed claims</caption>
+            <thead><tr><th scope="col">Receipt</th><th scope="col">Person</th><th scope="col">Attempts</th><th scope="col">Last error</th><th scope="col">Failed</th></tr></thead>
+            <tbody>
+              {failed.map((f) => (
+                <tr key={f.id}><th scope="row" className="mono">{f.id}</th><td className="mono">…{f.subject.slice(-8)}</td><td>{f.attempts} of {f.maxAttempts}</td><td className="mono">{f.lastError ?? "—"}</td><td>{f.failedAt ? fmtTime(f.failedAt) : "—"}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <h2>Agents</h2>
       <div className="table-container">

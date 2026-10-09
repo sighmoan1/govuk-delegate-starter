@@ -52,11 +52,11 @@ export async function viewTaxCode(taxpayer: Taxpayer) {
 }
 
 /** The domain rules have already admitted this claim: a first claim, or a resubmission with new evidence. */
-export async function claimJobExpenses(taxpayer: Taxpayer, actor: Actor, admitted: Admitted | undefined, db: Tx) {
+export async function claimJobExpenses(taxpayer: Taxpayer, actor: Actor, admitted: Admitted | undefined, db: Tx, opts: { reference?: string } = {}) {
   const amendment = (admitted?.used ?? 1) > 1;
   const claim = await db.claim.create({
     data: {
-      taxpayerId: taxpayer.id, reference: ref("JE"), kind: "job_expenses", taxYear: TAX_YEAR, evidenceFingerprint: admitted?.evidence ?? null,
+      taxpayerId: taxpayer.id, reference: opts.reference ?? ref("JE"), kind: "job_expenses", taxYear: TAX_YEAR, evidenceFingerprint: admitted?.evidence ?? null,
       summary: amendment ? "Tax relief for working from home: new evidence added" : `Tax relief for working from home, ${WFH_RELIEF}`,
       newTaxCode: amendment ? null : WFH_NEW_CODE, ...who(actor),
     },

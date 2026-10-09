@@ -47,11 +47,13 @@ export const DOMAIN_RULES = {
   max_open_cases: { limit: 3, label: "Open claims and changes at once" },
   /** PROVISIONAL demo policy, not an eligibility rule. */
   refund_account_changes_per_30_days: { limit: 1, windowMs: 30 * DAY, label: "Refund account changes per 30 days" },
+  /** A received claim can only be looked up by the person it is for. Not a count: the limit is the one person. */
+  transaction_belongs_to_person: { limit: 1, label: "Receipts can only be seen by the person they are for" },
 } as const;
 export type DomainRule = keyof typeof DOMAIN_RULES;
 
 /** Why HMRC would not do what was asked, as a statement about the transaction. */
-export type DomainReason = "CAPACITY_EXCEEDED" | "DUPLICATE_SUBMISSION" | "NEW_EVIDENCE_REQUIRED" | "QUERY_NOT_FOUND" | "INVALID_REQUEST";
+export type DomainReason = "CAPACITY_EXCEEDED" | "DUPLICATE_SUBMISSION" | "NEW_EVIDENCE_REQUIRED" | "QUERY_NOT_FOUND" | "TRANSACTION_NOT_FOUND" | "INVALID_REQUEST";
 
 /**
  * `CAPACITY_EXCEEDED` is only ever a business refusal: the person already has
@@ -64,6 +66,7 @@ export const DOMAIN_STATUS: Record<DomainReason, number> = {
   DUPLICATE_SUBMISSION: 409,
   NEW_EVIDENCE_REQUIRED: 409,
   QUERY_NOT_FOUND: 404,
+  TRANSACTION_NOT_FOUND: 404,
   INVALID_REQUEST: 400,
 };
 
@@ -90,8 +93,12 @@ export const NOT_METERED: Admitted = { rule: null, limit: null, used: null, evid
 const refuse = (reason: DomainReason, rule: DomainRule, used: number, message: string, resetsAt: string | null = null): { ok: false; refusal: DomainRefusal } =>
   ({ ok: false, refusal: { kind: reason === "INVALID_REQUEST" ? "REQUEST_ERROR" : "BUSINESS_REFUSAL", reason, rule, limit: DOMAIN_RULES[rule].limit, used, resetsAt, message } });
 
-async function openCases(tx: Tx, taxpayerId: string) {
-  const open = await tx.claim.count({ where: { taxpayerId, status: "OPEN" } });
+/** Claims HMRC has received but not yet recorded (issue #21). They count as the person's open cases and as claims for the year already, so a second submission is judged against them rather than waved through because a worker is behind. */
+const pendingClaims = (tx: Tx, subject: string) =>
+  tx.transaction.findMany({ where: { subject, operation: "claim_job_expenses", status: { in: ["QUEUED", "PROCESSING"] } }, select: { evidenceFingerprint: true } });
+
+async function openCases(tx: Tx, taxpayer: { id: string; oneLoginSubject: string }) {
+  const open = (await tx.claim.count({ where: { taxpayerId: taxpayer.id, status: "OPEN" } })) + (await pendingClaims(tx, taxpayer.oneLoginSubject)).length;
   return open >= DOMAIN_RULES.max_open_cases.limit
     ? refuse("CAPACITY_EXCEEDED", "max_open_cases", open, "You already have the maximum number of open claims and changes. Wait for one to be decided.")
     : null;
@@ -128,17 +135,18 @@ export async function admitDomain(
   switch (capability) {
     case "claim_job_expenses": {
       const evidence = fingerprint(body.evidence);
-      const existing = await tx.claim.findMany({ where: { taxpayerId: taxpayer.id, kind: "job_expenses", taxYear: TAX_YEAR } });
+      const recorded = await tx.claim.findMany({ where: { taxpayerId: taxpayer.id, kind: "job_expenses", taxYear: TAX_YEAR } });
+      const existing = [...recorded, ...(await pendingClaims(tx, taxpayer.oneLoginSubject))];
       if (existing.length > 0) {
         if (!evidence) return refuse("NEW_EVIDENCE_REQUIRED", "one_claim_per_tax_year", existing.length, "You’ve already claimed for this tax year. To claim again, include new evidence.");
         if (existing.some((c) => c.evidenceFingerprint === evidence)) return refuse("DUPLICATE_SUBMISSION", "one_claim_per_tax_year", existing.length, "This claim has already been made with the same evidence.");
       }
-      const full = await openCases(tx, taxpayer.id);
+      const full = await openCases(tx, taxpayer);
       if (full) return full;
       return { ok: true, admitted: { rule: "one_claim_per_tax_year", limit: DOMAIN_RULES.one_claim_per_tax_year.limit, used: existing.length + 1, evidence } };
     }
     case "change_refund_account": {
-      const full = await openCases(tx, taxpayer.id);
+      const full = await openCases(tx, taxpayer);
       if (full) return full;
       return refundAccountChange(tx, taxpayer.oneLoginSubject, now);
     }
@@ -152,11 +160,19 @@ export async function admitDomain(
     }
     case "update_employment":
     case "change_address": {
-      const full = await openCases(tx, taxpayer.id);
+      const full = await openCases(tx, taxpayer);
       return full ?? { ok: true, admitted: NOT_METERED };
     }
+    case "view_claim_status": {
+      // Looking up a received claim by its receipt id: it must be this person's. Someone else's is indistinguishable from none.
+      if (typeof body.transaction_id === "string") {
+        const mine = await tx.transaction.count({ where: { id: body.transaction_id, subject: taxpayer.oneLoginSubject } });
+        if (mine === 0) return refuse("TRANSACTION_NOT_FOUND", "transaction_belongs_to_person", 0, "There is no received claim with that reference for this person.");
+      }
+      return { ok: true, admitted: NOT_METERED };
+    }
     default:
-      // view_tax_code, view_claim_status, check_claim_progress: reads have no domain rule.
+      // view_tax_code, check_claim_progress: reads have no domain rule.
       return { ok: true, admitted: NOT_METERED };
   }
 }
