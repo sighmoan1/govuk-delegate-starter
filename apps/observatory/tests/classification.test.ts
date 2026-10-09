@@ -54,9 +54,11 @@ describe("blind versioned classification", () => {
   });
   it("malformed adapter cost/reason/reference metadata remains an error", async () => {
     const evidence = await mockSensor.collect(event());
-    for (const extra of [{ estimated_cost: { amount: -1, currency: "USD" } }, { reason: 5 }, { raw_result_ref: {} }]) {
+    for (const extra of [{ estimated_cost: { amount: -1, currency: "USD" } }, { reason: 5 }, { raw_result_ref: {} }, { class: { execution_class: "HUMAN_OPERATED" } }, { raw_vendor_payload: { secret: "private-value" } }, { estimated_cost: { amount: 0, currency: "USD", raw_secret: "private-value" } }]) {
       const broken: ClassifierAdapter = { ...stubRule, async classify(signals, config) { return { ...await stubRule.classify(signals, config), ...extra } as never; } };
-      expect(await classifyFrozen(evidence, experiment(broken), broken)).toMatchObject({ status: "error", reason: "ADAPTER_ERROR" });
+      const result = await classifyFrozen(evidence, experiment(broken), broken);
+      expect(result).toMatchObject({ status: "error", reason: "ADAPTER_ERROR" });
+      expect(JSON.stringify(result)).not.toContain("private-value"); expect(JSON.stringify(result)).not.toContain("HUMAN_OPERATED");
     }
   });
   it("canonical digest survives JSON key reordering", () => { expect(digest({a:1,b:{c:2,d:3}})).toBe(digest({b:{d:3,c:2},a:1})); });

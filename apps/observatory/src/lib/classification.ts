@@ -65,7 +65,9 @@ function validSignals(record: EvidenceRecord) {
 export async function classifyFrozen(record: EvidenceRecord, config: ExperimentConfig, adapter: ClassifierAdapter): Promise<ClassificationResult> {
   const start = performance.now(); const selected: Partial<Record<FeatureName, Signal>> = {};
   // This is the ONLY adapter input. No IDs, lane/outcomes, run tags, evaluator data or generation prompts.
-  for (const k of config.feature_set) if (FEATURE_NAMES.includes(k)) selected[k] = structuredClone(record.signals[k]);
+  for (const k of config.feature_set) if (FEATURE_NAMES.includes(k) && record.signals[k]) {
+    const s = record.signals[k]; selected[k] = { value: s.value, missingness: s.missingness, provenance: s.provenance, confidence: s.confidence };
+  }
   const baseline = { schema: "observatory-classification/1" as const, source: adapter.identifier, source_version: adapter.version, question: config.question, prompt: config.prompt, threshold: config.threshold, feature_set: [...config.feature_set], missingness: Object.fromEntries(Object.entries(selected).map(([k,s]) => [k,s?.missingness ?? "not_observed"])), model: adapter.model, config_digest: digest(config), input_digest: digest(record) };
   let decision: Decision;
   try {
@@ -73,9 +75,10 @@ export async function classifyFrozen(record: EvidenceRecord, config: ExperimentC
     else if (config.adapter !== adapter.identifier || config.version !== adapter.version || config.model !== adapter.model || config.schema !== adapter.schema || canonical(config.feature_set) !== canonical(adapter.feature_set) || !Number.isFinite(config.threshold) || config.threshold < 0 || config.threshold > 1) decision = { ...abstain("ADAPTER_CONFIG_MISMATCH"), status: "error" };
     else {
       decision = await adapter.classify(Object.freeze(selected), Object.freeze(structuredClone(config)));
-      if (!["classified","abstain","error"].includes(decision.status) || (decision.status === "classified" ? !decision.class || decision.score === null || !Number.isFinite(decision.score) || decision.score < 0 || decision.score > 1 : decision.class !== null || decision.score !== null)) throw new Error("INVALID_ADAPTER_RESULT");
+      if (!["classified","abstain","error"].includes(decision.status) || (decision.status === "classified" ? typeof decision.class !== "string" || !decision.class || decision.class.length > 128 || typeof decision.score !== "number" || !Number.isFinite(decision.score) || decision.score < 0 || decision.score > 1 : decision.class !== null || decision.score !== null)) throw new Error("INVALID_ADAPTER_RESULT");
+      if (Object.keys(decision).some(k => !["status", "class", "score", "reason", "raw_result_ref", "estimated_cost"].includes(k)) || Object.keys(decision.estimated_cost ?? {}).some(k => !["amount", "currency"].includes(k))) throw new Error("UNEXPECTED_ADAPTER_FIELD");
       if (typeof decision.reason !== "string" || !decision.reason || decision.reason.length > 256 || (decision.raw_result_ref !== null && (typeof decision.raw_result_ref !== "string" || decision.raw_result_ref.length > 256)) || !decision.estimated_cost || decision.estimated_cost.currency !== "USD" || (decision.estimated_cost.amount !== null && (typeof decision.estimated_cost.amount !== "number" || !Number.isFinite(decision.estimated_cost.amount) || decision.estimated_cost.amount < 0))) throw new Error("INVALID_ADAPTER_METADATA");
     }
   } catch { decision = { ...abstain("ADAPTER_ERROR"), status: "error" }; }
-  return { ...baseline, ...decision, latency_ms: Math.max(0, performance.now() - start) };
+  return { ...baseline, status: decision.status, class: decision.class, score: decision.score, reason: decision.reason, raw_result_ref: decision.raw_result_ref, estimated_cost: { amount: decision.estimated_cost.amount, currency: decision.estimated_cost.currency }, latency_ms: Math.max(0, performance.now() - start) };
 }
