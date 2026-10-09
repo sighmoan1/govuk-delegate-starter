@@ -24,6 +24,10 @@ const unlabelled=await api('/api/evaluation/runs',{mode:'MONITORING',protocol_ve
 const unlabelledAttempt=await api('/api/evaluation/attempts',{run_id:unlabelled.id});assert.equal(unlabelledAttempt.status,'UNLABELLED');
 const read=original.service_events.find(e=>e.capability==='view_claim_status');
 await api('/api/evaluation/bindings',{attempt_id:unlabelledAttempt.id,source_service:'hmrc',source_event_id:read.id,effect_class:'REQUEST_ONLY'});
+const write=original.service_events.find(e=>e.capability==='claim_job_expenses'&&e.outcomeClass==='UNIQUE_OPERATION');
+await api('/api/evaluation/bindings',{attempt_id:unlabelledAttempt.id,source_service:'hmrc',source_event_id:write.id,effect_class:'REQUEST_ONLY'});
+assert.equal((await request('/api/evaluation/bindings',{attempt_id:unlabelledAttempt.id,source_service:'hmrc',source_event_id:write.id,effect_class:'UNIQUE_OPERATION',operation_id:crypto.randomUUID(),effect_evidence_digest:replayDigest})).status,409);
+const coverage=(await request('/api/monitoring/runs',undefined,collection,'collection')).body.find(r=>r.run_id===unlabelled.id);assert.equal(coverage.requests,2);assert.equal(coverage.unique_service_operations,0);
 assert.equal((await request('/api/evaluation/attempts/'+unlabelledAttempt.id+'/verify',{origin:'CONTROLLED_RUNNER',execution_class:'SCRIPTED_AUTOMATION',trace_digest:replayDigest,source_commit:original.source_sha,runner:'test',observed_at:original.finished_at})).status,409);
 await api('/api/evaluation/runs/'+unlabelled.id+'/complete',{expected_attempts:1});
 const monitorRun=(await api('/api/evaluation/runs')).find(r=>r.id===unlabelled.id);assert.equal(monitorRun.attempts[0].executionClass,null);

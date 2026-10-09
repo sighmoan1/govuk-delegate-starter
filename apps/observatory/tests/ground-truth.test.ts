@@ -64,6 +64,8 @@ describe('truth isolation and provenance', () => {
     expect(()=>validateBindingAgainstSource(data,snapshot,{status:'PLANNED',provenance:{}})).toThrow('INDEPENDENT_EFFECT_EVIDENCE_REQUIRED');
     expect(()=>validateBindingAgainstSource({...data,effectClass:'REPLAY'},snapshot,{status:'VERIFIED',provenance:trace})).toThrow('SOURCE_EFFECT_CLASS_MISMATCH');
     expect(()=>validateBindingAgainstSource(data,{...snapshot,source_event_id:randomUUID()},{status:'VERIFIED',provenance:trace})).toThrow('SOURCE_ID_MISMATCH');
+    expect(validateBindingAgainstSource({...data,effectClass:'REQUEST_ONLY',operationId:null,effectEvidenceDigest:null},snapshot,{status:'UNLABELLED',provenance:null}).eventKind).toBe('service_request');
+    expect(()=>validateBindingAgainstSource(data,snapshot,{status:'UNLABELLED',provenance:null})).toThrow('SOURCE_EFFECT_CLASS_MISMATCH');
     expect(validateBindingAgainstSource(data,snapshot,{status:'VERIFIED',provenance:trace})).toEqual({eventKind:'service_request',identityObservation:snapshot.observed});
   });
 

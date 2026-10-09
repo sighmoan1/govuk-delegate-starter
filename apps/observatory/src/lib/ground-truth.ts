@@ -67,7 +67,7 @@ export function validateBindingAgainstSource(binding: ReturnType<typeof bindingI
   const sourceClass = object(outcome.outcome_class).value, cost = object(outcome.cost_class).value;
   if (event.source_service !== binding.sourceService || event.source_event_id !== binding.sourceEventId) throw new ResearchError("SOURCE_ID_MISMATCH", 409);
   const refused = ['DENY','REFUSED','THROTTLED','CHALLENGED'].includes(String(outcome.decision));
-  const expected = binding.sourceService !== 'hmrc' ? 'REQUEST_ONLY' : refused ? 'REFUSAL' : sourceClass === 'REPLAY' ? 'REPLAY' : sourceClass === 'UNIQUE_OPERATION' && cost === 'write' ? 'UNIQUE_OPERATION' : 'REQUEST_ONLY';
+  const expected = attempt.status === 'UNLABELLED' || event.event_kind === 'browser_sensor' || binding.sourceService !== 'hmrc' ? 'REQUEST_ONLY' : refused ? 'REFUSAL' : sourceClass === 'REPLAY' ? 'REPLAY' : sourceClass === 'UNIQUE_OPERATION' && cost === 'write' ? 'UNIQUE_OPERATION' : 'REQUEST_ONLY';
   if (binding.effectClass !== expected) throw new ResearchError("SOURCE_EFFECT_CLASS_MISMATCH", 409);
   if (binding.effectClass === 'UNIQUE_OPERATION' || binding.effectClass === 'REPLAY') {
     const evidence = object(attempt.provenance);
