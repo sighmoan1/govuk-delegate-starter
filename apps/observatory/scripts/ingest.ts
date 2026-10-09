@@ -3,7 +3,7 @@ import { ingestStore } from "../src/lib/ingest-store";
 import { prisma } from "../src/lib/db";
 
 async function main() {
-  if (process.env.RESEARCH_INGEST_ENABLED !== "true") throw new Error("RESEARCH_INGEST_DISABLED");
+  if (process.env.PUBLIC_MODE === "true" || process.env.RESEARCH_INGEST_ENABLED !== "true") throw new Error("RESEARCH_INGEST_DISABLED");
   let failed = false;
   for (const source of ["hmrc", "delegate"] as const) {
     const prefix = source.toUpperCase();
