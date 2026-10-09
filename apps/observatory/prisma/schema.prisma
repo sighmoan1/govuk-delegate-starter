@@ -40,3 +40,69 @@ model FeedCursor {
 
   @@map("feed_cursor")
 }
+
+// Evaluation-only truth. Never join these fields into ObservedEvent snapshots.
+model ResearchRun {
+  id              String   @id
+  mode            String
+  status          String   @default("OPEN")
+  protocolVersion String   @map("protocol_version")
+  sourceCommit    String   @map("source_commit")
+  seed            String
+  studyOwner      String   @map("study_owner")
+  evidenceDigest  String?  @unique @map("evidence_digest")
+  createdAt       DateTime @default(now()) @map("created_at")
+  attempts        ResearchAttempt[]
+  @@map("research_run")
+}
+
+model ResearchAttempt {
+  id             String   @id
+  runId          String   @map("run_id")
+  intentId       String   @map("intent_id")
+  status         String
+  executionClass String?  @map("execution_class")
+  provenance     Json?
+  createdAt      DateTime @default(now()) @map("created_at")
+  verifiedAt     DateTime? @map("verified_at")
+  run            ResearchRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  bindings       ResearchBinding[]
+  enrolments     ResearchEnrolment[]
+  sessions       ResearchSession[]
+  @@index([runId])
+  @@map("research_attempt")
+}
+
+model ResearchBinding {
+  id            String @id
+  attemptId     String @map("attempt_id")
+  sourceService String @map("source_service")
+  sourceEventId String @map("source_event_id")
+  operationId   String? @map("operation_id")
+  eventKind String @map("event_kind")
+  effectClass   String @map("effect_class")
+  effectEvidenceDigest String? @map("effect_evidence_digest")
+  identityObservation Json @map("identity_observation")
+  attempt       ResearchAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  @@unique([sourceService, sourceEventId])
+  @@map("research_binding")
+}
+
+model ResearchEnrolment {
+  id        String @id
+  attemptId String @map("attempt_id")
+  tokenHash String @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  claimedAt DateTime? @map("claimed_at")
+  attempt   ResearchAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  @@map("research_enrolment")
+}
+
+model ResearchSession {
+  id        String @id
+  attemptId String @map("attempt_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  attempt   ResearchAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  @@map("research_session")
+}

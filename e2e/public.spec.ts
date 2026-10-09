@@ -35,6 +35,7 @@ test("public: a self-declared agent gets permission from Sam, through the tunnel
   await expect(sam).toHaveURL(new RegExp(`^${OL}`));
   await signInAsSam(sam);
   await expect(sam.getByRole("heading", { level: 1 })).toContainText("wants to act for you");
+  for (const checkbox of await sam.getByRole("checkbox").all()) await checkbox.check();
   await sam.getByRole("button", { name: "Continue" }).click();
   await sam.getByRole("button", { name: "Allow" }).click();
   await expect(sam.getByRole("heading", { name: "Agent authorised" })).toBeVisible();

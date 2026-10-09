@@ -35,3 +35,15 @@ On first publication (or bootstrap replay of that first version after an upgrade
 The citizen demo reset recreates synthetic people, delegates and history from the current registered capabilities. It preserves service identities, catalogue publications and all capability versions. It never registers a stale embedded capability list. CLI reset registers the current HMRC artifact idempotently first, and fails before resetting fixtures if registration fails. Browser reset uses the stored latest publication.
 
 Approval field metadata supports only bounded text/digit transformations, fixed or bounded character-class patterns and explicit last-character masking. Delegate renders plain escaped text and hashes the same normalised fields it displays. It executes no supplied script, HTML or arbitrary regular expression. HIGH risk still requires transaction approval and at least REGISTERED assurance; stronger registered minimum assurance is enforced on each check.
+
+## Generic citizen consent (#30)
+
+Consent resolves the immutable publication pinned by each requested capability, validates its schema and digest, and checks that the stored capability identity and security declarations match that definition. A later catalogue publication does not replace a pending request's wording or widen its scopes. Missing publications, invalid definitions and incompatible stored rows block approval and offer rejection or a new request. Legacy requests without a pinned publication also need a fresh request; existing grants are unaffected.
+
+Both selection and confirmation show the service's own labels/descriptions, generic risk explanations and its per-action fresh-approval requirement. Nothing is preselected on first arrival. Back/change links retain the citizen's selected subset; unrequested codes cannot enter the confirmation or decision. The existing session, CSRF, signed-agent refusal and registered-return-URL controls remain in place.
+
+The current request contract has no descriptive purpose or enforceable condition values, so the page says so explicitly. Supported constraint options in a catalogue are not presented as restrictions attached to this request. Authority lasts `AUTHORISATION_DAYS` from approval; the pending request's separate expiry is also shown. Richer conditions belong to #32.
+
+`consentPresentation` is a plain JSON evidence interface for #31, containing the pinned publication identity/digest, service/delegate identity, displayed capability definitions and common terms. It does not persist a consent-history snapshot itself.
+
+Focused offline checks: `npx vitest run tests/consent-presentation.test.ts` and `npm run typecheck -w apps/delegate`. Database/security acceptance: `npx vitest run tests/catalogue-adoption.test.ts tests/consent-csrf.test.ts`; browser acceptance: the Delegate and agent consent journeys in `npm run test:e2e`, including mobile reflow. These latter checks need the isolated running stack.

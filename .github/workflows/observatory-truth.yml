@@ -1,0 +1,57 @@
+name: Observatory protected ground truth
+on:
+  pull_request:
+  push:
+    branches: [main]
+defaults:
+  run:
+    shell: bash
+permissions:
+  contents: read
+jobs:
+  protected-ledger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: research
+          POSTGRES_PASSWORD: synthetic-ci-only
+          POSTGRES_DB: observatory
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://research:synthetic-ci-only@localhost:5432/observatory
+      OBSERVATORY_EVALUATION_KEY: evaluation-synthetic-ci-only-0123456789abcdef
+      OBSERVATORY_COLLECTION_KEY: collection-synthetic-ci-only-0123456789abcdef
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run db:migrate -w apps/observatory
+      - run: npm run typecheck -w apps/observatory && npm test -w apps/observatory
+      - run: node --test scripts/observatory/import-e2.test.mjs
+      - run: npm run build -w apps/observatory
+      - name: HTTP ledger, archive audit and concurrent enrollment
+        run: |
+          set -euo pipefail
+          mkdir -p truth-report
+          npm run start -w apps/observatory > truth-report/server.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:3303/api/health >/dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/observatory/http-truth.test.mjs > truth-report/result.json
+          test -s truth-report/result.json
+          cat truth-report/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: protected-truth-validation
+          path: truth-report
+          retention-days: 7

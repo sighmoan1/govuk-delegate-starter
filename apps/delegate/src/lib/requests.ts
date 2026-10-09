@@ -1,3 +1,4 @@
+import { consentPresentation } from "./consent-presentation";
 import { currentCapabilities } from "./catalogues";
 import { prisma } from "./db";
 import { AUTHORISATION_DAYS, REQUEST_DAYS } from "./config";
@@ -63,7 +64,7 @@ export function returnTo(req: { id: string; returnUrl: string | null }, status: 
 export const requestInclude = {
   delegate: true,
   service: true,
-  permissions: { include: { capability: true }, orderBy: { capability: { sortOrder: "asc" as const } } },
+  permissions: { include: { capability: { include: { catalogue: true } } }, orderBy: { capability: { sortOrder: "asc" as const } } },
   authorisation: { include: { permissions: { include: { capability: true } } } },
 };
 
@@ -88,6 +89,8 @@ async function pendingOrThrow(id: string, principalId?: string) {
 /** Principal approves, optionally narrowing the permissions. Creates the active relationship. */
 export async function approveRequest(id: string, principalId: string, capabilityCodes?: string[]) {
   const req = await pendingOrThrow(id, principalId);
+  // Approval must validate the same pinned service definitions shown to the person.
+  consentPresentation(req);
   const requested = req.permissions.map((p) => p.capability);
   const chosen = capabilityCodes ? requested.filter((c) => capabilityCodes.includes(c.code)) : requested;
   if (capabilityCodes && capabilityCodes.some((c) => !requested.some((r) => r.code === c))) {
