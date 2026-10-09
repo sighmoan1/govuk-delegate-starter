@@ -36,7 +36,7 @@ export type DenyReason = Exclude<Reason, "VALID_AUTHORISATION" | "INVALID_AGENT_
 export type CheckResult =
   // `stepUp` is present for capabilities that need the person's approval of a specific change. A yes with a stepUp
   // means authority is sound; whether the change may proceed is stepUp.state (APPROVED only).
-  | { authorised: true; serviceId: string; chain: Chain; constraints: Constraints; catalogue: {version:number;id:string}|null; stepUp?: StepUpInfo }
+  | { authorised: true; serviceId: string; chain: Chain; constraints: Constraints; catalogue: {version:number;id:string;digest:string}|null; stepUp?: StepUpInfo }
   | {
       authorised: false;
       reason: DenyReason;
@@ -235,5 +235,5 @@ export async function checkAuthority(input: CheckInput, now = new Date()): Promi
     if (gate.blocked) return { authorised: false, reason: "STEP_UP_REQUIRED", ...base, stepUp: gate.info };
     stepUp = gate.info;
   }
-  return { authorised: true, serviceId: service.id, chain, constraints, catalogue: publication ? {id:publication.id,version:publication.version} : null, ...(stepUp ? { stepUp } : {}) };
+  return { authorised: true, serviceId: service.id, chain, constraints, catalogue: publication ? {id:publication.id,version:publication.version,digest:publication.digest} : null, ...(stepUp ? { stepUp } : {}) };
 }

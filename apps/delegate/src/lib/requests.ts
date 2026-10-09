@@ -21,6 +21,7 @@ export async function createRequest(input: {
   principalHint?: string;
   returnUrl?: string;
   constraints?: unknown;
+  catalogueVersion?: unknown;
 }) {
   const delegate = await prisma.delegate.findUniqueOrThrow({ where: { id: input.delegateId } });
   if (input.returnUrl && !isRegisteredReturnUrl(input.returnUrl, delegate.redirectUris)) {
@@ -30,7 +31,11 @@ export async function createRequest(input: {
   if (!service) throw new DomainError("UNKNOWN_SERVICE", "Unknown service");
   const wanted = [...new Set(input.capabilities)];
   if (wanted.length === 0) throw new DomainError("NO_CAPABILITIES", "Request at least one capability");
-  const caps = (await currentCapabilities(service.id)).filter((c) => wanted.includes(c.code));
+  if(input.catalogueVersion!==undefined && (!Number.isSafeInteger(input.catalogueVersion) || Number(input.catalogueVersion)<1)) throw new DomainError("CATALOGUE_INCOMPATIBLE","Invalid catalogue version");
+  const publication=input.catalogueVersion===undefined?null:await prisma.serviceCatalogue.findUnique({where:{serviceId_version:{serviceId:service.id,version:Number(input.catalogueVersion)}}});
+  if(input.catalogueVersion!==undefined && !publication) throw new DomainError("CATALOGUE_INCOMPATIBLE","Unknown catalogue version");
+  const available=publication?await prisma.capability.findMany({where:{serviceId:service.id,catalogueId:publication.id},orderBy:{sortOrder:"asc"}}):await currentCapabilities(service.id);
+  const caps = available.filter((c) => wanted.includes(c.code));
   if (caps.length !== wanted.length) throw new DomainError("UNKNOWN_CAPABILITY", "Unknown capability for this service");
 
   const constraints = validateConstraints(input.constraints, caps.map(c=>c.metadata as unknown as CatalogueCapability));

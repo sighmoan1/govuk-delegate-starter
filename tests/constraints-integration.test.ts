@@ -1,3 +1,6 @@
+import {readFileSync} from "node:fs";
+import {parseEnv} from "node:util";
+import {PrismaClient as HmrcClient} from "../apps/hmrc/src/generated/prisma";
 import { randomUUID } from "node:crypto";
 import { afterAll, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
@@ -8,13 +11,14 @@ import { narrowMandateConstraints } from "@/lib/constraint-narrowing";
 import { loadConsentHistory } from "@/lib/consent-evidence";
 import { consentPresentation } from "@/lib/consent-presentation";
 import { demoAgent, HMRC } from "./helpers";
-afterAll(()=>prisma.$disconnect());
+const hmrc=new HmrcClient({datasourceUrl:process.env.HMRC_DATABASE_URL ?? parseEnv(readFileSync("apps/hmrc/.env","utf8")).DATABASE_URL});
+afterAll(async()=>{await prisma.$disconnect();await hmrc.$disconnect();});
 const year="2026 to 2027", previous="2025 to 2026",cap="claim_job_expenses";
 const restrictions=(values:string[])=>({[cap]:{tax_year:values}});
 async function fixture(values=[year]) {
  const {token,delegateId}=await demoAgent();
  const principal=await prisma.principal.create({data:{oneLoginSubjectId:"urn:constraints:"+randomUUID(),displayName:"Constraint fixture"}});
- const req=await createRequest({delegateId,service:"hmrc-personal-tax",capabilities:[cap],constraints:restrictions(values)});
+ const req=await createRequest({delegateId,service:"hmrc-personal-tax",capabilities:[cap],catalogueVersion:2,constraints:restrictions(values)});
  return {token,delegateId,principal,req};
 }
 it("round-trips requested, presented, approved, checked and revoked with pinned provenance",async()=>{
@@ -51,10 +55,15 @@ it("HMRC denies cross-year actions from the agent and sub-agent, permits the mat
  const auth=await approveRequest(req.id,principal.id,[cap]);
  const child=await subDelegate({parent:{kind:"agent",delegateId},principalId:principal.id,service:"hmrc-personal-tax",capabilities:[cap]});
  const submit=async(t:string,tax_year:string)=>{const r=await fetch(`${HMRC}/api/job-expenses`,{method:"POST",headers:{authorization:`Bearer ${t}`,"content-type":"application/json","x-principal-id":principal.id},body:JSON.stringify({tax_year})});return {status:r.status,body:await r.json()};};
+ const effects=async()=>({claims:await hmrc.claim.count({where:{taxpayer:{oneLoginSubject:principal.oneLoginSubjectId}}}),transactions:await hmrc.transaction.count({where:{subject:principal.oneLoginSubjectId}})});
+ expect(await effects()).toEqual({claims:0,transactions:0});
  for(const t of [token,child.token]) expect(await submit(t,previous)).toMatchObject({status:403,body:{reason:"MANDATE_CONSTRAINT_REFUSED"}});
+ expect(await effects()).toEqual({claims:0,transactions:0});
  expect((await submit(token,year)).status).toBe(200);
+ expect(await effects()).toEqual({claims:1,transactions:0});
  await revokeAuthorisation(auth.id,principal.id);
  expect((await submit(child.token,year)).status).toBe(403);
+ expect(await effects()).toEqual({claims:1,transactions:0});
 });
 it("unknown inputs fail closed; plain old grants acquire no default restrictions",async()=>{
  const {delegateId,principal}=await fixture();

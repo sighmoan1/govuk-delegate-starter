@@ -1,3 +1,4 @@
+import {createHash} from "node:crypto";
 import catalogue from "../../service-catalogue.json";
 import { TAX_YEAR } from "./taxpayers";
 import { config } from "./config";
@@ -35,7 +36,7 @@ export type StepUpReport = {
 export type Proposal = { idempotency_key: string; payload: Record<string, string> };
 
 export type DelegateCheck =
-  | { authorised: true; status: "ACTIVE"; authorisation_id: string; principal_id: string; subject: string; delegate: DelegateInfo; chain: DelegateChain; check_id: string; constraints?:Record<string,Record<string,string[]>>; constraint_provenance?:{mandate_id:string;delegation_id:string;catalogue:{version:number;id:string}|null}; step_up?: StepUpReport }
+  | { authorised: true; status: "ACTIVE"; authorisation_id: string; principal_id: string; subject: string; delegate: DelegateInfo; chain: DelegateChain; check_id: string; constraints?:Record<string,Record<string,string[]>>; constraint_provenance?:{mandate_id:string;delegation_id:string;catalogue:{version:number;id:string;digest:string}|null}; step_up?: StepUpReport }
   | {
       authorised: false;
       reason: string;
@@ -54,6 +55,8 @@ export class DelegateUnavailableError extends Error {
   }
 }
 
+const canonical=(v:unknown):string=>Array.isArray(v)?"["+v.map(canonical).join(",")+"]":v&&typeof v==="object"?"{"+Object.keys(v).sort().map(k=>JSON.stringify(k)+":"+canonical((v as Record<string,unknown>)[k])).join(",")+"}":JSON.stringify(v);
+const supportedDigest=createHash("sha256").update(canonical(catalogue)).digest("hex");
 const TIMEOUT_MS = 5_000;
 const retryDelayMs = () => Number(process.env.DELEGATE_RETRY_DELAY_MS ?? 200);
 
@@ -105,7 +108,7 @@ export async function askDelegate(input: { agent_token: string; principal_id: st
   if(check.authorised && check.constraints && Object.keys(check.constraints).length) {
     const provenance=check.constraint_provenance;
     const allowed=hmrcConstraintsPermit(check.constraints,input.capability,input.constraint_context ?? {});
-    if(!allowed || !provenance || provenance.catalogue?.version!==catalogue.version || provenance.mandate_id!==check.authorisation_id || provenance.delegation_id!==check.chain.delegation_id) return {authorised:false,reason:"MANDATE_CONSTRAINT_REFUSED",delegate:check.delegate,chain:check.chain,check_id:check.check_id};
+    if(!allowed || !provenance || provenance.catalogue?.version!==catalogue.version || provenance.catalogue?.digest!==supportedDigest || provenance.mandate_id!==check.authorisation_id || provenance.delegation_id!==check.chain.delegation_id) return {authorised:false,reason:"MANDATE_CONSTRAINT_REFUSED",delegate:check.delegate,chain:check.chain,check_id:check.check_id};
   }
   return check;
 }

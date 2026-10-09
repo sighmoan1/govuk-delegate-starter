@@ -41,6 +41,7 @@ export default async function Check({
   const notAllowed = presentation.capabilities.filter(c => !allowed.some(a => a.id === c.id));
   const qs = new URLSearchParams();
   for (const c of allowed) qs.append("c", c.code);
+  for(const [cap,fields] of Object.entries(restrictions)) for(const [key,values] of Object.entries(fields)) for(const value of values) qs.append(`restriction:${cap}:${key}`,value);
 
   return (
     <div className="two-thirds">

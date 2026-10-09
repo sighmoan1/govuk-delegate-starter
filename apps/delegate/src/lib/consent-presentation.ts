@@ -52,7 +52,7 @@ export function consentPresentation(req: ConsentRequest) {
     service: { slug: req.service.slug, name: req.service.name },
     delegate: { name: req.delegate.name, provider: req.delegate.provider },
     purpose: "The assistant has requested the permissions listed below. No additional purpose was provided.",
-    conditions: "No additional conditions are attached to this request. Permission is limited to the actions you select.",
+    conditions: Object.keys(restrictions).length ? "Permission is limited to the actions and service-defined restrictions you select. You can narrow the restrictions, but cannot add values." : "No additional conditions are attached to this request. Permission is limited to the actions you select.",
     authorisation_days: AUTHORISATION_DAYS,
     request_expires_at: req.expiresAt.toISOString(),
     capabilities,
