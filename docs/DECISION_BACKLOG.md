@@ -13,7 +13,7 @@
 | **DB-01** | **P0** | What can legally be delegated to an AI representative, and how is it recognised? | **OPEN** | Departmental legal/policy + service owner | Before real-person consequential transactions | [#48](https://github.com/sighmoan1/govuk-delegate-starter/issues/48) |
 | **DB-02** | **P0** | When does standing authority suffice, and when must a person approve the exact act? | **OPEN** | Service product/policy/legal + user research | Before autonomous consequential actions | [#49](https://github.com/sighmoan1/govuk-delegate-starter/issues/49) |
 | **DB-03** | **P0** | What identity does a provider signature, application registration or execution session establish? | **OPEN** | Identity/security + service integrator | Before treating an agent as high-assurance | [#50](https://github.com/sighmoan1/govuk-delegate-starter/issues/50) |
-| **DB-04** | **P0** | What can government throttle or limit without restricting valid access/claims? | **OPEN (policy)** | Service policy + operations + legal/accessibility | Before production-like capacity limits and queue policy | [#51](https://github.com/sighmoan1/govuk-delegate-starter/issues/51) |
+| **DB-04** | **P0** | What can government throttle or limit without restricting valid access/claims? | **PRINCIPLE AGREED; limits/queue policy OPEN** | Service policy + operations + legal/accessibility | Before production-like capacity limits and queue policy | [#51](https://github.com/sighmoan1/govuk-delegate-starter/issues/51) |
 | **DB-05** | **P0** | What evidence justifies claiming Delegate improves agentic-demand handling? | **OPEN (experimental)** | Product + evaluation/service owner | Before benefits claims, business case, field pilot | [#52](https://github.com/sighmoan1/govuk-delegate-starter/issues/52) |
 | **DB-06** | **P1** | What happens to unidentified automation when a verified route exists? | **OPEN** | Service/security + accessibility/policy | Before additional friction or mandatory use | [#53](https://github.com/sighmoan1/govuk-delegate-starter/issues/53) |
 | **DB-07** | **P1** | Is authority centrally owned, federated, or a hybrid of issuers? | **OPEN** | Cross-government architecture + authority issuers | Before importing existing departmental relationships | [#54](https://github.com/sighmoan1/govuk-delegate-starter/issues/54) |
@@ -28,6 +28,9 @@
 ## 2. Five questions from our discussion — where we actually are
 
 ### Capacity — what are we limiting? → DB-04
+
+**Project principle accepted 9 October 2026:** [Regulate processing demand, not citizens' rights](docs/decisions/2026-10-09-capacity-and-rights.md). Government services should distinguish distinct citizen claims from repeated technical attempts, preserve lawful opportunities to submit, deduplicate retries, apply proportionate technical throttles and seek durable fair admission rather than suppress genuine demand. The agreement **does not** mandate unconditional acceptance during outages, create new legal filing rights or approve particular queue/eligibility limits. **DB-04 remains PARTIALLY DECIDED:** departmental service-policy and deadline rules still need review.
+
 
 - **Agreed implementation principle:** identity and authority checks are distinct from domain policy and request throughput. HMRC's technical throttles are not itself a decision that someone loses an underlying right; the service owns business constraints and integrity. [Decision 23](DECISIONS.md#decision-23--business-rules-and-traffic-limits-are-separate-code-separate-answers-separate-metrics).
 - **Present in code:** synthetic per-operator, principal and service technical limits, cost classes, domain outcomes, idempotency and separate event classes.
