@@ -5,9 +5,17 @@ test("generic citizen consent authorises council independently, then revokes wit
  async function consent(service:string,capability:string){
   const request=await(await fetch(`${DELEGATE}/api/authorisation-requests`,{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${tok.access_token}`},body:JSON.stringify({service,capabilities:[capability]})})).json();
   await page.goto(request.consent_url);
-  if(new URL(page.url()).pathname==="/sign-in") {await page.getByRole("button",{name:"Continue"}).click();await page.getByRole("button",{name:"Continue"}).click();}
+  if(new URL(page.url()).origin === new URL(process.env.ONELOGIN_URL ?? "http://localhost:3301").origin) {
+   await page.getByRole("button",{name:"Continue"}).click();
+   await expect(page.getByRole("heading",{name:"Enter your password"})).toBeVisible();
+   await page.getByRole("button",{name:"Continue"}).click();
+  }
+  await expect(page.getByRole("heading",{name:"Personal assistant wants to act for you",level:1})).toBeVisible();
+  await expect(page.getByRole("checkbox")).toHaveCount(1);
   const box=page.getByRole("checkbox"); await expect(box).not.toBeChecked(); await box.check();
-  await page.getByRole("button",{name:"Continue"}).click();await page.getByRole("button",{name:"Allow",exact:true}).click();
+  await page.getByRole("button",{name:"Continue"}).click();
+  await expect(page.getByRole("heading",{name:"Check what you are allowing"})).toBeVisible();
+  await page.getByRole("button",{name:"Allow",exact:true}).click();
   await expect(page.getByRole("heading",{name:"Agent authorised"})).toBeVisible();
   await page.getByRole("link",{name:"View this authority"}).click();
   await expect(page).toHaveURL(/\/account\/delegates\/[0-9a-f-]{36}$/);
@@ -23,5 +31,6 @@ test("generic citizen consent authorises council independently, then revokes wit
  const result=await call();expect(result.status).toBe(200);expect(await result.json()).toMatchObject({decision:"ALLOW",result:{reference:"CASE-SAM"}});
  expect((await fetch(`${COUNCIL}/api/cases/status?reference=CASE-OTHER`,{headers})).status).toBe(404);
  await page.goto(`${DELEGATE}/account/delegates/${council.mandate}`);await page.getByRole("link",{name:/Remove access/}).click();await page.getByRole("button",{name:"Remove access"}).click();
+ await expect(page.getByRole("heading",{name:"Access removed"})).toBeVisible();
  expect((await call()).status).toBe(403);expect((await fetch(`${HMRC}/api/tax-code`,{headers})).status).toBe(200);
 });
