@@ -44,6 +44,8 @@ jobs:
           npx prisma generate --schema apps/observatory/prisma/schema.prisma
       - name: Typecheck all workspaces
         run: npm run typecheck 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/typecheck.log
+      - name: Validate opt-in real-vendor harness discovery (no vendor calls)
+        run: npx playwright test --config research-tests/playwright.config.ts --list
       - name: Build all workspaces
         run: npm run build 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/build.log
       - name: Install Chromium and system dependencies
@@ -75,6 +77,8 @@ jobs:
         run: npx vitest run --reporter=default --reporter=junit --outputFile=ci-artifacts/api-junit.xml 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/api-tests.log
       - name: Run browser regression from clean fixtures
         run: npx playwright test --reporter=list,html 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/browser-tests.log
+      - name: Verify enabled sensor with missing vendor key makes no vendor calls
+        run: bash scripts/ci-fingerprint-missing.sh 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/fingerprint-missing-browser.log
       - name: Restart Observatory and verify UI and schema readiness
         run: |
           docker compose start observatory
@@ -101,3 +105,4 @@ jobs:
       - name: Remove isolated stack and its fixture volumes
         if: always()
         run: docker compose down --volumes --remove-orphans
+

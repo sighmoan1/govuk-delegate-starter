@@ -10,6 +10,7 @@ import { verifyAgentSignature } from "@/lib/agent-identity";
 import { agentSessionFromRequest } from "@/lib/agent-session";
 import { askDelegate, reportOutcome } from "@/lib/delegate-client";
 import type { Actor } from "@/lib/delegated-authority";
+import { researchLogEvidence } from "@/lib/fingerprint-research";
 
 const CAPABILITY = "claim_job_expenses";
 
@@ -27,6 +28,7 @@ export async function POST(req: Request) {
     userAgent: req.headers.get("user-agent")?.slice(0, 300) ?? null,
     signatureAgent: sig.verified ? sig.agent : sig.agent ?? null,
     signatureResult: sig.verified ? "verified" : sig.reason,
+    ...await researchLogEvidence(req),
   };
   const form = await req.formData().catch(() => new FormData());
   const body = { evidence: String(form.get("evidence") ?? "") || undefined };
