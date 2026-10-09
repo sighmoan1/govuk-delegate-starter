@@ -38,7 +38,11 @@ test("consent: sign in with One Login, narrow the request, allow; then remove ac
 
   await expect(page.getByRole("heading", { level: 1, name: "Personal assistant wants to act for you" })).toBeVisible();
   for (const checkbox of await page.getByRole("checkbox").all()) await expect(checkbox).not.toBeChecked();
-  await page.getByLabel(/View your tax code/).check();
+  const readPermission = page.getByRole("checkbox", { name: /View your tax code/ });
+  await readPermission.focus();
+  await page.keyboard.press("Space");
+  await expect(readPermission).toBeChecked();
+  await expect(readPermission).toHaveAttribute("aria-describedby", "c-0-hint");
   await page.getByLabel(/Claim tax relief for working from home/).check();
   await expect(page.getByLabel(/Update your employment details/)).not.toBeChecked();
   await page.getByRole("button", { name: "Continue" }).click();
