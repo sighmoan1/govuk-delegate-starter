@@ -24,6 +24,8 @@ jobs:
     env:
       CI: "true"
       NEXT_TELEMETRY_DISABLED: "1"
+      RESEARCH_FEED_ENABLED: "true"
+      RESEARCH_INGEST_ENABLED: "true"
       COMPOSE_PROJECT_NAME: delegate-ci-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v4
@@ -51,6 +53,8 @@ jobs:
           docker compose up -d --build db simulator onelogin delegate hmrc about observatory council 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/stack-start.log
           bash scripts/ci-wait.sh
           bash scripts/ci-observatory-wait.sh
+      - name: Test shared research feed schema
+        run: npm test -w packages/research-feed
       - name: Run Observatory readiness unit tests
         run: npm test -w apps/observatory 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/observatory-tests.log
       - name: Stop Observatory before existing-service regression
@@ -75,6 +79,7 @@ jobs:
         run: |
           docker compose start observatory
           bash scripts/ci-observatory-wait.sh
+          npm run verify:feeds -w apps/observatory
           npx playwright test --config apps/observatory/playwright.config.ts 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/observatory-browser.log
       - name: Collect redacted stack diagnostics
         if: always()

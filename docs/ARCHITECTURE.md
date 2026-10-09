@@ -237,6 +237,6 @@ Build on the merged catalogue publication foundation by completing: (1) dynamic 
 
 ## Observatory research boundary
 
-`apps/observatory` is independently built and served on local port 3303. It owns database `observatory`, a separate database login and generated Prisma client. It is a read-only research scaffold with no event feeds, classifiers or operational decision hooks. No HMRC or Delegate startup dependency points to it. Stopping Observatory leaves their authority, queue and service journeys running.
+`apps/observatory` is independently built and served on local port 3303. It owns database `observatory`, a separate database login and generated Prisma client. It is a research workbench with explicitly enabled, minimised read-only source feeds and append-only research collection. There are no classifiers or operational decision hooks. No HMRC or Delegate startup dependency points to it. Stopping Observatory leaves their authority, queue and service journeys running.
 
 See [research protocol](observatory/RESEARCH_PROTOCOL.md) and [setup and verification](observatory/SETUP.md). It is not GOV.UK Orchestrate or the unimplemented historical Example AI app.
