@@ -1,5 +1,5 @@
 import { describe, it, expect, afterAll } from "vitest";
-import { prisma, newPrincipal, authorise, check, DELEGATE, SERVICE, demoAgent, createRequest, approveRequest } from "./helpers";
+import { prisma, newPrincipal, authorise, check, DELEGATE, SERVICE, demoAgent, createRequest, approveRequest, approve, refundProposal, reserve, markDone } from "./helpers";
 
 afterAll(() => prisma.$disconnect());
 
@@ -119,19 +119,27 @@ describe("ancestors are checked on every use", () => {
 });
 
 describe("step-up for consequential actions", () => {
-  it("changing the refund bank account needs the person's fresh approval each time, whoever asks", async () => {
+  it("changing the refund bank account needs the person's approval of that change; once it is used, the next change needs a new one", async () => {
     const sam = await newPrincipal();
     const { token } = await authorise(sam.id, ["change_refund_account"]);
-    const first = await check({ agent_token: token, principal_id: sam.id, capability: "change_refund_account" });
-    expect(first.body).toMatchObject({ authorised: false, reason: "STEP_UP_REQUIRED" });
+    const proposal = refundProposal();
+    const ask = (p = proposal) => check({ agent_token: token, principal_id: sam.id, capability: "change_refund_account", proposal: p });
+    const first = await ask();
+    expect(first.body).toMatchObject({ authorised: false, reason: "STEP_UP_REQUIRED", step_up: { state: "AWAITING_APPROVAL" } });
     expect(first.body.step_up.user_code).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
     expect(first.body.step_up.approve_url).toContain("/approve?code=");
 
-    // Sam approves once (as the approve page does).
-    await prisma.stepUp.update({ where: { userCode: first.body.step_up.user_code }, data: { status: "APPROVED", approvedAt: new Date() } });
-    expect((await check({ agent_token: token, principal_id: sam.id, capability: "change_refund_account" })).body.authorised).toBe(true);
-    // Used up: the next one needs approval again.
-    expect((await check({ agent_token: token, principal_id: sam.id, capability: "change_refund_account" })).body.reason).toBe("STEP_UP_REQUIRED");
+    // Sam approves it (as the approve page does). Asking does not use it up.
+    expect((await approve(first.body.step_up.user_code, sam.id)).ok).toBe(true);
+    for (let i = 0; i < 3; i++) expect((await ask()).body).toMatchObject({ authorised: true, step_up: { state: "APPROVED" } });
+
+    // The service reserves it for the change, makes the change, and reports it. Now it is spent.
+    const r = await reserve({ agent_token: token, principal_id: sam.id, proposal });
+    expect(r.body.reserved).toBe(true);
+    expect((await markDone({ proposal_id: first.body.step_up.proposal_id, reference: "BA-1" })).body).toMatchObject({ state: "USED" });
+    expect((await ask()).body).toMatchObject({ authorised: true, step_up: { state: "REDEEMED" } });
+    // Another change is a new proposal and needs its own approval.
+    expect((await ask(refundProposal())).body).toMatchObject({ authorised: false, reason: "STEP_UP_REQUIRED", step_up: { state: "AWAITING_APPROVAL" } });
   });
 });
 

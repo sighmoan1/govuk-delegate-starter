@@ -87,9 +87,12 @@ enum DelegationStatus {
 }
 
 enum StepUpStatus {
-  PENDING
-  APPROVED
-  USED
+  PENDING // proposed by the service on the agent's behalf; the person has not decided
+  APPROVED // the person approved this exact proposal; nothing has been redeemed
+  RESERVED // a service holds the approval for one in-flight operation (a lease, not a spend)
+  USED // the service reported the operation committed; spent for good
+  DECLINED // the person said no to this exact proposal
+  EXPIRED // the validity window ran out before it was used
 }
 
 model Principal {
@@ -298,20 +301,37 @@ model Delegation {
   @@map("delegation")
 }
 
-// A fresh approval by the person for one consequential action.
+// The person's approval of ONE proposed consequential transaction (issue #19).
+// It is bound to the mandate, principal, service, capability, a digest of the
+// proposed content and the client's idempotency key, and it expires. Checking
+// never changes it. The service reserves it when it admits the operation and
+// completes it after its own commit (docs/DECISIONS.md, Decision 24).
 model StepUp {
-  id         String       @id @default(uuid())
-  mandateId  String       @map("mandate_id")
-  capability String
-  userCode   String       @unique @map("user_code")
-  status     StepUpStatus @default(PENDING)
-  createdAt  DateTime     @default(now()) @map("created_at")
-  approvedAt DateTime?    @map("approved_at")
-  usedAt     DateTime?    @map("used_at")
+  id             String       @id @default(uuid())
+  mandateId      String       @map("mandate_id")
+  principalId    String       @map("principal_id")
+  serviceId      String       @map("service_id")
+  capability     String
+  userCode       String       @unique @map("user_code")
+  idempotencyKey String       @map("idempotency_key")
+  payloadDigest  String       @map("payload_digest") // sha256 over service + capability + normalised content
+  proposalHash   String       @map("proposal_hash") // sha256 over every binding field, including expiry
+  display        Json         // what the person is shown: [{ label, value }], sensitive values masked
+  status         StepUpStatus @default(PENDING)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  expiresAt      DateTime     @map("expires_at")
+  approvedAt     DateTime?    @map("approved_at")
+  declinedAt     DateTime?    @map("declined_at")
+  reservationId  String?      @map("reservation_id")
+  reservedAt     DateTime?    @map("reserved_at")
+  reservationExpiresAt DateTime? @map("reservation_expires_at")
+  usedAt         DateTime?    @map("used_at")
+  usedReference  String?      @map("used_reference") // the service's own reference for what it committed
 
   mandate Authorisation @relation(fields: [mandateId], references: [id], onDelete: Cascade)
 
-  @@index([mandateId, capability, status])
+  // Also: a partial unique index (one non-expired proposal per mandate + capability + key + digest) lives in SQL only.
+  @@index([mandateId, capability, idempotencyKey])
   @@map("step_up")
 }
 

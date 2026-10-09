@@ -1,5 +1,6 @@
 import type { Lane, Outcome } from "@/generated/prisma";
 import { prisma } from "./db";
+import type { Refusal } from "./operation";
 
 /** HMRC's own log: every request, whichever lane, whatever happened. */
 export async function logEvent(e: {
@@ -27,6 +28,13 @@ export async function logEvent(e: {
   signatureResult?: string | null;
   sessionId?: string | null;
   runTag?: string | null;
+  /** Derived from outcome and reason when not given. */
+  outcomeClass?: OutcomeClass | null;
+  costClass?: string | null;
+  throttleScope?: string | null;
+  retryAfterSeconds?: number | null;
+  /** GOV.UK Delegate's check authorised this request (agent calls only). */
+  authorisedCheck?: boolean;
 }) {
   return prisma.serviceEvent.create({
     data: {
@@ -54,8 +62,66 @@ export async function logEvent(e: {
       signatureResult: e.signatureResult ?? null,
       sessionId: e.sessionId ?? null,
       runTag: e.runTag ?? null,
+      outcomeClass: e.outcomeClass ?? outcomeClassOf(e.outcome, e.reason),
+      costClass: e.costClass ?? null,
+      throttleScope: e.throttleScope ?? null,
+      retryAfterSeconds: e.retryAfterSeconds ?? null,
+      authorisedCheck: e.authorisedCheck ?? false,
     },
   });
+}
+
+/**
+ * What kind of answer an event was. Kept apart because they mean different
+ * things to a person and to an operator:
+ *   UNIQUE_OPERATION    an admitted request that ran (first time)
+ *   REPLAY              a retry answered from the stored outcome; not a new operation
+ *   BUSINESS_REFUSAL    the transaction isn't permissible (duplicate, new evidence needed, open-case limit...)
+ *   INVALID_REQUEST     malformed request or Idempotency-Key misuse
+ *   TECHNICAL_THROTTLE  too much traffic; retry later (429)
+ *   UNAVAILABLE         HMRC or GOV.UK Delegate couldn't take it just now; retry later (503)
+ *   AUTHORITY_REFUSAL   identity or permission (401/403)
+ */
+export type OutcomeClass = "UNIQUE_OPERATION" | "REPLAY" | "BUSINESS_REFUSAL" | "INVALID_REQUEST" | "TECHNICAL_THROTTLE" | "UNAVAILABLE" | "AUTHORITY_REFUSAL";
+
+const BUSINESS_REASONS = new Set(["CAPACITY_EXCEEDED", "DUPLICATE_SUBMISSION", "NEW_EVIDENCE_REQUIRED", "QUERY_NOT_FOUND", "TRANSACTION_NOT_FOUND"]);
+const INVALID_REASONS = new Set(["INVALID_REQUEST", "INVALID_IDEMPOTENCY_KEY", "IDEMPOTENCY_KEY_REUSED", "IDEMPOTENCY_KEY_REQUIRED"]);
+
+export function outcomeClassOf(outcome: Outcome, reason?: string | null): OutcomeClass {
+  if (outcome === "ALLOWED") return reason === "IDEMPOTENT_REPLAY" ? "REPLAY" : "UNIQUE_OPERATION";
+  if (outcome === "THROTTLED" || reason === "RATE_LIMITED") return "TECHNICAL_THROTTLE";
+  if (reason === "SERVICE_UNAVAILABLE" || reason === "DELEGATE_UNAVAILABLE") return "UNAVAILABLE";
+  if (reason && BUSINESS_REASONS.has(reason)) return "BUSINESS_REFUSAL";
+  if (reason && INVALID_REASONS.has(reason)) return "INVALID_REQUEST";
+  return "AUTHORITY_REFUSAL";
+}
+
+type MetricRow = { outcome: Outcome; reason: string | null; outcomeClass: string | null; authorisedCheck: boolean };
+
+/**
+ * The numbers that must not be confused, all from HMRC's own log:
+ *   httpRequests       every request that reached a route
+ *   authorisedChecks   requests where GOV.UK Delegate's check said yes (it spends nothing)
+ *   uniqueOperations   admitted requests that ran, excluding idempotent replays
+ *   businessRefusals   transactions HMRC would not do (a statement about the transaction)
+ *   technicalThrottles requests turned away for traffic, 429 (says nothing about entitlement)
+ * plus replays, unavailable (503), invalid requests and identity/permission
+ * refusals, so the columns add up to httpRequests.
+ */
+export function requestMetrics(rows: MetricRow[]) {
+  const cls = (e: MetricRow) => e.outcomeClass ?? outcomeClassOf(e.outcome, e.reason);
+  const n = (c: OutcomeClass) => rows.filter((e) => cls(e) === c).length;
+  return {
+    httpRequests: rows.length,
+    authorisedChecks: rows.filter((e) => e.authorisedCheck).length,
+    uniqueOperations: n("UNIQUE_OPERATION"),
+    replays: n("REPLAY"),
+    businessRefusals: n("BUSINESS_REFUSAL"),
+    technicalThrottles: n("TECHNICAL_THROTTLE"),
+    unavailable: n("UNAVAILABLE"),
+    invalidRequests: n("INVALID_REQUEST"),
+    authorityRefusals: n("AUTHORITY_REFUSAL"),
+  };
 }
 
 const median = (xs: number[]) => {
@@ -82,6 +148,8 @@ export async function opsSummary(now = new Date()) {
   return {
     lastMinute: laneRows(minute),
     lastDay: laneRows(day),
+    metricsLastMinute: requestMetrics(minute),
+    metricsLastDay: requestMetrics(day),
     perAgent: [...agents].map(([name, rows]) => ({
       name,
       requests: rows.length,
@@ -99,13 +167,14 @@ export async function opsSummary(now = new Date()) {
  */
 export async function capacityByPerson(limit = 10) {
   const rows = await prisma.$queryRaw<
-    { subject: string; requests: bigint; allowed: bigint; at_limit: bigint; refused_other: bigint; agents: bigint; delegations: bigint; last_at: Date }[]
+    { subject: string; requests: bigint; allowed: bigint; at_limit: bigint; throttled: bigint; refused_other: bigint; agents: bigint; delegations: bigint; last_at: Date }[]
   >`
     select subject,
            count(*) as requests,
            count(*) filter (where outcome = 'ALLOWED') as allowed,
            count(*) filter (where reason in ('CAPACITY_EXCEEDED', 'NEW_EVIDENCE_REQUIRED', 'DUPLICATE_SUBMISSION')) as at_limit,
-           count(*) filter (where outcome <> 'ALLOWED' and reason not in ('CAPACITY_EXCEEDED', 'NEW_EVIDENCE_REQUIRED', 'DUPLICATE_SUBMISSION')) as refused_other,
+           count(*) filter (where outcome = 'THROTTLED' or reason = 'RATE_LIMITED') as throttled,
+           count(*) filter (where outcome <> 'ALLOWED' and outcome <> 'THROTTLED' and reason is distinct from 'RATE_LIMITED' and reason not in ('CAPACITY_EXCEEDED', 'NEW_EVIDENCE_REQUIRED', 'DUPLICATE_SUBMISSION')) as refused_other,
            count(distinct agent_id) as agents,
            count(distinct delegation_id) as delegations,
            max(timestamp) as last_at
@@ -115,7 +184,18 @@ export async function capacityByPerson(limit = 10) {
     order by count(*) desc
     limit ${limit}`;
   return rows.map((r) => ({
-    subject: r.subject, requests: Number(r.requests), allowed: Number(r.allowed), atLimit: Number(r.at_limit),
+    subject: r.subject, requests: Number(r.requests), allowed: Number(r.allowed), atLimit: Number(r.at_limit), throttled: Number(r.throttled),
     refusedOther: Number(r.refused_other), agents: Number(r.agents), delegations: Number(r.delegations), lastAt: r.last_at,
   }));
+}
+
+/**
+ * The log fields for a refusal from runOperation. A technical throttle is
+ * outcome THROTTLED and never carries a business reason; a business refusal
+ * is REFUSED and never carries retry guidance.
+ */
+export function refusalEventFields(f: Refusal, costClass: string) {
+  if (f.kind === "TECHNICAL_THROTTLE") return { outcome: "THROTTLED" as const, reason: f.reason, rule: f.rule, capacityUsed: f.used, capacityLimit: f.limit, costClass, throttleScope: f.scope, retryAfterSeconds: f.retryAfterSeconds };
+  if (f.kind === "UNAVAILABLE") return { outcome: "REFUSED" as const, reason: f.reason, costClass, retryAfterSeconds: f.retryAfterSeconds };
+  return { outcome: "REFUSED" as const, reason: f.reason, rule: f.rule, capacityUsed: f.used, capacityLimit: f.limit, costClass };
 }

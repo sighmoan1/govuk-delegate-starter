@@ -20,15 +20,25 @@ export const config = {
   get aboutUrl() { return need("ABOUT_URL", "http://localhost:3304"); },
 };
 
+/**
+ * TECHNICAL, not policy: how long a service may hold an approval for one
+ * in-flight operation before Delegate treats the holder as crashed and lets the
+ * approval be reserved again. Longer than the service's own transaction timeout.
+ */
+export const STEP_UP_RESERVATION_LEASE_SECONDS = 60;
+
 export const AUTHORISATION_DAYS = 30;
 export const REQUEST_DAYS = 7;
 
 /**
- * How long a person's step-up approval stays usable after they give it (issue #38).
- * Approval covers the NEXT positive check for that mandate + capability (it is not
- * bound to transaction details; see docs/DECISIONS.md). Ten minutes is long enough
- * to switch from the GOV.UK approval page back to the agent and let it retry, and
- * short enough that an abandoned approval cannot be picked up later.
+ * POLICY (owner to confirm; Decision 24): the one validity window for a step-up
+ * approval (issues #38, #19). A proposed sensitive change is approvable and
+ * redeemable until this long after the service proposed it. The deadline is fixed
+ * when the proposal is made; approving or reserving does not extend it. A change
+ * already reserved when the window closes may still finish; nothing new may start.
+ * Ten minutes is long enough to go from the agent to GOV.UK, sign in, read the
+ * details and come back, and short enough that an abandoned approval cannot be
+ * picked up later while the mandate is still active. A product and risk call.
  * Override with STEP_UP_MAX_AGE_MINUTES (a positive number; invalid values use the default).
  */
 export const DEFAULT_STEP_UP_MAX_AGE_MINUTES = 10;

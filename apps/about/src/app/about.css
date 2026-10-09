@@ -73,8 +73,22 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .viz-table { margin-top: .75rem; font-size: .9rem; }
 .viz-table table { width: 100%; border-collapse: collapse; margin-top: .5rem; }
 .viz-table th, .viz-table td { padding: .35rem .5rem; border-bottom: 1px solid var(--border-soft); text-align: left; }
+/* Where a number comes from: the words carry it, the border style repeats it (solid measured, dotted demo limit, dashed simulated). */
+.prov { display: inline-block; margin: 0 .35rem .25rem 0; padding: .1rem .55rem; border: 2px solid currentColor; font-size: .9rem; font-weight: 700; white-space: nowrap; }
+.prov--limit { border-style: dotted; }
+.prov--sim { border-style: dashed; }
 .swarm-form { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem 1.5rem; margin: 1.5rem 0 .75rem; }
 .swarm-form .form-group { margin: 0; }
 .viz-scroll { overflow-x: auto; }
 .viz-scroll .viz-svg { min-width: 560px; }
 .viz-scroll:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* Architecture: concise, readable responsibility diagram; source of truth in docs/ARCHITECTURE.md. */
+.boundary-flow { max-width: 48rem; margin: 1rem 0 1.25rem; }
+.boundary-flow__box { padding: 1rem 1.3rem; border: 2px solid var(--border); background: var(--white); }
+.boundary-flow__box strong { display: block; font-size: 1.2rem; margin-bottom: .35rem; }
+.boundary-flow__box p { margin: .4rem 0; }
+.boundary-flow__box .small { font-size: .93rem; }
+.boundary-flow__box--authority { border-color: var(--teal); background: var(--soft-aqua); }
+.boundary-flow__box--service { border-color: var(--coral); }
+.boundary-flow__arrow { text-align: center; color: var(--muted); margin: .5rem 0; font-weight: 700; }

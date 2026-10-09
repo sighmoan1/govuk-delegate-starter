@@ -24,11 +24,12 @@ export const config = {
 };
 
 /**
- * Per-caller throttles, per minute: an operational safety valve, not the
- * control. An authorised agent may act for many people, so its throttle is
- * high; the scarce resource is each person's capacity (see capacity.ts).
- * Unidentified traffic gets very little.
+ * Per-caller throttles, per minute, for traffic that has not been admitted as a
+ * person or an authorised agent: an agent that declares itself without
+ * permission, and traffic that will not say what it is. Signed-in people and
+ * authorised agents are admitted by operator, person and service per cost
+ * class in throughput.ts; what a person may do is in domain-policy.ts.
  */
-export const LANE_LIMITS = { AUTHENTICATED_HUMAN: 600, AUTHORISED_AGENT: 5000, DECLARED_AGENT: 30, UNTRUSTED: 5 } as const;
+export const LANE_LIMITS = { DECLARED_AGENT: 30, UNTRUSTED: 5 } as const;
 /** Simulated extra delay for traffic that will not identify itself. */
 export const UNTRUSTED_DELAY_MS = 1500;

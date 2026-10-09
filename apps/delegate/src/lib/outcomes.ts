@@ -12,6 +12,7 @@ export const outcomeLabel: Record<(typeof OUTCOME_STATUSES)[number], string> = {
 const reasonText: Record<string, string> = {
   CAPACITY_EXCEEDED: "You had reached the limit for this service.",
   RATE_LIMITED: "The service was too busy and held it back.",
+  SERVICE_UNAVAILABLE: "The service was unavailable just then and did nothing.",
   DUPLICATE_SUBMISSION: "It had already been done.",
   HANDLER_ERROR: "The service had a problem.",
 };

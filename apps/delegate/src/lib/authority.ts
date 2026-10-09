@@ -1,7 +1,8 @@
-import { randomInt } from "node:crypto";
 import type { Assurance, AuthorisationStatus, Reason } from "@/generated/prisma";
 import { prisma } from "./db";
-import { stepUpMaxAgeMs } from "./config";
+import { stepUpGate, type ProposalInput, type StepUpInfo } from "./step-ups";
+
+export { userCode } from "./user-code";
 
 /** Who is presenting: an agent signed in with its own credentials, or a sub-agent holding a delegation token. */
 export type Presenter = { kind: "agent"; delegateId: string } | { kind: "delegation"; delegationId: string };
@@ -11,6 +12,8 @@ export type CheckInput = {
   presenter: Presenter;
   service: string; // slug
   capability: string;
+  /** The change the service is about to make, for capabilities that need the person's approval of it. */
+  proposal?: ProposalInput;
 };
 
 export type Chain = {
@@ -28,7 +31,9 @@ export type Chain = {
 export type DenyReason = Exclude<Reason, "VALID_AUTHORISATION" | "INVALID_AGENT_AUTHENTICATION" | "RATE_LIMITED" | "HUMAN_SESSION" | "CAPACITY_EXCEEDED">;
 
 export type CheckResult =
-  | { authorised: true; serviceId: string; chain: Chain }
+  // `stepUp` is present for capabilities that need the person's approval of a specific change. A yes with a stepUp
+  // means authority is sound; whether the change may proceed is stepUp.state (APPROVED only).
+  | { authorised: true; serviceId: string; chain: Chain; stepUp?: StepUpInfo }
   | {
       authorised: false;
       reason: DenyReason;
@@ -36,7 +41,7 @@ export type CheckResult =
       authorisationId?: string;
       serviceId?: string;
       chain?: Partial<Chain>;
-      stepUp?: { userCode: string; stepUpId: string };
+      stepUp?: StepUpInfo;
     };
 
 /** Flip ACTIVE authorisations whose time has run out. Authoritative, server-side. */
@@ -189,41 +194,13 @@ export async function checkAuthority(input: CheckInput, now = new Date()): Promi
     return { authorised: false, reason: "ASSURANCE_TOO_LOW", ...base };
   }
 
-  // ── Consequential actions need the person's fresh approval, whoever asks.
-  // One approval admits one positive check, and only while it is fresh (see
-  // stepUpFreshSince). Consumption is a compare-and-set
-  // (APPROVED -> USED in one UPDATE), so of any number of concurrent checks only
-  // one can win a given approval. A loser tries any other approved step-up, and
-  // otherwise gets the normal STEP_UP_REQUIRED refusal. This is not end-to-end
-  // exactly-once: if the service then fails the action, the approval stays spent.
+  // ── Consequential actions need the person's approval of THIS change.
+  // Reporting its state is a read: a check never uses the approval up (Decision 24).
+  let stepUp: StepUpInfo | undefined;
   if (capability.requiresStepUp) {
-    let consumed = false;
-    for (let attempt = 0; attempt < 5 && !consumed; attempt++) {
-      const approved = await prisma.stepUp.findFirst({ where: { mandateId: mandate.id, capability: input.capability, status: "APPROVED", approvedAt: { gte: stepUpFreshSince(now) } }, orderBy: { approvedAt: "asc" } });
-      if (!approved) break;
-      const used = await prisma.stepUp.updateMany({ where: { id: approved.id, status: "APPROVED" }, data: { status: "USED", usedAt: now } });
-      consumed = used.count === 1;
-    }
-    if (!consumed) return stepUpRequired(mandate.id, input.capability, base);
+    const gate = await stepUpGate({ mandate, serviceSlug: service.slug, capability: input.capability, proposal: input.proposal }, now);
+    if (gate.blocked) return { authorised: false, reason: "STEP_UP_REQUIRED", ...base, stepUp: gate.info };
+    stepUp = gate.info;
   }
-  return { authorised: true, serviceId: service.id, chain };
-}
-
-/** Oldest `approvedAt` still usable at `now`. An approval exactly at the maximum age is still valid; older ones are refused as STEP_UP_REQUIRED. */
-export function stepUpFreshSince(now: Date, maxAgeMs = stepUpMaxAgeMs()) {
-  return new Date(now.getTime() - maxAgeMs);
-}
-
-async function stepUpRequired(mandateId: string, capability: string, base: { status: "ACTIVE"; authorisationId: string; serviceId: string; chain: Chain }): Promise<CheckResult> {
-  const pending =
-    (await prisma.stepUp.findFirst({ where: { mandateId, capability, status: "PENDING" } })) ??
-    (await prisma.stepUp.create({ data: { mandateId, capability, userCode: userCode() } }));
-  return { authorised: false, reason: "STEP_UP_REQUIRED", ...base, stepUp: { userCode: pending.userCode, stepUpId: pending.id } };
-}
-
-/** Short, unambiguous codes a person can type: KQ7M-42XD. */
-export function userCode() {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const pick = () => Array.from({ length: 4 }, () => alphabet[randomInt(alphabet.length)]).join("");
-  return `${pick()}-${pick()}`;
+  return { authorised: true, serviceId: service.id, chain, ...(stepUp ? { stepUp } : {}) };
 }

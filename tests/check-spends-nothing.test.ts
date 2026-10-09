@@ -1,5 +1,5 @@
 import { describe, it, expect, afterAll } from "vitest";
-import { prisma, newPrincipal, authorise, check, revokeAuthorisation, DELEGATE, HMRC, SERVICE } from "./helpers";
+import { prisma, newPrincipal, authorise, check, revokeAuthorisation, DELEGATE, HMRC, SERVICE, approve, refundProposal, reserve } from "./helpers";
 
 afterAll(() => prisma.$disconnect());
 
@@ -99,15 +99,19 @@ describe("Delegate: a positive check spends nothing", () => {
     }
   });
 
-  it("the high-risk step-up gate still applies, and an approval is still used up by exactly one positive check", async () => {
+  it("the high-risk step-up gate still applies, but checking never uses an approval up: only a reservation does, and only one can win", async () => {
     const sam = await newPrincipal();
     const { token } = await authorise(sam.id, ["change_refund_account"]);
-    const first = await check({ agent_token: token, principal_id: sam.id, capability: "change_refund_account" });
+    const proposal = refundProposal();
+    const ask = () => check({ agent_token: token, principal_id: sam.id, capability: "change_refund_account", proposal });
+    const first = await ask();
     expect(first.body).toMatchObject({ authorised: false, reason: "STEP_UP_REQUIRED" });
-    await prisma.stepUp.update({ where: { userCode: first.body.step_up.user_code }, data: { status: "APPROVED", approvedAt: new Date() } });
-    const results = await Promise.all(Array.from({ length: 5 }, () => check({ agent_token: token, principal_id: sam.id, capability: "change_refund_account" })));
-    expect(results.filter((r) => r.body.authorised).length).toBe(1);
-    expect(results.filter((r) => r.body.reason === "STEP_UP_REQUIRED").length).toBe(4);
+    expect((await approve(first.body.step_up.user_code, sam.id)).ok).toBe(true);
+    const checks = await Promise.all(Array.from({ length: 5 }, ask));
+    expect(checks.every((r) => r.body.authorised === true && r.body.step_up.state === "APPROVED")).toBe(true);
+    const reservations = await Promise.all(Array.from({ length: 5 }, () => reserve({ agent_token: token, principal_id: sam.id, proposal })));
+    expect(reservations.filter((r) => r.body.reserved).length).toBe(1);
+    expect(reservations.filter((r) => r.body.reason === "STEP_UP_IN_USE").length).toBe(4);
   });
 });
 
@@ -135,7 +139,7 @@ describe("HMRC: Delegate checks no longer eat HMRC's person-level allowance", ()
     expect(first.body).not.toHaveProperty("delegate_capacity");
   });
 
-  it("HMRC's own business limit still refuses (CAPACITY_EXCEEDED from HMRC), while Delegate allowed every check", async () => {
+  it("HMRC's own tax-code lookup limit throttles (RATE_LIMITED, 429), while Delegate allowed every check", async () => {
     const since = new Date();
     const sam = await newPrincipal();
     const { token } = await authorise(sam.id, ["view_tax_code"]);
@@ -144,10 +148,10 @@ describe("HMRC: Delegate checks no longer eat HMRC's person-level allowance", ()
     expect(outcomes.filter((o) => o.status === 200).length).toBe(60);
     const refused = outcomes.filter((o) => o.status === 429);
     expect(refused.length).toBe(2);
-    expect(refused[0].body).toMatchObject({ reason: "CAPACITY_EXCEEDED", rule: "tax_code_views_per_hour", limit: 60 });
+    expect(refused[0].body).toMatchObject({ reason: "RATE_LIMITED", kind: "TECHNICAL_THROTTLE", rule: "tax_code_views_per_hour", limit: 60, entitlement_affected: false });
     expect(refused[0].body.rule).not.toMatch(/^delegate:/);
 
-    // Delegate allowed all 62 checks: the refusals were HMRC's business rule, not Delegate's.
+    // Delegate allowed all 62 checks: the refusals were HMRC's traffic limit, not Delegate's.
     expect(await prisma.activityEvent.count({ where: { principalId: sam.id, decision: "ALLOW" } })).toBe(62);
     expect(await prisma.activityEvent.count({ where: { principalId: sam.id, decision: "DENY" } })).toBe(0);
     const events = await hmrcEvents(since);

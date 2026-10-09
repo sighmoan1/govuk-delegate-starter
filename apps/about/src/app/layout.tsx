@@ -17,6 +17,7 @@ const LINKS = [
   { href: "/swarm", label: "4. Can a swarm win?" },
   { href: "/evidence", label: "Evidence & experiments" },
   { href: "/how-it-works", label: "How it works" },
+  { href: "/delegate-orchestrate", label: "Delegate or Orchestrate?" },
   { href: "/why", label: "Why" },
   { href: "/precedents", label: "Precedents" },
   { href: "/sams-phone", label: "Sam’s phone" },
