@@ -4,7 +4,25 @@
 
 **The idea.** A person who has signed in with GOV.UK One Login can give an agent limited, revocable permission to act for them. A service like HMRC then needs to add very little to let that agent through on the same happy path as a signed-in person. Because a trusted route exists, government can put friction on traffic that will not identify itself, and steer automation into the approved route instead of being flooded.
 
-The pattern copies HMRC's agent authorisation: an agent asks, the person approves, a relationship is recorded, the service checks it, the person can remove it. See `docs/` for the case, the original brief and the decisions. Decision 12 describes the current shape.
+The pattern copies HMRC's agent authorisation: an agent asks, the person approves, a relationship is recorded, the service checks it, the person can remove it. **Delegate verifies authority; it does not plan or orchestrate AI tasks.** Decision 28 records this boundary.
+
+## Architecture and scope
+
+**Canonical reference:** [Delegate vs Orchestrate — target architecture](docs/ARCHITECTURE.md). This explains system ownership, service-defined capabilities, richer mandates, citizen control, consent, cross-service integration, and why a possible **GOV.UK Orchestrate** is a separate, **theoretical** service rather than part of Delegate.
+
+**On the About site:** [Delegate or Orchestrate?](apps/about/src/app/delegate-orchestrate/page.tsx) is the accessible, plain-language version, served at `/delegate-orchestrate`. The detailed Markdown document and [Decision 28](docs/DECISIONS.md) are the engineering source of truth; the About site explains them to product and policy audiences.
+
+| Product boundary | Responsibility |
+|---|---|
+| **One Login** | Authenticate the person |
+| **GOV.UK Delegate** | Record scoped, revocable authority for their chosen representative |
+| **HMRC / other government services** | Define delegable actions and enforce the underlying business rules |
+| **Citizen's assistant / model provider** | Understand goals, plan and execute tasks within granted authority |
+| **GOV.UK Orchestrate (hypothetical)** | Potential future provider-neutral task continuity and cross-service coordination, **not built** |
+
+**Open architecture question:** [Where should authority records live?](docs/FEDERATED_AUTHORITY.md) compares a central national registry with federated and hybrid recognition of existing departmental authority. It proposes one narrow experiment; federation is **not yet decided or implemented**.
+
+**Current limitation:** Delegate's demo seed and UI still hard-code some HMRC capability definitions. The target is that each service publishes a versioned catalogue and Delegate renders/checks it generically. This is tracked as follow-up engineering work; the documentation is not a claim that the feature exists.
 
 ## What still needs deciding
 
@@ -60,18 +78,30 @@ Open http://localhost:3304. Each scenario has its own page, and each page resets
 2. **Government prioritises people and authorised agents.** HMRC treats signed-in people, authorised agents and unidentified traffic differently. The page sends bursts of traffic as a bot and as an anonymous visitor, and shows who got through.
 
 3. **Which route do agents choose?** Findings from live runs with real agents (ChatGPT with TinyFish so far), from HMRC's own logs: what HMRC could see, and which route each took.
-4. **Can a swarm beat the system?** The same workload run four ways: one person with one agent, with 100 sub-agents, with 100 hidden sessions, and 100 people with one agent each. Business limits belong to the person and are applied by the service (HMRC), so the first three match. Delegate's check never spends them.
+4. **Can a swarm beat the system?** Seven scenarios through the real services, counting technical load (requests, authority checks, 429 and 503 answers, back-end work) apart from service outcomes (claims received, queued, recorded, duplicates absorbed, waiting and worker time). One person with one agent, 100 sub-agents or 100 hidden sessions is one claim, however many requests. 100 people through one agent is 100 claims, received at once and recorded gradually. A burst, a retry storm and a status-poll flood are added, and a labelled, seeded simulation compares an agent-level throttle, a person-level throttle and fair scheduling. Every number is marked measured, depends on a demo-only limit, or simulated. Decision 27.
 
 The core idea, in one line: **identify the agent, authorise the mandate, limit the principal at the service** (Decision 16 in `docs/DECISIONS.md`).
 
 **Reset everything** is on the overview page. From the command line, `npm run db:reset` does the same.
+
+## Validation and evidence
+
+**The working experiment plan is [docs/VALIDATION.md](docs/VALIDATION.md).** It frames GOV.UK Delegate as a falsifiable proposition: can identified, authorised agents improve the management of legitimate automated demand **beyond what a good API and service-local authorisation already deliver**?
+
+- [Experimental protocol](docs/VALIDATION.md) — hypotheses, seven experiments (E1–E7), fair API-only comparator, metrics, controls and falsification criteria.
+- [Evidence register](docs/EVIDENCE.md) — what is exploratory, what exists only as technical test source, and links to independently recorded experimental runs when available.
+- [Demo and claims guide](docs/DEMO_GUIDE.md) — a seven-minute walkthrough and defensible language for stakeholders.
+- [About-site evidence page](apps/about/src/app/evidence/page.tsx) — readable explanation at `/evidence` when deployed.
+
+**No comparative or real-world economic result has yet been published in the register.** Existing route-choice observations and synthetic swarm tests are useful starting points, not proof of national-scale benefit. Keep further architecture debates in the relevant ADRs, not in experiment results.
 
 ## Tests
 
 With the stack running:
 
 ```bash
-npm test            # Vitest: HMRC database-backed idempotency/atomicity tests (apps/hmrc/tests), then over HTTP: scenarios A–F at Delegate's check API and again through HMRC;
+npm test            # Vitest: HMRC database-backed idempotency/atomicity/queue tests (apps/hmrc/tests), then over HTTP: scenarios A–F at Delegate's check API and again through HMRC;
+                    # the swarm experiments (tests/swarm.test.ts: seven scenarios measured, then a seeded simulation; needs the queue worker running);
                     # one event per attempt in both logs; untrusted-lane friction; lifecycle; return URLs
 npm run test:e2e    # Playwright: the scenarios (each started from its UI reset) across all apps, each system alone, a check
                     # that the services carry no demo copy, skip link, 320px reflow. Resets demo data first.
@@ -82,6 +112,7 @@ npm run test:e2e    # Playwright: the scenarios (each started from its UI reset)
 - **Sign-in.** The One Login screens are a lookalike; any password works, and `sam.taylor@example.com` (pre-filled) is the seeded person. Any other email is a different person. Behind the screens, the official simulator issues the codes, signed tokens and userinfo.
 - **The simulator supports one client.** Delegate and HMRC share its client id and test key. In production they would be separate relying parties.
 - **Pairwise subjects.** Real One Login gives each relying party its own subject for the same person. Here both see the same one; production would need a shared sector or a mapping held by Delegate (Decision 12).
+- **Receive now, record later.** `POST /api/job-expenses` with `Prefer: respond-async` and an `Idempotency-Key` stores the claim and answers `202 Accepted` with a `Location: /api/transactions/{id}`; a queue worker (`npm run worker -w apps/hmrc`, started by `npm run dev` and as the `hmrc-worker` compose service) records it shortly after. 202 is a receipt, never an approval, and the receipt time is not a legal filing date. Decision 25.
 - **The friction is a stand-in:** an in-memory limiter, a 1.5 second delay, plain-text refusals and a checkbox challenge page. It shows the incentive, not real abuse controls.
 - **Step-up:** high-risk permissions need the person's approval of one proposed change (`STEP_UP_REQUIRED`, then the approval page showing the details). The approval is used up only when HMRC makes that change, not by being checked, and expires `STEP_UP_MAX_AGE_MINUTES` after the change is proposed (default 10). The details are made up. What the demo does and does not guarantee is in Decision 24.
 - **Dev keys:** `dev/oidc-client-private.pem` is the simulator's published test key. All secrets in compose and `.env.example` files are for local use only.

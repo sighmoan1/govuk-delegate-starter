@@ -25,7 +25,7 @@ const SCENARIOS = [
     href: "/swarm",
     n: 4,
     title: "Can a swarm beat the system?",
-    text: "One person authorising a hundred agents, or running a hundred hidden sessions, gets no more than one person with one agent.",
+    text: "A hundred requests for one claim are one claim, however many agents, sessions or retries carry them. A hundred claims from a hundred people may be legitimate demand: they are received and recorded gradually. Technical load and outcomes are measured apart.",
   },
 ];
 
@@ -70,6 +70,17 @@ export default async function Overview({ searchParams }: { searchParams: Promise
 
       <p><a href="/ask-your-agent">Ask your own agent</a> to find out about a claim, submit one, answer HMRC’s question with you, or keep you posted.</p>
 
+      <h2>What would count as evidence?</h2>
+      <div className="two-thirds">
+        <p>
+          This prototype demonstrates a possible authorised route. We have not yet demonstrated that it improves government
+          outcomes or costs. The key experiment compares a <strong>good agent API using service-local delegation</strong>
+          with <strong>the same API plus GOV.UK Delegate</strong>, measuring the extra value of independent citizen control
+          alongside additional effort and operating cost.
+        </p>
+        <p><Link href="/evidence">See our experiments, existing observations and evidence register</Link>.</p>
+      </div>
+
       <h2>Four scenarios</h2>
       <p>Each one stands on its own and can reset everything to the right starting point.</p>
       <ul className="scenarios">
@@ -81,6 +92,17 @@ export default async function Overview({ searchParams }: { searchParams: Promise
           </li>
         ))}
       </ul>
+
+      <h2>Delegate is not Orchestrate</h2>
+      <div className="two-thirds">
+        <p>
+          GOV.UK Delegate records who a person allows to act and within which limits; it does not tell the assistant
+          what tasks to carry out. The person’s assistant plans the work. Government services decide what transactions
+          are valid. A possible future Orchestrate could offer provider-neutral task tracking and handoffs, but is
+          not part of this prototype.
+        </p>
+        <p><Link href="/delegate-orchestrate">Explore the Delegate / Orchestrate architecture and responsibilities</Link>.</p>
+      </div>
 
       <h2>The three systems</h2>
       <ul className="systems">

@@ -29,7 +29,7 @@
 
 ### Capacity — what are we limiting? → DB-04
 
-**Project principle accepted 9 October 2026:** [Regulate processing demand, not citizens' rights](docs/decisions/2026-10-09-capacity-and-rights.md). Government services should distinguish distinct citizen claims from repeated technical attempts, preserve lawful opportunities to submit, deduplicate retries, apply proportionate technical throttles and seek durable fair admission rather than suppress genuine demand. The agreement **does not** mandate unconditional acceptance during outages, create new legal filing rights or approve particular queue/eligibility limits. **DB-04 remains PARTIALLY DECIDED:** departmental service-policy and deadline rules still need review.
+**Project principle accepted 9 October 2026:** [Regulate processing demand, not citizens' rights](decisions/2026-10-09-capacity-and-rights.md). Government services should distinguish distinct citizen claims from repeated technical attempts, preserve lawful opportunities to submit, deduplicate retries, apply proportionate technical throttles and seek durable fair admission rather than suppress genuine demand. The agreement **does not** mandate unconditional acceptance during outages, create new legal filing rights or approve particular queue/eligibility limits. **DB-04 remains PARTIALLY DECIDED:** departmental service-policy and deadline rules still need review.
 
 
 - **Agreed implementation principle:** identity and authority checks are distinct from domain policy and request throughput. HMRC's technical throttles are not itself a decision that someone loses an underlying right; the service owns business constraints and integrity. [Decision 23](DECISIONS.md#decision-23--business-rules-and-traffic-limits-are-separate-code-separate-answers-separate-metrics).
@@ -94,7 +94,7 @@ The key distinction is **authority to take an action** versus **authority to dec
 | No AI-content detection as security control | Detection is uncertain; identify/verifiably authorise the agent where possible | [Decisions 6–8](DECISIONS.md) | No proof all agents will choose the authorised route |
 | Idempotent claim/answer handling | One retry must not create extra business effects | [Decision 21](DECISIONS.md#decision-21--one-client-operation-at-most-one-committed-business-transaction) | Receiving service's feature; not proof of Delegate's marginal value |
 | Transaction-specific step-up | Consequential change proposal is bound to approval | [Decision 24](DECISIONS.md#decision-24--a-step-up-approval-is-for-one-proposed-change-and-checking-never-spends-it) | Mechanics implemented, legal/policy trigger still open |
-| Delegate is not Orchestrate | Authority platform rather than provider task manager | [Architecture PR #27](https://github.com/sighmoan1/govuk-delegate-starter/pull/27) | Documented on a **still-open PR**, not merged policy |
+| Delegate is not Orchestrate | Authority platform rather than provider task manager | [Architecture PR #27](https://github.com/sighmoan1/govuk-delegate-starter/pull/27) | Decision 28 records the synthetic prototype architecture; not national policy |
 | Federated vs central authority origin | Hybrid is a hypothesis, not an approved architecture | [Federation options in PR #27](https://github.com/sighmoan1/govuk-delegate-starter/pull/27) | Requires experiment [#43](https://github.com/sighmoan1/govuk-delegate-starter/issues/43) and decision DB-07 |
 
 **Important:** an architectural decision made for *a synthetic prototype* is not automatically an approved national-government legal or policy decision. Preserve exact scope and date in any eventual ADR.
@@ -124,7 +124,7 @@ Every decision issue should retain:
 - **Outcome:** dated ADR in [DECISIONS.md](DECISIONS.md) with scope, rationale, consequences and dissent; then update this table and close/supersede issue.
 - **Implementation:** a *separate engineering issue* only if the chosen direction is not already implemented. Don't use a code PR to quietly settle policy.
 
-**ADR numbering:** check the current final number on `main` at decision time. The still-open [PR #27](https://github.com/sighmoan1/govuk-delegate-starter/pull/27) includes an ADR numbered “21” on its historical branch while main has advanced beyond Decision 24; reconcile numbering when merging. Do not rewrite historical decisions without a supersession note.
+**ADR numbering:** polling is Decision 26, swarm accounting Decision 27, and the Delegate/Orchestrate boundary Decision 28 (historically numbered 21 in PR #27). Decisions 21–25 remain intact. Check the current final number before adding an ADR; preserve superseded decisions with a visible note.
 
 ## 6. Where the artefacts belong
 

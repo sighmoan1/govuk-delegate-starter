@@ -32,6 +32,14 @@ export default function HowItWorks() {
 └──────────────────────────────────────────────────────────────────┘`}</pre>
 
       <div className="two-thirds">
+        <h2>Who manages tasks, and who manages authority?</h2>
+        <p>
+          An agent or AI provider manages the citizen’s task. Delegate checks a registered mandate; it does not
+          interpret goals or orchestrate work. Each receiving department defines its own actions and rules.
+          <Link href="/delegate-orchestrate"> See the Delegate / Orchestrate architecture</Link> and the
+          distinction between the current prototype and the proposed cross-government design.
+        </p>
+
         <h2>The relationship, not a token</h2>
         <p>
           The agent does not carry a signed permission around. Each time it calls HMRC, HMRC asks GOV.UK Delegate whether this agent may do
@@ -83,6 +91,12 @@ x-service-key: <HMRC's own key>
           The limits are counted against the person’s One Login identifier, never against an agent or session. A person with a hundred agents,
           or a hundred hidden sessions, gets the same as a person with one. An agent’s identity decides what it may do: sensitive changes
           need an agent whose identity is verified or registered, plus the person’s fresh approval. It never raises the limits.
+        </p>
+        <p>
+          That is about one person’s claim, not about how many claims there are. A hundred claims from a hundred different people is not a swarm
+          beating a limit: it may be a hundred people’s legitimate demand, sent through one agent provider. HMRC receives them all and records them
+          gradually. What it slows, with a 429 that says when to come back, is traffic that costs it something, such as repeated polling. The
+          swarm page measures the two apart, and says which numbers are measured and which are simulated.
         </p>
         <p>
           Agents can pass part of their authority to sub-agents. Each one stays inside what its parent was given, down to a maximum depth,
