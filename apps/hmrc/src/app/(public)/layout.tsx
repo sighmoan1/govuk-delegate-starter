@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { config } from "@/lib/config";
 import { currentTaxpayer } from "@/lib/session";
 import { currentAgentSession } from "@/lib/agent-session";
@@ -10,10 +9,10 @@ export default async function PublicLayout({ children }: { children: React.React
     <>
       <header className="service-header hmrc-header">
         <div className="width-container service-header__inner">
-          <Link className="brand-link" href="/">
+          <a className="brand-link" href="/">
             <span className="brand-name">GOV.UK</span>
-          </Link>
-          <Link className="service-name" href="/">Claim tax relief for your job expenses</Link>
+          </a>
+          <a className="service-name" href="/">Claim tax relief for your job expenses</a>
           {taxpayer && (
             <form action="/auth/logout" method="post" className="header-signout">
               <button className="header-link" type="submit">Sign out</button>

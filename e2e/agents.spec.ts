@@ -82,6 +82,8 @@ test("a verified agent is shown the proper route, Sam approves on her own device
   await expect(agent.getByRole("heading", { name: "Act for someone" })).toBeVisible();
   await expect(agent.getByText("You’re using Test agent.")).toBeVisible();
   await expect(agent.getByText("We can see you are")).toBeVisible();
+  // Attribution is shown in the claim-status view, which needs its own permission.
+  await agent.getByLabel("See how their claims are going").check();
   await agent.getByRole("button", { name: "Get a code" }).click();
   await expect(agent.getByRole("heading", { name: "Ask the person to approve you" })).toBeVisible();
   const code = (await agent.locator(".code-panel--big").innerText()).trim();

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { Transaction } from "@/generated/prisma";
 import { fmt } from "@/lib/format";
 import { RECEIPT_NOTE, STATUS_TEXT } from "@/lib/transactions";
@@ -14,13 +13,13 @@ export function TransactionPanel({ t }: { t: Props }) {
   const waiting = t.status === "QUEUED" || t.status === "PROCESSING";
   return (
     <div className="two-thirds">
-      <Link className="back-link" href="/your-tax">Back</Link>
+      <a className="back-link" href="/your-tax">Back</a>
       <span className="caption">Working-from-home claim</span>
       <h1>{text.heading}</h1>
       <div className="inset-text" role="status">
         <p>{text.meaning}</p>
         {waiting && <p>You do not need to send it again. This page does not update by itself: <a href={`/transactions/${t.id}`}>check again</a> in a minute.</p>}
-        {t.status === "FAILED" && <p>You can <Link href="/claim">make the claim again</Link>.</p>}
+        {t.status === "FAILED" && <p>You can <a href="/claim">make the claim again</a>.</p>}
       </div>
       <dl className="summary-list">
         <div><dt>Receipt reference</dt><dd>{t.id}</dd></div>

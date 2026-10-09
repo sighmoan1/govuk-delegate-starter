@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { randomUUID } from "node:crypto";
 import { requireViewer } from "@/lib/guard";
@@ -13,12 +12,12 @@ export default async function Check({ searchParams }: { searchParams: Promise<{ 
   if (required !== "yes") redirect("/claim?error=required");
   return (
     <div className="two-thirds">
-      <Link className="back-link" href="/claim">Back</Link>
+      <a className="back-link" href="/claim">Back</a>
       <h1>Check your answers</h1>
       <dl className="summary-list">
         <div><dt>Claim</dt><dd>Tax relief for working from home</dd><dd /></div>
         <div><dt>Tax year</dt><dd>{TAX_YEAR}</dd><dd /></div>
-        <div><dt>Employer required you to work from home</dt><dd>Yes</dd><dd><Link href="/claim">Change</Link></dd></div>
+        <div><dt>Employer required you to work from home</dt><dd>Yes</dd><dd><a href="/claim">Change</a></dd></div>
         <div><dt>Relief</dt><dd>{WFH_RELIEF}</dd><dd /></div>
         <div><dt>Your tax code will change</dt><dd>{taxpayer.taxCode} to {WFH_NEW_CODE}</dd><dd /></div>
       </dl>

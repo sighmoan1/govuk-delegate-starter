@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { requireViewer } from "@/lib/guard";
 import { TAX_YEAR, WFH_RELIEF } from "@/lib/taxpayers";
 
@@ -10,7 +9,7 @@ export default async function ClaimForm({ searchParams }: { searchParams: Promis
   await requireViewer("/claim", "claim_job_expenses");
   return (
     <div className="two-thirds">
-      <Link className="back-link" href="/your-tax">Back</Link>
+      <a className="back-link" href="/your-tax">Back</a>
       {error && (
         <div className="error-summary" role="alert" aria-labelledby="err-h">
           <h2 id="err-h">There is a problem</h2>

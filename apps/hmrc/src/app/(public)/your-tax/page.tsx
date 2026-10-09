@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { randomUUID } from "node:crypto";
-import Link from "next/link";
 import { config } from "@/lib/config";
 import { requireViewer, viewerCan } from "@/lib/guard";
 import { claimsFor, reopenDisputedAnswers } from "@/lib/taxpayers";
@@ -75,7 +74,7 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
         <>
           <h2>Working from home</h2>
           <p>You have not claimed tax relief for working from home this year. If your employer required you to work from home, you can claim now. It takes about a minute.</p>
-          <Link className="button" href="/claim">Claim tax relief for working from home</Link>
+          <a className="button" href="/claim">Claim tax relief for working from home</a>
         </>
       ) : (
         <p>Your working-from-home claim for this year has been received.</p>
@@ -106,7 +105,7 @@ export default async function YourTax({ searchParams }: { searchParams: Promise<
               <li key={t.id}>
                 <strong>Working-from-home claim: {STATUS_TEXT[t.status].heading.toLowerCase()}.</strong>{" "}
                 <span>Received {fmt(t.receivedAt)}. </span>
-                <Link href={`/transactions/${t.id}`}>See where it has got to</Link>
+                <a href={`/transactions/${t.id}`}>See where it has got to</a>
               </li>
             ))}
           </ul>
