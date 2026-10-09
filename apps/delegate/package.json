@@ -10,6 +10,7 @@
     "start": "next start -p 3300",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
+    "catalogue:register": "tsx prisma/seed.ts --catalogue-only",
     "db:reset": "tsx prisma/seed.ts",
     "typecheck": "tsc --noEmit"
   },

@@ -1,4 +1,5 @@
 import type { Assurance, AuthorisationStatus, Reason } from "@/generated/prisma";
+import type { CatalogueCapability } from "./catalogues";
 import { prisma } from "./db";
 import { stepUpGate, type ProposalInput, type StepUpInfo } from "./step-ups";
 
@@ -190,7 +191,10 @@ export async function checkAuthority(input: CheckInput, now = new Date()): Promi
 
   // ── Sensitive actions need an agent whose identity is verified or registered.
   // Assurance decides WHAT an agent may do.
-  if (capability.riskLevel === "HIGH" && delegation.assurance === "DECLARED") {
+  const metadata = capability.metadata as unknown as CatalogueCapability | null;
+  const rank = { DECLARED: 0, REGISTERED: 1, VERIFIED: 2 };
+  const minimum = metadata?.minimum_assurance ?? (capability.riskLevel === "HIGH" ? "REGISTERED" : "DECLARED");
+  if (rank[delegation.assurance] < rank[minimum]) {
     return { authorised: false, reason: "ASSURANCE_TOO_LOW", ...base };
   }
 
@@ -198,7 +202,7 @@ export async function checkAuthority(input: CheckInput, now = new Date()): Promi
   // Reporting its state is a read: a check never uses the approval up (Decision 24).
   let stepUp: StepUpInfo | undefined;
   if (capability.requiresStepUp) {
-    const gate = await stepUpGate({ mandate, serviceSlug: service.slug, capability: input.capability, proposal: input.proposal }, now);
+    const gate = await stepUpGate({ mandate, serviceSlug: service.slug, capability: input.capability, fields: metadata?.approval_fields, proposal: input.proposal }, now);
     if (gate.blocked) return { authorised: false, reason: "STEP_UP_REQUIRED", ...base, stepUp: gate.info };
     stepUp = gate.info;
   }

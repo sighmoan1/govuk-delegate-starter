@@ -1,23 +1,4 @@
-export type CapabilitySpec = {
-  label: string; // what the person reads on GOV.UK
-  short: string; // compact form for tables and agent steps
-  endpoint: string;
-  method: "GET" | "POST";
-};
-
-export const CAPABILITY_COPY: Record<string, CapabilitySpec> = {
-  view_tax_code: { label: "View your tax code", short: "View tax code", endpoint: "/api/tax-code", method: "GET" },
-  claim_job_expenses: { label: "Claim tax relief for working from home", short: "Claim working-from-home relief", endpoint: "/api/job-expenses", method: "POST" },
-  update_employment: { label: "Update your employment details", short: "Update employment details", endpoint: "/api/employment", method: "POST" },
-  change_refund_account: { label: "Change the bank account for refunds", short: "Change refund bank account", endpoint: "/api/refund-account", method: "POST" },
-  view_claim_status: { label: "See how your claims are going", short: "View claim status", endpoint: "/api/claims", method: "GET" },
-  respond_to_query: { label: "Answer HMRC’s questions about your claim", short: "Answer HMRC question", endpoint: "/api/claims/respond", method: "POST" },
-  check_claim_progress: { label: "Check your claim progress on a schedule (a few times a day)", short: "Check claim progress", endpoint: "/api/claims/progress", method: "GET" },
-  change_address: { label: "Change your address", short: "Change address", endpoint: "/api/address", method: "POST" },
-};
-
-export const CAPABILITY_CODES = Object.keys(CAPABILITY_COPY);
-export const capabilityLabel = (code: string) => CAPABILITY_COPY[code]?.short ?? code;
+export const capabilityLabel = (code: string) => code.replace(/_/g, " ").replace(/^./, c => c.toUpperCase());
 
 /** Plain-English reasons, from the person's point of view. */
 export const REASON_COPY: Record<string, string> = {

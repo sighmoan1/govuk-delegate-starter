@@ -1,0 +1,39 @@
+
+ RUN  v3.2.7 <repo>
+
+ ✓ tests/hmrc.test.ts (10 tests) 9990ms
+   ✓ the untrusted lane > no identity: slow plain-text refusal pointing at Delegate, no structured body, then 429s  7584ms
+   ✓ every attempt is logged by HMRC > one HMRC event per request across all lanes  1652ms
+ ✓ tests/swarm.test.ts (30 tests) 23901ms
+   ✓ real: no cross-user state mixing > one person's traffic does not draw on another's: whatever a flood costs its person, a bystander's identical requests all succeed  431ms
+   ✓ real: no cross-user state mixing > an agent's identity assurance buys no extra capacity: the same traffic gets the same answers at any assurance level  628ms
+   ✓ real: the accounting is reproducible > running the same scenarios twice, with new people, gives the same claim and duplicate counts  6166ms
+ ✓ tests/step-up.test.ts (36 tests) 3581ms
+ ✓ tests/check-spends-nothing.test.ts (8 tests) 3139ms
+   ✓ Delegate: a positive check spends nothing > 100 repeated valid checks by one agent stay authorised, identical, logged, and create no quota records  637ms
+   ✓ Delegate: a positive check spends nothing > revoked, expired and undelegated still DENY after many allowed checks, each one logged  301ms
+   ✓ HMRC: Delegate checks no longer eat HMRC's person-level allowance > after 100 bare Delegate checks, HMRC still has its full allowance and counts only its own use  553ms
+   ✓ HMRC: Delegate checks no longer eat HMRC's person-level allowance > HMRC's own tax-code lookup limit throttles (RATE_LIMITED, 429), while Delegate allowed every check  1181ms
+ ✓ tests/claims.test.ts (17 tests) 2168ms
+ ✓ tests/idempotency.test.ts (11 tests) 1951ms
+   ✓ claim_job_expenses: Idempotency-Key > 100 concurrent identical retries create exactly one claim; every response references it  383ms
+   ✓ respond_to_query: Idempotency-Key > 50 concurrent identical answers record one answer and one receipt; a different answer under the key is 409  319ms
+ ✓ tests/delegation.test.ts (22 tests) 1534ms
+ ✓ tests/chain.test.ts (10 tests) 967ms
+ ✓ tests/web-bot-auth.test.ts (25 tests) 1061ms
+   ✓ Web Bot Auth verification > the real ChatGPT and Google key directories parse as Ed25519 JWKS  1040ms
+ ✓ tests/progress-changes.test.ts (3 tests) 712ms
+   ✓ progress change detection > detects a withdrawn answer after the watermark, on every later poll with that watermark, and not after it  313ms
+ ✓ tests/outcomes.test.ts (5 tests) 547ms
+ ✓ tests/consent-csrf.test.ts (8 tests) 591ms
+ ✓ tests/catalogues.test.ts (5 tests) 388ms
+ ✓ tests/catalogue-adoption.test.ts (4 tests) 228ms
+ ✓ tests/delegate-failure.test.ts (15 tests) 130ms
+ ✓ tests/swarm-recovery.test.ts (2 tests) 6ms
+ ✓ tests/hmrc-guard.test.ts (16 tests) 6ms
+
+ Test Files  17 passed (17)
+      Tests  227 passed (227)
+   Start at  19:32:11
+   Duration  55.02s (transform 206ms, setup 25ms, collect 801ms, tests 50.90s, environment 1ms, prepare 546ms)
+

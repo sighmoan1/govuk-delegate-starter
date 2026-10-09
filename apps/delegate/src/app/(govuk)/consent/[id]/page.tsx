@@ -6,7 +6,6 @@ import { cookies } from "next/headers";
 import { currentPrincipal, SESSION_COOKIE } from "@/lib/session";
 import { decisionToken } from "@/lib/consent-csrf";
 import { prisma } from "@/lib/db";
-import { CAPABILITY_COPY } from "@/lib/capabilities";
 
 export const metadata: Metadata = { title: "Request to act for you" };
 
@@ -38,7 +37,7 @@ export default async function RequestPage({
   }
 
   const requested = req.permissions.map((p) => p.capability);
-  const all = await prisma.capability.findMany({ where: { serviceId: req.serviceId }, orderBy: { sortOrder: "asc" } });
+  const all = await prisma.capability.findMany({ where: { serviceId: req.serviceId, catalogueId: req.permissions[0]?.capability.catalogueId ?? null }, orderBy: { sortOrder: "asc" } });
   const notRequested = all.filter((c) => !requested.some((r) => r.id === c.id));
   const hasError = Boolean(error) && error !== "AGENT_CANNOT_APPROVE";
 
@@ -72,7 +71,7 @@ export default async function RequestPage({
               <div className="choice-item" key={c.id}>
                 <input id={`c-${i}`} type="checkbox" name="c" value={c.code} defaultChecked={hasError ? false : kept ? kept.includes(c.code) : true} aria-describedby={`c-${i}-hint`} />
                 <label htmlFor={`c-${i}`}>
-                  {CAPABILITY_COPY[c.code]?.label ?? c.name}
+                  {c.name}
                   {c.riskLevel === "HIGH" && <> — <span className="sensitive">sensitive action</span></>}
                   <span id={`c-${i}-hint`} className="choice-hint">
                     {c.riskLevel === "HIGH" ? "This affects money or where HMRC writes to you. Only allow it if you are sure." : c.riskLevel === "MEDIUM" ? "This changes your tax records." : "This only reads information."}

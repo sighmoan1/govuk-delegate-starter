@@ -1,6 +1,7 @@
 // An agent that has arrived at a service (in a browser, without its own
 // Delegate credentials) asks to act for someone. The service raises the
 // request on its behalf; the person approves on GOV.UK with a short code.
+import { currentCapabilities } from "./catalogues";
 import { prisma } from "./db";
 import { DomainError } from "./requests";
 import { userCode, rootDelegationFor } from "./authority";
@@ -44,7 +45,7 @@ export async function agentDelegateFor(agent: ArrivingAgent) {
 export async function createServiceInitiatedRequest(serviceId: string, agent: ArrivingAgent, capabilities: string[]) {
   const service = await prisma.service.findUniqueOrThrow({ where: { id: serviceId }, include: { capabilities: true } });
   const wanted = [...new Set(capabilities)];
-  const caps = service.capabilities.filter((c) => wanted.includes(c.code));
+  const caps = (await currentCapabilities(service.id)).filter((c) => wanted.includes(c.code));
   if (caps.length === 0 || caps.length !== wanted.length) throw new DomainError("UNKNOWN_CAPABILITY", "Ask for at least one of this service's actions");
   const delegate = await agentDelegateFor(agent);
   const req = await prisma.authorisationRequest.create({

@@ -1,3 +1,4 @@
+import { currentCapabilities } from "./catalogues";
 import { prisma } from "./db";
 import { AUTHORISATION_DAYS, REQUEST_DAYS } from "./config";
 
@@ -24,7 +25,7 @@ export async function createRequest(input: {
   if (!service) throw new DomainError("UNKNOWN_SERVICE", "Unknown service");
   const wanted = [...new Set(input.capabilities)];
   if (wanted.length === 0) throw new DomainError("NO_CAPABILITIES", "Request at least one capability");
-  const caps = service.capabilities.filter((c) => wanted.includes(c.code));
+  const caps = (await currentCapabilities(service.id)).filter((c) => wanted.includes(c.code));
   if (caps.length !== wanted.length) throw new DomainError("UNKNOWN_CAPABILITY", "Unknown capability for this service");
 
   return prisma.authorisationRequest.create({

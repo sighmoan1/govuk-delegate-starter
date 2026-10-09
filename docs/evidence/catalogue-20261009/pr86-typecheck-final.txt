@@ -1,0 +1,24 @@
+
+> govuk-delegate-prototype@0.2.0 typecheck
+> npm run typecheck --workspaces --if-present
+
+
+> @prototype/about@0.2.0 typecheck
+> tsc --noEmit
+
+
+> @prototype/delegate@0.2.0 typecheck
+> tsc --noEmit
+
+
+> @prototype/hmrc@0.2.0 typecheck
+> tsc --noEmit
+
+
+> @prototype/onelogin@0.2.0 typecheck
+> tsc --noEmit
+
+
+> @prototype/web-bot-auth@0.1.0 typecheck
+> tsc --noEmit -p .
+

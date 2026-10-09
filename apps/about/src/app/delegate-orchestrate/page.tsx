@@ -115,8 +115,8 @@ export default function DelegateOrOrchestrate() {
         </p>
         <p>
           A new department should not require us to add its permission names or endpoints to Delegate's source code.
-          Authenticated catalogue publication, immutable versions and public discovery are already built. HMRC still
-          uses its central demo fixture for permissions; moving that fixture into an HMRC-owned catalogue is in review.
+          Authenticated catalogue publication, immutable versions and public discovery are already built. HMRC owns
+          its versioned catalogue and registers it during setup, preserving historical permissions.
           Generic consent rendering and consent evidence snapshots follow separately.
         </p>
       </div>
@@ -172,7 +172,7 @@ export default function DelegateOrOrchestrate() {
 
       <h2>What we are building next</h2>
       <p>
-        Build on catalogue publication: migrate HMRC definitions, render generic consent, let people grant richer boundaries,
+        Build on catalogue publication: render generic consent, let people grant richer boundaries,
         and a second mock department integrates without changing Delegate code. Later we can explore grouped consent.
         We are <strong>not</strong> adding agent planning, task scheduling or orchestration to Delegate.
       </p>

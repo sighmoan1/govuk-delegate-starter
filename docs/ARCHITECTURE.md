@@ -210,7 +210,7 @@ The central registry, fully federated and hybrid alternatives—including privac
 |---|---|---|
 | One Login + Delegate consent lifecycle | **Implemented** with simulator and synthetic identities | Real relying-party integration and identity correlation |
 | Service catalogue publication/discovery | **Implemented**: authenticated publication, immutable history, bounded schema, public discovery | Governed catalogue lifecycle and service adoption |
-| HMRC delegation permissions | **Implemented**, still using the central fixture; HMRC-owned migration under review (#86) | Catalogue-backed bootstrap and generic consent (#29–31) |
+| HMRC delegation permissions | **Implemented**, HMRC-owned catalogue bootstrap with historical grant preservation (#86) | Generic consent and immutable consent snapshots (#30–31) |
 | Rich structured constraints | **Not implemented**; mostly flat capability codes | Structured grant/mandate constraints |
 | User-facing task purpose | **Not a structured consent object** | Human-readable label, not an authorisation bypass |
 | HMRC authority checks and revocation | **Implemented** | Generic, service-neutral check plus structured grants |
@@ -222,7 +222,7 @@ The prototype's earlier decision "Identify the agent. Authorise the mandate. Lim
 
 ## 11. What to build next
 
-Build on the merged catalogue publication foundation by completing: (1) HMRC-owned catalogue bootstrap (under review, #86); (2) dynamic generic consent rendering; (3) structured enforceable mandates with a stable check contract; (4) an independent second mock department as a decoupling proof; (5) optional grouped consent and grant-template portability. These are distinct implementation phases.
+Build on the merged catalogue publication foundation by completing: (1) dynamic generic consent rendering; (2) structured enforceable mandates with a stable check contract; (3) an independent second mock department as a decoupling proof; (4) optional grouped consent and grant-template portability. These are distinct implementation phases.
 
 **Acceptance test for the architectural boundary:** a new government service can publish its own capability catalogue, offer consent, check mandates and receive an enforceable result **without adding a service-specific capability or endpoint to Delegate's application code**.
 

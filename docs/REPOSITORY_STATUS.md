@@ -59,3 +59,10 @@ Verification for this refresh is recorded below after execution. Existing `.last
 Executed against `949f2e2`: workspace typecheck and About production build passed; HMRC tests 118/118, root integration tests 223/223, browser tests 28 passed (6 public-tunnel tests skipped), documentation smoke passed at 1280px and 320px. The manual clean-fixture approval → ALLOW → undelegated DENY → revoke → DENY flow passed, with every attempt visible in activity.
 
 The local demo stack was rebuilt with its database volume retained; the HMRC worker is running and `/evidence`, `/delegate-orchestrate` and `/project-status` return 200. [The pinned engineering record and archived output](evidence/ENGINEERING-20261009.md) include reproduction, independent DB assertions and invalid initial setup runs. Dependency installation reported 10 audit advisories; remediation remains separate work. [PR #88](https://github.com/sighmoan1/govuk-delegate-starter/pull/88) contains this refresh.
+
+
+## Catalogue adoption follow-up — PR #86
+
+HMRC now owns its versioned capability definitions in `apps/hmrc/service-catalogue.json`. Bootstrap registers them through the authenticated publication handler; citizen reset preserves publications. New requests select the current catalogue, while pending consent and grants retain historical capability IDs. Account and activity views use those stored labels. The branch inventory above preserves the earlier audit baseline; #30–33 remain follow-up work.
+
+Catalogue adoption validation: typecheck/production builds passed; final API 227 passed, HMRC 118 passed, upgraded and fresh browser suites 28 passed each (6 public-tunnel skips each), documentation smoke passed. [Pinned evidence and negative-run notes](evidence/CATALOGUE-ADOPTION-20261009.md).

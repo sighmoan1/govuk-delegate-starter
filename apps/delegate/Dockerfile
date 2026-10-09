@@ -10,6 +10,8 @@ COPY packages/web-bot-auth ./packages/web-bot-auth
 COPY styles ./styles
 COPY dev ./dev
 COPY apps/delegate ./apps/delegate
+# Local demo bootstrap configuration is owned by HMRC; Delegate imports no HMRC code.
+COPY apps/hmrc/service-catalogue.json ./apps/hmrc/service-catalogue.json
 WORKDIR /repo/apps/delegate
 RUN npm run build
 ENV NODE_ENV=production
