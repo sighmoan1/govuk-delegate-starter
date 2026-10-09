@@ -81,11 +81,11 @@ Sources: [Implemented behaviour at the briefing baseline](https://github.com/sig
 ## 7. Observatory makes the evidence inspectable
 
 The event explorer connects service attempts with recorded authority checks and outcomes.
-Sensor coverage, recorded predictions and protected research labels have separate fields.
+Comparing several clues may improve understanding. Sensor coverage and recorded predictions stay visible.
 
 ### Speaker notes
 
-Demo C requires the unmerged dashboard and classifier PRs in a reviewed isolated stack. Use the read-only monitoring view first. Ground truth in research view describes audited scripted execution, not an inferred label. The current deterministic signature stub reports observed signature evidence. It is not a trained AI detector. Actual vendor validation remains outstanding.
+Demo C requires the unmerged dashboard and classifier PRs in a reviewed isolated stack. Use the read-only monitoring view first. Ground truth in research view describes audited scripted execution, not an inferred label. Combining clues is the proposed approach; its accuracy still needs testing on varied agents and people. Protected execution labels remain separate from predictions. The current deterministic signature stub reports observed signature evidence. It is not a trained AI detector. Actual vendor validation remains outstanding.
 
 Sources: [Observatory dashboard, PR 110, unmerged at preparation](https://github.com/sighmoan1/govuk-delegate-starter/pull/110), [Blind classifier contract, PR 109, unmerged at preparation](https://github.com/sighmoan1/govuk-delegate-starter/pull/109), [Real vendor validation still outstanding, issue 68](https://github.com/sighmoan1/govuk-delegate-starter/issues/68).
 

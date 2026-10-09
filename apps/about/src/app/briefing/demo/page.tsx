@@ -7,7 +7,7 @@ export default function DemoGuide() {
   return <div className="two-thirds">
     <p><Link href="/briefing">All briefings</Link></p><h1>Demonstration guide</h1>
     <p className="lead">Rehearse on an isolated synthetic stack before the meeting.</p>
-    <p>The account pages manage permission. A compatible agent or presenter-operated API client sends service actions. Identify a scripted client as scripted. The guide adds no assistant or transaction console.</p>
+    <p>The account pages manage permission. The supplied presenter client or a compatible agent sends service actions. Identify a scripted client as scripted. The full runbook includes the client commands.</p>
     <h2 id="a">A. Sam grants and removes permission</h2>
     <ol><li>Create a fresh request through HMRC’s agent route or the agent API. Open its returned consent URL.</li><li>Sign in as Sam. Select tax-code access and job expenses. Leave employment changes unchecked.</li><li>Check the selection and allow it. Use the same agent to read the tax code and submit the synthetic claim.</li><li>Show the refusal of the ungranted employment action.</li><li>Open the account, inspect the permission and outcome, then remove access.</li><li>Repeat the tax-code request and show the revoked-authority refusal.</li></ol>
     <p><a href={`${urls.hmrc}/act-for-someone`}>HMRC agent request route</a> and <a href={`${urls.delegate}/account/delegates`}>Who can act for you</a>.</p>

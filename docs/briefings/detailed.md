@@ -35,7 +35,7 @@ Sources: [Architecture and ownership](https://github.com/sighmoan1/govuk-delegat
 ## 3. A request becomes a bounded relationship
 
 A registered representative asks for named service capabilities.
-The person approves an unchecked selection and duration. Each service checks current authority before acting.
+Choices start unchecked. The person selects scope and sees when permission ends. Each service checks current authority before acting.
 
 ### Speaker notes
 

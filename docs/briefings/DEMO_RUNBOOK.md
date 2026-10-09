@@ -12,12 +12,12 @@ Open the briefing, account, HMRC and swarm tabs before presenting. Enter the Obs
 
 ## A. Citizen permission and service enforcement, about three minutes
 
-Use the registered synthetic Personal assistant through HMRC's agent-request route, or the documented agent API with a presenter-operated client. If the client is scripted, say so. Start from a fresh request, not a preconfigured grant with missing original consent evidence.
+Use the registered synthetic Personal assistant through HMRC's agent-request route, or the supplied presenter-operated client. If the client is scripted, say so. Start from a fresh request, not a preconfigured grant with missing original consent evidence.
 
-1. Open the request's returned consent URL as Sam. Local sign-in uses the prefilled email and nonempty password. Strict/public mode needs the configured password and mock phone code.
+1. Open the request's returned consent URL as Sam. For a fresh claim rehearsal in local mode, enter a new synthetic email such as briefing-20261010@example.com and a nonempty password. The fixtures still display Sam Taylor. Reusing the prefilled Sam account can trigger the existing one-claim-per-tax-year rule; a fresh request alone does not clear previous service work. Strict/public mode needs the configured password and mock phone code.
 2. On “Personal assistant wants to act for you”, show that choices start unchecked. Select “View your tax code” and “Claim tax relief for working from home”. Leave “Update your employment details” unchecked. Show duration and any requested restriction.
 3. Continue to “Check what you are allowing”, then choose “Allow”. The request status is the agent's source of truth after consent. A configured return URL is not itself proof of approval. The seed callback is a placeholder, so stay on the confirmation/account page rather than follow it blindly.
-4. Through the same agent identity, read the tax code and submit a synthetic expense claim. Inspect the actual response/receipt. If asynchronous, show “received” separately from later “recorded”. A presenter can use the existing HTTP client from the engineering rehearsal, or a compatible real agent. Exact schemas are in HMRC's discovery/OpenAPI documents. Real-agent success depends on the tool and handoff support.
+4. Through the same agent identity, read the tax code and submit a synthetic expense claim. Inspect the actual response/receipt. If asynchronous, show “received” separately from later “recorded”. A presenter can use the supplied client below, or a compatible real agent. Exact schemas are in HMRC's discovery/OpenAPI documents. Real-agent success depends on the tool and handoff support.
 5. Attempt the ungranted employment action and show the refusal. Do not deliberately run a malformed business request and mistake its validation failure for an authority refusal.
 6. Open `/account/delegates`, choose View and show current scope, original consent and recent service outcomes. Choose Remove access and confirm.
 7. Repeat the tax-code request using the same agent identity and show `AUTHORISATION_REVOKED`. Keep the history visible.
@@ -25,6 +25,36 @@ Use the registered synthetic Personal assistant through HMRC's agent-request rou
 Expected observation: granted actions work, the excluded action is refused, revocation blocks the next action, and checks/outcomes remain inspectable. Accepted work can finish after revocation. This does not undo a claim or establish production legal authority.
 
 The earlier isolated manual walkthrough and independent one-claim/zero-employment-update DB checks are recorded in issue #90. That evidence establishes the pinned rehearsal, not a new live run during this presentation.
+
+### Supplied presenter client
+
+From this checkout, with Node 20 or later, use the default local stack:
+
+```sh
+node scripts/briefings/demo.mjs prepare
+```
+
+For the existing isolated review stack:
+
+```sh
+DEMO_DELEGATE_URL=http://localhost:5300 DEMO_HMRC_URL=http://localhost:5302 node scripts/briefings/demo.mjs prepare
+```
+
+The command prints a fresh consent URL and a private state-file path. Follow steps 1–3 in the browser. Use the actual printed path in place of `STATE` below:
+
+```sh
+node scripts/briefings/demo.mjs status STATE
+node scripts/briefings/demo.mjs act STATE
+```
+
+`act` reads the tax code, submits one synchronous synthetic claim and verifies the excluded employment action is refused. The same operation key is reused if `act` is repeated. It stops if the citizen selected the wrong scope or a response differs from the expected result. Inspect the account and remove access, then:
+
+```sh
+node scripts/briefings/demo.mjs after-revoke STATE
+node scripts/briefings/demo.mjs clean STATE
+```
+
+The client obtains short-lived credentials without printing or saving them. State is owner-only in a temporary directory; it holds synthetic request references and the operation key. Loopback HTTP addresses are required. Custom synthetic seed credentials use `DEMO_AGENT_ID` and `DEMO_AGENT_SECRET` in the presenter's private environment. `clean` deletes the state file, not the grant or audit history. No global reset is performed.
 
 ## B. Repeated traffic and distinct citizen demand, about two minutes
 
@@ -82,4 +112,4 @@ Request `council-casework` / `view_case_status` through the existing agent-reque
 
 Use the editable decks and the pinned evidence records. A screenshot is a view of its stated revision and recorded synthetic state. Explain the failed dependency and continue with that limitation. Do not display expected counts as live results. The deck's Observatory screenshot is a review-branch interface, not a vendor or participant result.
 
-A complete post-revocation API run needs a compatible client or the existing engineering rehearsal. The pack adds explanation and navigation, not a new standalone consumer assistant. If the intended presenter needs a browser-only action console, record that as a separate engineering issue rather than pretending the current account page sends agent transactions.
+The supplied presenter client supports the full post-revocation API run. It is scripted and must be described that way; a compatible real assistant can also use the existing API. If the intended presenter needs a browser-only action console, record that as a separate engineering issue rather than pretending the current account page sends agent transactions.

@@ -201,9 +201,9 @@
           "title": "Observatory makes the evidence inspectable",
           "paragraphs": [
             "The event explorer connects service attempts with recorded authority checks and outcomes.",
-            "Sensor coverage, recorded predictions and protected research labels have separate fields."
+            "Comparing several clues may improve understanding. Sensor coverage and recorded predictions stay visible."
           ],
-          "notes": "Demo C requires the unmerged dashboard and classifier PRs in a reviewed isolated stack. Use the read-only monitoring view first. Ground truth in research view describes audited scripted execution, not an inferred label. The current deterministic signature stub reports observed signature evidence. It is not a trained AI detector. Actual vendor validation remains outstanding.",
+          "notes": "Demo C requires the unmerged dashboard and classifier PRs in a reviewed isolated stack. Use the read-only monitoring view first. Ground truth in research view describes audited scripted execution, not an inferred label. Combining clues is the proposed approach; its accuracy still needs testing on varied agents and people. Protected execution labels remain separate from predictions. The current deterministic signature stub reports observed signature evidence. It is not a trained AI detector. Actual vendor validation remains outstanding.",
           "sources": [
             "dashboard",
             "classifiers",
@@ -338,7 +338,7 @@
           "title": "A request becomes a bounded relationship",
           "paragraphs": [
             "A registered representative asks for named service capabilities.",
-            "The person approves an unchecked selection and duration. Each service checks current authority before acting."
+            "Choices start unchecked. The person selects scope and sees when permission ends. Each service checks current authority before acting."
           ],
           "notes": "Demonstrate the pinned catalogue labels and purpose. The purpose helps Sam recognise the request but grants no extra actions. Credentials identify the representative separately from Sam. Show a granted and an ungranted action with the same token so scope enforcement is observable.",
           "sources": [
