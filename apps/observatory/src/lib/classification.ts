@@ -24,7 +24,7 @@ export const mockSensor: SensorAdapter = {
   identifier: "source-observation", version: "1.0.0", schema: EVIDENCE_SCHEMA, config: { mapping: "allowlisted-source-fields/1" },
   async collect(input) {
     const e = Event.parse(input); const b = e.browser_sensor;
-    const missingness = b.status === "not_run" ? "not_configured" : b.status === "error" ? "error" : "not_observed";
+    const missingness = b.status === "error" ? "error" : "not_observed";
     const record: EvidenceRecord = { schema: EVIDENCE_SCHEMA, source: e.source_service, source_event_id: e.source_event_id, collection_method: "immutable_source_feed", observed_at: e.occurred_at.value,
       sensor: { identifier: this.identifier, version: this.version, config: { ...this.config } },
       refs: { session: e.correlation.session_id.value, transaction: e.correlation.transaction_id.value }, sensitivity: "synthetic_pseudonymous",
@@ -41,8 +41,8 @@ export const stubRule: ClassifierAdapter = {
   async classify(signals, config) {
     const s = signals.signature_verified;
     if (!s || s.missingness !== "observed") return abstain("SIGNATURE_NOT_OBSERVED");
+    if (s.provenance !== "source_record") return abstain("SIGNATURE_PROVENANCE_UNVERIFIED");
     if (s.value !== true) return abstain("NO_VERIFIED_AGENT_IDENTITY");
-    if (config.threshold > 1) return abstain("BELOW_THRESHOLD");
     return { status: "classified", class: "VERIFIED_SIGNATURE", score: 1, reason: "SOURCE_RECORDED_SIGNATURE_VERIFIED", raw_result_ref: null, estimated_cost: { amount: 0, currency: "USD" } };
   },
 };
@@ -57,7 +57,7 @@ export function experiment(adapter: ClassifierAdapter, threshold = 0.5): Experim
 function validSignals(record: EvidenceRecord) {
   if (record.schema !== EVIDENCE_SCHEMA || Object.keys(record.signals).some(k => !FEATURE_NAMES.includes(k as FeatureName))) return false;
   return FEATURE_NAMES.every(k => {
-    const s = record.signals[k]; if (!s || !["observed","not_observed","not_configured","error"].includes(s.missingness)) return false;
+    const s = record.signals[k]; if (!s || !["observed","not_observed","not_configured","error"].includes(s.missingness) || typeof s.provenance !== "string" || (s.confidence !== null && (!Number.isFinite(s.confidence) || s.confidence < 0 || s.confidence > 1))) return false;
     if (s.missingness !== "observed") return s.value === null;
     return k === "latency_ms" ? typeof s.value === "number" && Number.isFinite(s.value) && s.value >= 0 : typeof s.value === "boolean";
   });
@@ -74,6 +74,7 @@ export async function classifyFrozen(record: EvidenceRecord, config: ExperimentC
     else {
       decision = await adapter.classify(Object.freeze(selected), Object.freeze(structuredClone(config)));
       if (!["classified","abstain","error"].includes(decision.status) || (decision.status === "classified" ? !decision.class || decision.score === null || !Number.isFinite(decision.score) || decision.score < 0 || decision.score > 1 : decision.class !== null || decision.score !== null)) throw new Error("INVALID_ADAPTER_RESULT");
+      if (typeof decision.reason !== "string" || !decision.reason || decision.reason.length > 256 || (decision.raw_result_ref !== null && (typeof decision.raw_result_ref !== "string" || decision.raw_result_ref.length > 256)) || !decision.estimated_cost || decision.estimated_cost.currency !== "USD" || (decision.estimated_cost.amount !== null && (typeof decision.estimated_cost.amount !== "number" || !Number.isFinite(decision.estimated_cost.amount) || decision.estimated_cost.amount < 0))) throw new Error("INVALID_ADAPTER_METADATA");
     }
   } catch { decision = { ...abstain("ADAPTER_ERROR"), status: "error" }; }
   return { ...baseline, ...decision, latency_ms: Math.max(0, performance.now() - start) };

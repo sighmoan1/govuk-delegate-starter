@@ -11,10 +11,14 @@ describe("blind versioned classification", () => {
   });
   it("API-only absence never means human and unavailable paid detectors abstain honestly", async () => {
     const evidence = await mockSensor.collect(event(null));
-    expect(evidence.signals.browser_present).toMatchObject({ value: null, missingness: "not_configured" });
+    expect(evidence.signals.browser_present).toMatchObject({ value: null, missingness: "not_observed" });
     expect(await classifyFrozen(evidence, experiment(stubRule), stubRule)).toMatchObject({ status: "abstain", score: null, class: null, reason: "SIGNATURE_NOT_OBSERVED" });
     expect(await classifyFrozen(evidence, experiment(unavailablePaid), unavailablePaid)).toMatchObject({ status: "abstain", reason: "DETECTOR_NOT_CONFIGURED", estimated_cost: { amount: null } });
     expect(await classifyFrozen(await mockSensor.collect(event(false)), experiment(stubRule), stubRule)).toMatchObject({ status: "abstain", class: null });
+  });
+  it("client-claimed signature values cannot become verified identity", async () => {
+    const e = event(); e.observed.signature_verified = { value: true, status: "inferred", provenance: "client_claim" };
+    expect(await classifyFrozen(await mockSensor.collect(e), experiment(stubRule), stubRule)).toMatchObject({ status: "abstain", reason: "SIGNATURE_PROVENANCE_UNVERIFIED" });
   });
   it("retains browser error and blocked missingness, not negative signal values", async () => {
     for (const status of ["error", "blocked"] as const) {
@@ -47,6 +51,13 @@ describe("blind versioned classification", () => {
     expect(() => experiment(stubRule, NaN)).toThrow("INVALID_THRESHOLD");
     const broken: ClassifierAdapter = { ...stubRule, async classify() { return { status: "classified", score: NaN, class: "bad" } as never; } };
     expect(await classifyFrozen(evidence, experiment(broken), broken)).toMatchObject({ status: "error", reason: "ADAPTER_ERROR" });
+  });
+  it("malformed adapter cost/reason/reference metadata remains an error", async () => {
+    const evidence = await mockSensor.collect(event());
+    for (const extra of [{ estimated_cost: { amount: -1, currency: "USD" } }, { reason: 5 }, { raw_result_ref: {} }]) {
+      const broken: ClassifierAdapter = { ...stubRule, async classify(signals, config) { return { ...await stubRule.classify(signals, config), ...extra } as never; } };
+      expect(await classifyFrozen(evidence, experiment(broken), broken)).toMatchObject({ status: "error", reason: "ADAPTER_ERROR" });
+    }
   });
   it("canonical digest survives JSON key reordering", () => { expect(digest({a:1,b:{c:2,d:3}})).toBe(digest({b:{d:3,c:2},a:1})); });
 });
