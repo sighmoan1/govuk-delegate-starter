@@ -12,7 +12,8 @@
     "typecheck": "prisma generate && tsc --noEmit",
     "test": "vitest run",
     "ingest": "node --env-file=.env --import tsx scripts/ingest.ts",
-    "verify:feeds": "node --env-file=.env --import tsx scripts/verify-feeds.ts"
+    "verify:feeds": "node --env-file=.env --import tsx scripts/verify-feeds.ts",
+    "verify:classifications": "node --env-file=.env --import tsx scripts/verify-classifications.ts"
   },
   "dependencies": {
     "next": "^15.5.0",

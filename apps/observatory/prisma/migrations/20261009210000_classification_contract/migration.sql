@@ -1,0 +1,11 @@
+CREATE TABLE "evidence_snapshot" ("id" TEXT NOT NULL, "source_service" TEXT NOT NULL, "source_event_id" TEXT NOT NULL, "schema_version" TEXT NOT NULL, "digest" TEXT NOT NULL, "record" JSONB NOT NULL, "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "evidence_snapshot_pkey" PRIMARY KEY ("id"));
+CREATE UNIQUE INDEX "evidence_snapshot_digest_key" ON "evidence_snapshot"("digest");
+CREATE UNIQUE INDEX "evidence_snapshot_source_service_source_event_id_schema_version_key" ON "evidence_snapshot"("source_service", "source_event_id", "schema_version");
+CREATE TABLE "classifier_config" ("id" TEXT NOT NULL, "digest" TEXT NOT NULL, "record" JSONB NOT NULL, "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "classifier_config_pkey" PRIMARY KEY ("id"));
+CREATE UNIQUE INDEX "classifier_config_digest_key" ON "classifier_config"("digest");
+CREATE TABLE "classification_run" ("id" TEXT NOT NULL, "snapshot_id" TEXT NOT NULL, "config_id" TEXT NOT NULL, "result" JSONB NOT NULL, "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "classification_run_pkey" PRIMARY KEY ("id"), CONSTRAINT "classification_run_snapshot_id_fkey" FOREIGN KEY ("snapshot_id") REFERENCES "evidence_snapshot"("id") ON DELETE RESTRICT ON UPDATE RESTRICT, CONSTRAINT "classification_run_config_id_fkey" FOREIGN KEY ("config_id") REFERENCES "classifier_config"("id") ON DELETE RESTRICT ON UPDATE RESTRICT);
+CREATE INDEX "classification_run_snapshot_id_created_at_idx" ON "classification_run"("snapshot_id", "created_at");
+CREATE FUNCTION prevent_inference_rewrite() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Inference evidence, configuration and runs are immutable'; END; $$;
+CREATE TRIGGER evidence_snapshot_immutable BEFORE UPDATE OR DELETE ON "evidence_snapshot" FOR EACH ROW EXECUTE FUNCTION prevent_inference_rewrite();
+CREATE TRIGGER classifier_config_immutable BEFORE UPDATE OR DELETE ON "classifier_config" FOR EACH ROW EXECUTE FUNCTION prevent_inference_rewrite();
+CREATE TRIGGER classification_run_immutable BEFORE UPDATE OR DELETE ON "classification_run" FOR EACH ROW EXECUTE FUNCTION prevent_inference_rewrite();
