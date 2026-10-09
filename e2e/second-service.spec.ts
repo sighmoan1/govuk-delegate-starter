@@ -9,9 +9,11 @@ test("generic citizen consent authorises council independently, then revokes wit
   const box=page.getByRole("checkbox"); await expect(box).not.toBeChecked(); await box.check();
   await page.getByRole("button",{name:"Continue"}).click();await page.getByRole("button",{name:"Allow",exact:true}).click();
   await expect(page.getByRole("heading",{name:"Agent authorised"})).toBeVisible();
-  await page.getByRole("link",{name:"View this authority"}).click();const mandate=page.url().split("/").pop()!;
+  await page.getByRole("link",{name:"View this authority"}).click();
+  await expect(page).toHaveURL(/\/account\/delegates\/[0-9a-f-]{36}$/);
   const status=await(await fetch(`${DELEGATE}/api/authorisation-requests/${request.id}`,{headers:{authorization:`Bearer ${tok.access_token}`}})).json();
-  return {mandate,principal:status.principal_id};
+  expect(status.status).toBe("APPROVED");
+  return {mandate:status.authorisation_id,principal:status.principal_id};
  }
  const hmrc=await consent("hmrc-personal-tax","view_tax_code");
  const headers={authorization:`Bearer ${tok.access_token}`,"x-principal-id":hmrc.principal};
