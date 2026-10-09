@@ -357,3 +357,33 @@ An authorised check is not a claim, a request that ran is not a claim, and a 429
 - **What the real runs found.** (1) HMRC's status read (`GET /api/transactions/{id}`) asked the database pool for a second connection while the request held one and the person's lock, so a few dozen concurrent checks on one claim took every connection and answered 500 to everyone, bystanders included. Fixed with this change: it reads through the request's own transaction (a regression test sends 40 at once). (2) HMRC's progress check (`GET /api/claims/progress`) still does the same: more than one at a time can starve the pool. Fixed during integration with the newer polling implementation: status and progress reads use the request transaction, with a concurrent progress-poll regression. The experiment still bounds its progress traffic to one at a time. (3) Under a burst of 200 simultaneous requests the development servers sometimes answered 503 `DELEGATE_UNAVAILABLE` to some of them; the clients retried and nothing was lost, and the count is shown as technical load. (4) The queue took seconds to empty 100 claims although the worker spends milliseconds recording each. The time is spent somewhere other than the recording step (claiming in fair order, or reporting outcomes to GOV.UK Delegate one at a time are the candidates); this change measures it and does not investigate it.
 
 Not done: the experiment's lookups (tax code) are technical load only and are never claims; the progress and status polls do not use `ETag`/`304` (that work is separate, issue #23, so the flood is written against current behaviour); results are held in the About site's memory (the last eight runs), not stored; nothing here tests an abuse control for traffic with no identity, which is still a different problem (Decision 7); the simulation has no 503 or load-shedding model; and HMRC's `/ops` page does not show the new instrumentation, which is available at `POST /api/demo/run-stats` (demo-gated, not reachable through the public tunnel) for the About site and the tests.
+
+## Decision 28 — Delegate governs authority; Orchestrate, if needed, governs work
+
+**Decision (target architecture):** Keep **GOV.UK Delegate** a generic, cross-government authority and consent platform. Do **not** expand it into a central AI planner or task-orchestration service. `GOV.UK Orchestrate` is a **hypothetical complementary product**, not a new subsystem in this repo.
+
+- **One Login** establishes the principal's identity.
+- **Government services** own and publish their delegable capabilities, policy/assurance requirements and permitted constraint types; they enforce eligibility, domain rules, legally required confirmation, idempotency and technical throughput.
+- **Delegate** registers representative identities and service capability catalogues, records citizen-approved mandates and enforceable bounds, verifies current authority, manages revocation and consent evidence, and makes relevant outcomes inspectable.
+- **A citizen's chosen assistant or representative** interprets private goals, plans, uses tools and follows up. Delegate does not receive or interpret complete task conversations or decide what the agent should attempt.
+- **Orchestrate**, if ever built, may offer provider-neutral task continuity, cross-department status coordination, assisted-digital handoffs or durable civic task tracking. Today AI providers already supply many such functions. Orchestrate must consume the same scoped grants as every other delegate and has no special power to self-authorise or direct departments.
+
+**A mandate is not a prompt.** A plain-language purpose can help a citizen recognise a grant, but authority exists only in registered service-defined capabilities and enforceable constraints. One consent journey may group several grants, but each government service remains independently scoped. Switching representatives may reuse a grant *template*; it requires fresh explicit citizen consent for the new representative.
+
+**Why:** a central authority system can be small, neutral, reusable and auditable. A central government AI orchestrator would require private task data, model/provider integrations and detailed business-workflow knowledge, expanding privacy, security and accountability risks. We can support multiple competing orchestration solutions without building one.
+
+**Current gap:** `apps/delegate/src/lib/demo-seed.ts` and `apps/delegate/src/lib/capabilities.ts` still hard-code HMRC capabilities and display metadata. These are **prototype limitations**, not the intended ownership model. Service-published versioned catalogues, rich mandates, consent snapshots and multi-service grouping require follow-up implementation; this decision does not claim they already exist.
+
+**Related:** [Delegate and Orchestrate architecture](ARCHITECTURE.md), [product case](PRODUCT_CASE.md). Decisions 4 and 5 remain the original guiding pattern; this decision clarifies the service integration contract and product boundary. Decisions 16–20 describe historical demo states and must not be mistaken for a production specification.
+
+## Open question — Where authority is authoritative (not a settled decision)
+
+**Status:** Investigate; do not present as an accepted ADR or as an implemented feature.
+
+A citizen-facing **Who can act for me?** service may combine:
+- **Delegate-issued** mandates, for which Delegate is source of truth;
+- **externally issued** authority (such as departmental agent relationships or legally appointed representation), for which the issuing system remains authoritative.
+
+This is distinct from Decision 28's settled Delegate/Orchestrate responsibility boundary. Central, federated and hybrid authority-storage models all remain possible. A **hybrid hypothesis** deserves a bounded synthetic experiment: show two differently sourced relationships, prove source-specific revocation and denial, and avoid misleading answers when the external issuer is unavailable.
+
+**Decision criteria:** legal origin, service recognition, reliability, privacy, revocation guarantees, provenance, citizen comprehension and feasible cross-service identity matching. See [Federated authority options and experiment](FEDERATED_AUTHORITY.md). Do not add generic external-authority ALLOW decisions before the trust and evidence model has been tested.

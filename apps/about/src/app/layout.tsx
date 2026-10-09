@@ -16,6 +16,7 @@ const LINKS = [
   { href: "/which-route", label: "3. Which route?" },
   { href: "/swarm", label: "4. Can a swarm win?" },
   { href: "/how-it-works", label: "How it works" },
+  { href: "/delegate-orchestrate", label: "Delegate or Orchestrate?" },
   { href: "/why", label: "Why" },
   { href: "/precedents", label: "Precedents" },
   { href: "/sams-phone", label: "Sam’s phone" },

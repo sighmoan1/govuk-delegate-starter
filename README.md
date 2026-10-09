@@ -4,7 +4,25 @@
 
 **The idea.** A person who has signed in with GOV.UK One Login can give an agent limited, revocable permission to act for them. A service like HMRC then needs to add very little to let that agent through on the same happy path as a signed-in person. Because a trusted route exists, government can put friction on traffic that will not identify itself, and steer automation into the approved route instead of being flooded.
 
-The pattern copies HMRC's agent authorisation: an agent asks, the person approves, a relationship is recorded, the service checks it, the person can remove it. See `docs/` for the case, the original brief and the decisions. Decision 12 describes the current shape.
+The pattern copies HMRC's agent authorisation: an agent asks, the person approves, a relationship is recorded, the service checks it, the person can remove it. **Delegate verifies authority; it does not plan or orchestrate AI tasks.** Decision 28 records this boundary.
+
+## Architecture and scope
+
+**Canonical reference:** [Delegate vs Orchestrate — target architecture](docs/ARCHITECTURE.md). This explains system ownership, service-defined capabilities, richer mandates, citizen control, consent, cross-service integration, and why a possible **GOV.UK Orchestrate** is a separate, **theoretical** service rather than part of Delegate.
+
+**On the About site:** [Delegate or Orchestrate?](apps/about/src/app/delegate-orchestrate/page.tsx) is the accessible, plain-language version, served at `/delegate-orchestrate`. The detailed Markdown document and [Decision 28](docs/DECISIONS.md) are the engineering source of truth; the About site explains them to product and policy audiences.
+
+| Product boundary | Responsibility |
+|---|---|
+| **One Login** | Authenticate the person |
+| **GOV.UK Delegate** | Record scoped, revocable authority for their chosen representative |
+| **HMRC / other government services** | Define delegable actions and enforce the underlying business rules |
+| **Citizen's assistant / model provider** | Understand goals, plan and execute tasks within granted authority |
+| **GOV.UK Orchestrate (hypothetical)** | Potential future provider-neutral task continuity and cross-service coordination, **not built** |
+
+**Open architecture question:** [Where should authority records live?](docs/FEDERATED_AUTHORITY.md) compares a central national registry with federated and hybrid recognition of existing departmental authority. It proposes one narrow experiment; federation is **not yet decided or implemented**.
+
+**Current limitation:** Delegate's demo seed and UI still hard-code some HMRC capability definitions. The target is that each service publishes a versioned catalogue and Delegate renders/checks it generically. This is tracked as follow-up engineering work; the documentation is not a claim that the feature exists.
 
 ## Four apps
 
