@@ -59,9 +59,28 @@ not control vendor retention. Do not enrol participants before confirming both.
 
 Default-disabled, missing-key, explicit-consent, forged-cookie, mismatched vendor
 event and outage tests use synthetic fixtures. They demonstrate mechanics only.
-No real vendor key/event has been exercised in this implementation. Issue #68's
-real event-ID acceptance criterion remains blocked until a configured EU study
+The supplied public EU key has not produced a real event in a configured study.
+The local exact agent-module probe returned HTTP 403; local Chromium and Docker
+are unavailable. This does not determine whether the key itself is valid.
+Issue #68's real event-ID acceptance criterion remains blocked until a configured EU study
 produces a real event and the research collection displays its minimised evidence.
+
+An explicit real-vendor check is available separately from ordinary CI:
+`npx playwright test --config research-tests/playwright.config.ts`.
+Run it only against an isolated configured stack with
+`FINGERPRINT_VENDOR_TEST=true`, `TEST_HMRC_URL`, `TEST_OBSERVATORY_URL`,
+`RESEARCH_SOURCE_COMMIT` (the deployed 40-character commit),
+`OBSERVATORY_EVALUATION_KEY`, `RESEARCH_PSEUDONYM_KEY`, and `DATABASE_URL`
+pointing to that stack's Observatory database. Configure the public key only in
+the HMRC build environment, enable the study and research collection at runtime,
+and leave the server verification secret unset for this unverified-claim check.
+Never commit key values or include them in commands recorded by CI logs.
+The check creates an unlabelled monitoring attempt, explicitly opts in, requires
+real returned event and visitor IDs, compares persisted HMACs to those IDs,
+checks the protected session/attempt join, and registers the sensor observation
+without assigning an execution class. It hard-fails on absent configuration or
+vendor failure; it has no mocked vendor response. Traces/screenshots/video are
+disabled to avoid capturing raw identifiers or enrolment credentials.
 
 CI runs the ordinary default-disabled browser assertion, then switches a one-off
 HMRC container to enabled with no vendor key and repeats the assertion for
@@ -75,3 +94,4 @@ Official sources checked 9 October 2026:
 - [JavaScript get options](https://docs.fingerprint.com/reference/js-agent-get-function)
 - [Server API, EU region and Bearer authentication](https://docs.fingerprint.com/reference/server-api)
 - [v4 event response](https://docs.fingerprint.com/reference/server-api-get-event)
+

@@ -5,7 +5,7 @@ import { SignJWT } from "jose";
 test("ordinary HMRC and uncovered research pages send no Fingerprint requests", async ({ page, request }) => {
   const missing = process.env.FINGERPRINT_EXPECT_MISSING === "true";
   const vendorRequests: string[] = [];
-  page.on("request", r => { if (/fpjs\.io|fingerprint\.com|fpcdn\.io/.test(r.url())) vendorRequests.push(r.url()); });
+  page.on("request", r => { if (/fpjs\.io|fpjscdn\.net|fingerprint\.com|fpcdn\.io/.test(r.url())) vendorRequests.push(r.url()); });
   await page.goto("http://localhost:3302/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await page.goto("http://localhost:3302/research/device-intelligence");
@@ -36,3 +36,4 @@ if (process.env.FINGERPRINT_EXPECT_MISSING === "true") {
     expect(JSON.stringify(event)).not.toMatch(/caller-selected-run|actor_class|ground_truth|visitor_id/);
   });
 }
+
