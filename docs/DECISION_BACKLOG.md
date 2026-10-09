@@ -50,6 +50,24 @@
 
 ### Legal basis — what authorises what? → DB-01 + DB-10 + DB-11
 
+#### Parking-lot: delegated discretion versus citizen-directed execution (UNDECIDED)
+
+**We have intentionally not decided this.** There are at least three plausible product ambitions:
+
+1. **Assisted execution:** an agent prepares or carries out specifically approved citizen decisions; citizen retains each substantive choice.
+2. **Bounded discretion:** citizen authorises a representative to make specified decisions independently within a scope (e.g. respond to routine correspondence, choose between lawful filing options with explicit constraints, escalate higher-impact choices).
+3. **Broad autonomous representation:** citizen appoints an agent to manage an entire domain (e.g. “handle my taxes this year”) with substantial ongoing discretion.
+
+The key distinction is **authority to take an action** versus **authority to decide *which* action to take or which assertions to make**. A human might lawfully grant discretionary authority for some services; that does not establish that an AI system or its operator can automatically be recognised on equivalent terms.
+
+**Questions to revisit:** Who legally holds and exercises the delegated discretion—software, its provider, a recognised human/professional representative, or a combination? What scope, financial limits, non-delegable duties, declaration requirements and material-action alerts would make bounded autonomy comprehensible? How could consent, revocation, monitoring, redress and liability work when the agent's specific future decisions are unknown at authorisation? What can receiving services recognise under existing law versus what would need policy/legislative change?
+
+**Concrete test case:** The citizen grants “manage my taxes this year.” The assistant prepares a factually accurate return and wishes to submit without the citizen inspecting the final declaration. Does the citizen have to approve the exact content; may a formally recognised representative exercise discretion; or is the act simply non-delegable in that service?
+
+**Provisional design discipline, not a decision:** Do not make a broad natural-language goal a machine-enforceable mandate. Continue to implement narrowly scoped permissions with service-owned conditions while keeping the future ability to express *bounded discretion* open. Resolve this question in DB-01 together with [DB-02](https://github.com/sighmoan1/govuk-delegate-starter/issues/49) if a real service/use case forces it. Avoid turning prototype mechanics into a claim of UK legal validity.
+
+
+
 - **Agreed principle:** a citizen's generic click in Delegate cannot create a legal power the citizen is not able to grant; a receiving department still determines if an operation is legally effective.
 - **Not yet decided:** legal validity of particular software-agent acts, origin of appointed authority, responsibility for incorrect submissions, required electronic signatures/attestations, who may rescind an appointment, and lawful data processing by each organisation.
 - **Decision sought:** an action-by-action legal and administrative matrix, verified by qualified departmental lawyers/owners for any non-synthetic trial. Distinguish authority to act, recognition of acts and a separate **lawful basis for processing personal data**. See [#48](https://github.com/sighmoan1/govuk-delegate-starter/issues/48), [#57](https://github.com/sighmoan1/govuk-delegate-starter/issues/57), [#58](https://github.com/sighmoan1/govuk-delegate-starter/issues/58).
