@@ -4,7 +4,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-cert
 WORKDIR /repo
 COPY package.json package-lock.json ./
 COPY apps/observatory/package.json apps/observatory/
-RUN npm ci --workspace apps/observatory
+COPY packages/research-feed/package.json packages/research-feed/
+RUN npm ci --workspace apps/observatory --workspace packages/research-feed
+COPY packages/research-feed ./packages/research-feed
 COPY styles ./styles
 COPY apps/observatory ./apps/observatory
 WORKDIR /repo/apps/observatory

@@ -1,0 +1,18 @@
+{
+  "name": "@prototype/research-feed",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Minimised versioned synthetic research HTTP schema; no service storage or authority logic.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.7"
+  }
+}
