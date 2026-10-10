@@ -30,12 +30,12 @@ Do not reset this stack for tests. `npm run public` creates fresh credentials an
 
 ## Dated inventory and ownership
 
-Read-only inspection on 10 October 2026 found the following Delegate environments. This inventory is a snapshot, not a shutdown or migration record. Docker lists dependency containers; some app servers run as host processes, so container counts alone do not prove a stack is unused.
+Read-only inspection on 10 October 2026 found the following Delegate environments. The initial inventory is a snapshot; later ownership-confirmed shutdown is noted explicitly below. No research migration is recorded. Docker lists dependency containers; some app servers run as host processes, so container counts alone do not prove a stack is unused.
 
 | Project | Runtime observed | Ownership and next step |
 |---|---|---|
 | `govuk-delegate-starter` | Public apps, private About, read-only briefing, connector, worker, database and simulator; database `5433`, simulator `3399` | Canonical demo. One designated runtime owner performs reviewed updates; agents use isolated fixtures. |
-| `delegate-branding-137` | Database `55437` and simulator `5499`; completed branding verification | The branding run's owner may stop its own remaining dependencies, retaining volumes. This document does not assert shutdown. |
+| `delegate-branding-137` | Database `55437` and simulator `5499`; completed branding verification | The original inventory observed these dependencies. Later in the #139 cleanup session, the owning root agent stopped them and retained the database volume; see the #139 issue checkpoint. No longer an active test runtime. |
 | `delegate-validation` | Database `55433` and simulator dependencies; older validation checkout | Confirm the originating run has finished and identify any host processes before stopping. Retain data/evidence. No active owner was established by this inventory. |
 | `delegate-obs-20261009` | Database `55434`, simulator `5399`, host Observatory listening on loopback `5303` | Research checkout, distinct from the main demo. Confirm its owner and retained evidence before any retirement. |
 | `whenisbins-demo-ebf3e8b0` | Database `55435`, simulator `5799`, host Observatory listening on loopback `5703` | Existing WhenIsBins worktree fixture. Its managed launcher owns the app processes; verify ownership in that original checkout before stopping. |
