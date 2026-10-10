@@ -49,7 +49,7 @@ export function verifiedProvenance(value: unknown, mode: string) {
 export const EFFECT_CLASSES = ["REQUEST_ONLY", "UNIQUE_OPERATION", "REPLAY", "REFUSAL"] as const;
 export function bindingInput(value: unknown) {
   const v = object(value); fields(v, ["attempt_id", "source_service", "source_event_id", "operation_id", "effect_class", "effect_evidence_digest"]);
-  if (!['hmrc', 'delegate'].includes(String(v.source_service)) || !EFFECT_CLASSES.includes(v.effect_class as typeof EFFECT_CLASSES[number])) throw new ResearchError("INVALID_SOURCE_BINDING");
+  if (!['hmrc', 'delegate', 'whenisbins_connector'].includes(String(v.source_service)) || !EFFECT_CLASSES.includes(v.effect_class as typeof EFFECT_CLASSES[number])) throw new ResearchError("INVALID_SOURCE_BINDING");
   if ((v.effect_class === "UNIQUE_OPERATION" || v.effect_class === "REPLAY") && !v.operation_id) throw new ResearchError("OPERATION_ID_REQUIRED");
   return { id: randomUUID(), attemptId: uuid(v.attempt_id), sourceService: String(v.source_service), sourceEventId: text(v.source_event_id, 120), operationId: v.operation_id ? uuid(v.operation_id) : null, effectClass: String(v.effect_class), effectEvidenceDigest: v.effect_evidence_digest ? sha(v.effect_evidence_digest) : null };
 }
