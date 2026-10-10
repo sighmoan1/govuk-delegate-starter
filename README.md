@@ -82,6 +82,8 @@ For existing database volumes, first provision the new Observatory database/logi
 
 Startup applies migrations and seeds only empty databases. Rebuilding retains the existing database volume; `db:reset` deliberately replaces citizen demo fixtures. The HMRC queue worker is a separate compose service and must be running for asynchronous claims. See [current behaviour](docs/CURRENT_BEHAVIOUR.md) before resetting or testing.
 
+Read-only public briefings and non-resetting updates are documented in [the public briefing deployment guide](docs/briefings/PUBLIC_DEPLOYMENT.md).
+
 ### On public URLs, for agents that browse from the cloud
 
 ChatGPT agent and Google's agent browse from their own cloud machines, so they can't reach localhost. With the dev servers stopped:

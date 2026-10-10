@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { urls } from "@/lib/config";
+import { publicBriefingMode } from "@/lib/public-briefing";
 
 export const metadata: Metadata = { title: "Briefing demonstration guide" };
 export default function DemoGuide() {
@@ -14,7 +15,7 @@ export default function DemoGuide() {
     <p>Already accepted work can finish after removal. Revocation prevents later authorised requests.</p>
     <h2 id="b">B. Requests and claims</h2>
     <p>Run the existing swarm demonstration at N=10 before presenting. Compare one person’s repeated claim attempts with separate people’s claims, then show retry or polling load. Read technical demand separately from service outcomes.</p>
-    <p><Link href="/swarm">Open the swarm demonstration</Link></p>
+    <p>{publicBriefingMode() ? <>The presenter prepares and runs the swarm demonstration privately, then shows its recorded results.</> : <Link href="/swarm">Open the swarm demonstration</Link>}</p>
     <p>The lower scheduling comparison is a labelled simulation. Limits are illustrative. Check failed invariants before describing a run as successful.</p>
     <h2 id="c">C. Evidence and uncertainty</h2>
     <p>This scene needs the reviewed Observatory stack containing PRs 109–110. Its address and access keys belong to that private setup. Keep the workbench off public tunnels.</p>
@@ -25,6 +26,6 @@ export default function DemoGuide() {
     <p><a href="https://github.com/sighmoan1/govuk-delegate-starter/blob/main/docs/SECOND_SERVICE.md">Council request and verification instructions</a></p>
     <h2>Fallback and full coverage</h2>
     <p>If a live dependency fails, use the decks and pinned recorded evidence and explain the limitation. Treat screenshot state as historical. Never replace a live result with an expected number.</p>
-    <p><a href="https://github.com/sighmoan1/govuk-delegate-starter/blob/codex/issue-111-public-digital-briefings/docs/briefings/DEMO_RUNBOOK.md">Full runbook, preparation and feature coverage</a></p>
+    <p><a href="https://github.com/sighmoan1/govuk-delegate-starter/blob/main/docs/briefings/DEMO_RUNBOOK.md">Full runbook, preparation and feature coverage</a></p>
   </div>;
 }

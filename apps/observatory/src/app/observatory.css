@@ -5,3 +5,11 @@
 .research-status > div { padding: 1rem 0; border-bottom: 1px solid var(--border-soft); }
 .research-status dt { font-weight: 700; }
 .research-status dd { margin: .4rem 0 0; }
+
+.observatory-filters { display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:1rem;margin-bottom:2rem; }
+.observatory-filters label { min-width:0; }
+.observatory-filters .input { width:100%; }
+.observatory-timeline { padding-left:1.5rem; }
+.observatory-timeline li { padding:.75rem 0;border-bottom:1px solid var(--border-soft); }
+.observatory-link { padding:0;border:0;background:none;color:var(--link);text-align:left;text-decoration:underline;font:inherit;cursor:pointer;overflow-wrap:anywhere; }
+pre { max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.875rem; }
