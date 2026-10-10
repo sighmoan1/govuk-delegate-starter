@@ -60,6 +60,20 @@ describe("scoped synthetic browser email workflow",()=>{
   it("records browser timeout or closure as uncertainty",async()=>{
     await page.close();expect((await execute()).reason).toBe("BROWSER_OR_RESPONSE_UNCERTAIN");
   });
+  it("refuses an initial cross-origin redirect before filling data",async()=>{
+    const foreign=await startEmailFixture();
+    try {
+      await page.route(fixture.config.origin+"/signup",route=>route.fulfill({status:302,headers:{location:foreign.config.origin+"/signup"}}));
+      expect((await execute()).reason).toBe("UNEXPECTED_FORM_ORIGIN");expect(foreign.counts().submissions).toBe(0);
+    } finally { await foreign.close(); }
+  });
+  it("does not interpret a cross-origin post-submission page as confirmation",async()=>{
+    const foreign=await startEmailFixture();
+    try {
+      await page.route(fixture.config.origin+"/signup",route=>route.request().method()==="POST"?route.fulfill({status:302,headers:{location:foreign.config.origin+"/signup"}}):route.continue());
+      expect((await execute()).reason).toBe("UNEXPECTED_RESULT_ORIGIN");expect(foreign.counts().submissions).toBe(0);
+    } finally { await foreign.close(); }
+  });
   it("rejects an invalid runtime operation",async()=>{
     const invalid={...action,operation:"other"} as unknown as EmailAction;
     expect((await execute({action:invalid,approvedAction:invalid})).reason).toBe("INVALID_ACTION");expect(page.url()).toBe("about:blank");

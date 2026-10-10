@@ -36,7 +36,7 @@ npm run typecheck -w packages/whenisbins-email
 npm test -w packages/whenisbins-email
 ```
 
-Fifteen browser tests pass: real signup/inbox/cancellation, four exact payload replacements, human challenge, submitted-only receipt, service refusal, lost acknowledgement/reconciliation with no duplicate send, operation conflict, live designation/foreign stop refusal, wrong stop recipient, browser uncertainty forged CSRF and invalid runtime operation. Authority refusal, event completeness and revocation-after-signup are connector integration acceptance tests, not claims made by this isolated package.
+Seventeen browser tests pass: real signup/inbox/cancellation, four exact payload replacements, human challenge, submitted-only receipt, service refusal, lost acknowledgement/reconciliation with no duplicate send, operation conflict, live designation/foreign stop refusal, wrong stop recipient, browser uncertainty forged CSRF, invalid runtime operation and cross-origin form/result redirects. Authority refusal, event completeness and revocation-after-signup are connector integration acceptance tests, not claims made by this isolated package.
 
 ## Live compatibility remains unvalidated
 
