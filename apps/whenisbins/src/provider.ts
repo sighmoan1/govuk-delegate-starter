@@ -20,10 +20,10 @@ export class LiveProvider implements Provider {
  async submit(p:Property,key:string):Promise<Lookup>{
   const discovery=await (await this.call('/addresses?postcode='+encodeURIComponent(p.postcode))).json();
   if(!['none','property','property_id'].includes(discovery.required_input))throw Error('UNSUPPORTED_COUNCIL_INPUT');
-  const candidate=Array.isArray(discovery.candidates)?discovery.candidates.find((c:Record<string,unknown>)=>p.propertyId?c.property_id===p.propertyId:(c.label===p.address||c.address===p.address)):null;
-  if(discovery.required_input==='property_id'&&!candidate)throw Error('EXACT_ADDRESS_SELECTION_REQUIRED');
+  const candidate=Array.isArray(discovery.candidates)?discovery.candidates.find((c:Record<string,unknown>)=>p.propertyId?c.id===p.propertyId:c.label===p.address):null;
+  if(discovery.required_input==='property_id'&&(!candidate||typeof candidate.id!=='string'||!candidate.id))throw Error('EXACT_ADDRESS_SELECTION_REQUIRED');
   const required=discovery.required_input;
-  const payload=required==='property_id'?{postcode:p.postcode,property_id:candidate.property_id}:{postcode:p.postcode,property:p.address};
+  const payload=required==='none'?{postcode:p.postcode}:required==='property_id'?{postcode:p.postcode,property_id:candidate.id}:{postcode:p.postcode,property:p.address};
   return this.parse(await this.call('/lookups',{method:'POST',headers:{'Idempotency-Key':key},body:JSON.stringify(payload)}));
  }
  private async parse(r:Response):Promise<Lookup>{const b=await r.json();if(typeof b.id!=='string'||!['queued','running','partial','done','failed'].includes(b.status))throw Error('INVALID_PROVIDER_RESPONSE');return {status:b.status,lookup_id:b.id,...(b.result?{result:b.result}:{}),retry_after_seconds:Math.max(5,Number(r.headers.get('retry-after'))||5)};}
