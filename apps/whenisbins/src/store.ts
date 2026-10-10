@@ -1,7 +1,7 @@
 import {mkdir,readFile,writeFile,rename,rm,chmod} from 'node:fs/promises';
 import {dirname} from 'node:path';
 import {randomUUID} from 'node:crypto';
-export type Event={sourceEventId:string;occurredAt:string;action:'lookup'|'email_signup'|'email_cancel'|'schedule';stage:string;decision:string;requestId:string;delegateCheckId?:string;taskId?:string;occurrenceId?:string;outboundCallId?:string;effectId?:string;upstreamAgentDeclared?:boolean;latencyMs?:number;outcomeClass?:string;costClass?:string};
+export type Event={sourceEventId:string;occurredAt:string;action:'lookup'|'email_signup'|'email_cancel'|'schedule';stage:string;decision:string;requestId:string;delegateCheckId?:string;taskId?:string;occurrenceId?:string;outboundCallId?:string;effectId?:string;authorityVerified?:boolean;upstreamAgentDeclared?:boolean;latencyMs?:number;outcomeClass?:string;costClass?:string};
 export type Operation={digest:string;owner:string;property:string;key:string;state:'pending'|'done';lookupId?:string;result?:Record<string,unknown>;effectId?:string;etag?:string;reported?:boolean;nextPollAt?:number;leaseUntil?:number};
 export type State={version:1;operations:Record<string,Operation>;events:Event[]};
 export interface Store {transaction<T>(fn:(state:State)=>Promise<T>|T):Promise<T>; snapshot():Promise<State>}

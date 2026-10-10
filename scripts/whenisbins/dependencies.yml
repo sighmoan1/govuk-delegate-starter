@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: delegate
+      POSTGRES_PASSWORD: delegate
+      POSTGRES_DB: delegate
+    ports: ["127.0.0.1:55435:5432"]
+    volumes:
+      - whenisbins-test-data:/var/lib/postgresql/data
+      - ../../dev/db-init.sql:/docker-entrypoint-initdb.d/10-databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U delegate"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  simulator:
+    image: ghcr.io/govuk-one-login/simulator:latest
+    ports: ["127.0.0.1:5799:3000"]
+    environment:
+      SIMULATOR_URL: http://localhost:5701
+      INTERACTIVE_MODE: "false"
+      CLIENT_ID: delegate-dev-client
+      SCOPES: openid,email
+      REDIRECT_URLS: http://localhost:5700/auth/callback,http://localhost:5702/auth/callback
+      POST_LOGOUT_REDIRECT_URLS: http://localhost:5700/
+      IDENTITY_VERIFICATION_SUPPORTED: "false"
+      CLAIMS: ""
+      PUBLIC_KEY: "-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmXXR3EsRvUMVhEJMtQ1wexJjfQ00Q0MQ7ARfShN53BnOQEPFnS/I8ntBddkKdE3q+vMTI72w6Fv3SsMM+ciR2LIHdEQfKgsLt6PGNcV1kG6GG/3nSW3psW8w65Q3fmy81P1748qezDrVfaGrF4PDXALzX1ph+nz8mpKmck6aY6LEUJ4B+TIfYzlKmmwFe3ri0spSW+J5wE9mmT3VkR2ySuHRYHQlxlF9dfX7ltOTsbgJFzN6TO01ZQDhY0iLwzdGwhSxO6R6N/ZINYHCKFPaQD+tdKsrw7QDIYnx0IiXFnkGnizl3UtqSmXAaceTvPM2Pz84x2JiwHrp2Sml6RYLCQIDAQAB-----END PUBLIC KEY-----"
+volumes:
+  whenisbins-test-data:

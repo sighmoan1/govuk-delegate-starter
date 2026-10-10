@@ -44,7 +44,7 @@ it("rejects missing agreement and unlimited duration; CLI manages a persisted jo
 });
 describe("HTTP connector",()=>{
  it.each([[403,{},"refused"],[503,{},"unavailable"],[429,{},"unavailable"],[202,{result:{status:"queued"}},"pending"],[200,{result:{status:"partial"}},"unavailable"],[200,{result:{status:"done"}},"completed"]])("classifies %s %s",async(status,body,kind)=>{
- let sent:any; const lookup=connectorLookup("http://127.0.0.1:3307",async()=>"test-token",async(_url,init)=>{sent=init;return new Response(JSON.stringify(body),{status:status as number,headers:{"Retry-After":"5"}});}); const result=await lookup({...agreement,idempotencyKey:"occurrence"}); expect(result.kind).toBe(kind); expect(sent.headers["Idempotency-Key"]).toBe("occurrence"); expect(JSON.parse(sent.body)).toEqual({property_id:"home-sam"});
+ let sent:any; const lookup=connectorLookup("http://127.0.0.1:3307",async()=>"test-token",async(_url,init)=>{sent=init;return new Response(JSON.stringify(body),{status:status as number,headers:{"Retry-After":"5"}});}); const result=await lookup({...agreement,idempotencyKey:"occurrence"}); expect(result.kind).toBe(kind); expect(sent.headers["Idempotency-Key"]).toBe("occurrence"); expect(JSON.parse(sent.body)).toEqual({property_id:"home-sam",grant_reference:"relationship-id"});
  });
 });
 it("drops unsolicited secrets from agreement and injected provider outcomes",async()=>{

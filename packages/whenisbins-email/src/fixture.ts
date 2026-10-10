@@ -1,16 +1,20 @@
 /** Synthetic localhost-only website/mailbox. Never imports or calls WhenIsBins. */
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
+import {readFileSync,writeFileSync,renameSync,mkdirSync} from "node:fs";
+import {dirname} from "node:path";
 import type { EmailAction, EmailConfig, EmailReceipt, ReceiptStore } from "./index";
 export class MemoryReceiptStore implements ReceiptStore {
   private receipts = new Map<string, EmailReceipt>();
   async get(id: string) { return this.receipts.get(id); }
   async put(receipt: EmailReceipt) { this.receipts.set(receipt.operationId, receipt); }
 }
-export async function startEmailFixture() {
+export async function startEmailFixture(stateFile?:string) {
   const sessions = new Map<string, string>();
   const subscriptions = new Map<string, { action: EmailAction; confirmed: boolean; active: boolean; stop: string }>();
   let submissions = 0; let cancellations = 0;
+  if(stateFile){try{const saved=JSON.parse(readFileSync(stateFile,"utf8"));for(const [key,value] of saved.subscriptions)subscriptions.set(key,value);submissions=saved.submissions;cancellations=saved.cancellations;}catch(e){if((e as NodeJS.ErrnoException).code!=="ENOENT")throw e;}}
+  const persist=()=>{if(!stateFile)return;mkdirSync(dirname(stateFile),{recursive:true,mode:0o700});const temp=stateFile+"."+randomUUID();writeFileSync(temp,JSON.stringify({subscriptions:[...subscriptions],submissions,cancellations}),{mode:0o600,flag:"wx"});renameSync(temp,stateFile);};
   let mode: "normal" | "challenge" | "refuse" | "lost" | "submitted" = "normal";
   const escape = (value: string) => value.replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]!));
   const server = createServer(async (req, res) => {
@@ -39,13 +43,14 @@ export async function startEmailFixture() {
         if (action.property !== "synthetic-property-1" || action.email !== "sam.test@example.invalid" || action.reminderChoice !== "evening_before") return reply(400, '<p data-state="refused">Unexpected fixture payload</p>');
         const key = `${action.property}:${action.email}`;
         if (!subscriptions.has(key)) { submissions++; subscriptions.set(key, {action,confirmed:false,active:true,stop:randomUUID()}); }
+        persist();
         if (mode === "lost") return reply(200, ""); // Mutation happened; acknowledgement was lost.
         return reply(200, mode === "submitted" ? '<p data-state="submitted">Request received</p>' : '<p data-state="confirmation_required">Check your inbox to confirm</p>');
       }
       const subscription = [...subscriptions.values()].find(s => url.pathname === `/stop/${s.stop}`);
       if (subscription) {
         if (subscription.active) cancellations++;
-        subscription.active = false;
+        subscription.active = false;persist();
         return reply(200, '<p data-state="confirmed">Reminders stopped</p>');
       }
     }
@@ -57,7 +62,7 @@ export async function startEmailFixture() {
   const key = (a: EmailAction) => `${a.property}:${a.email}`;
   return { config, setMode(value: typeof mode) { mode=value; }, counts:()=>({submissions,cancellations}),
     /** Controlled synthetic mailbox evidence; no mail delivery claim or public endpoint. */
-    mailbox: { confirm(a: EmailAction) { const s=subscriptions.get(key(a)); if (!s) throw new Error("No message"); s.confirmed=true; }, stopPath(a: EmailAction) { const s=subscriptions.get(key(a)); if (!s?.confirmed) throw new Error("Inbox not confirmed"); return `/stop/${s.stop}`; } },
+    mailbox: { confirm(a: EmailAction) { const s=subscriptions.get(key(a)); if (!s) throw new Error("No message"); s.confirmed=true;persist(); }, stopPath(a: EmailAction) { const s=subscriptions.get(key(a)); if (!s?.confirmed) throw new Error("Inbox not confirmed"); return `/stop/${s.stop}`; } },
     async reconcile(a: EmailAction): Promise<"confirmed"|"absent"|"unknown"> { const s=subscriptions.get(key(a)); if (!s) return "absent"; if (a.operation === "cancel") return s.active ? "absent" : "confirmed"; return s.confirmed && s.active ? "confirmed" : "unknown"; },
     close:()=>new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve())) };
 }

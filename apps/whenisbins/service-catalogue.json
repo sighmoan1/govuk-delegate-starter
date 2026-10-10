@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "service": "whenisbins-connector",
-  "version": 1,
+  "version": 2,
   "capabilities": [
     {
       "code": "read_collection_dates",
@@ -22,6 +22,108 @@
             "home-other"
           ],
           "label": "Synthetic home"
+        }
+      }
+    },
+    {
+      "code": "subscribe_reminders",
+      "name": "Sign up for bin reminder emails",
+      "description": "Use the unchanged synthetic website through a scoped browser adapter. A separate approval confirms the exact home and mailbox.",
+      "risk": "MEDIUM",
+      "requires_step_up": true,
+      "minimum_assurance": "REGISTERED",
+      "operation": {
+        "method": "POST",
+        "path": "/api/reminders/signup"
+      },
+      "approval_fields": [
+        {
+          "key": "property",
+          "label": "Home",
+          "required": true,
+          "max": 160,
+          "normalisation": "text"
+        },
+        {
+          "key": "email",
+          "label": "Email address",
+          "required": true,
+          "max": 160,
+          "normalisation": "text"
+        },
+        {
+          "key": "reminder_choice",
+          "label": "Reminder time",
+          "required": true,
+          "max": 160,
+          "normalisation": "text"
+        }
+      ],
+      "supported_constraints": {
+        "property_id": {
+          "type": "enum",
+          "values": [
+            "home-sam"
+          ],
+          "label": "Synthetic home"
+        },
+        "mailbox_id": {
+          "type": "enum",
+          "values": [
+            "mailbox-sam"
+          ],
+          "label": "Synthetic mailbox"
+        }
+      }
+    },
+    {
+      "code": "cancel_reminders",
+      "name": "Stop bin reminder emails",
+      "description": "Use the unchanged synthetic website through a scoped browser adapter. A separate approval confirms the exact home and mailbox.",
+      "risk": "MEDIUM",
+      "requires_step_up": true,
+      "minimum_assurance": "REGISTERED",
+      "operation": {
+        "method": "POST",
+        "path": "/api/reminders/cancel"
+      },
+      "approval_fields": [
+        {
+          "key": "property",
+          "label": "Home",
+          "required": true,
+          "max": 160,
+          "normalisation": "text"
+        },
+        {
+          "key": "email",
+          "label": "Email address",
+          "required": true,
+          "max": 160,
+          "normalisation": "text"
+        },
+        {
+          "key": "reminder_choice",
+          "label": "Reminder time",
+          "required": true,
+          "max": 160,
+          "normalisation": "text"
+        }
+      ],
+      "supported_constraints": {
+        "property_id": {
+          "type": "enum",
+          "values": [
+            "home-sam"
+          ],
+          "label": "Synthetic home"
+        },
+        "mailbox_id": {
+          "type": "enum",
+          "values": [
+            "mailbox-sam"
+          ],
+          "label": "Synthetic mailbox"
         }
       }
     }
