@@ -25,7 +25,7 @@
 import { spawn, execFileSync } from "node:child_process";
 import { homedir } from "node:os";
 import { randomBytes } from "node:crypto";
-import { mkdirSync, openSync, readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
+import { mkdirSync, openSync, readFileSync, writeFileSync, existsSync, rmSync, chmodSync } from "node:fs";
 import { setTimeout as sleep } from "node:timers/promises";
 
 const STATE = ".public";
@@ -154,7 +154,7 @@ async function update() {
   // Preserve every existing credential. Only add/replace the public explanation address.
   const aboutUrl = `https://${named.hosts.about}`;
   const nextEnv = oldEnv.split("\n").filter(l => !l.startsWith("ABOUT_PUBLIC_URL=")).join("\n").trimEnd()+`\nABOUT_PUBLIC_URL=${aboutUrl}\n`;
-  writeFileSync(ENV_FILE,nextEnv,{mode:0o600});
+  writeFileSync(ENV_FILE,nextEnv,{mode:0o600});chmodSync(ENV_FILE,0o600);
   console.log("Building the public update; existing database volumes and credentials are retained…");
   sh("docker",["compose","--profile","public-briefing","--env-file",ENV_FILE,"up","--build","-d","onelogin","delegate","hmrc","hmrc-worker","about","about-public"]);
   for (const port of [3300,3301,3302,3304,3306]) await waitFor(`http://localhost:${port}/`);

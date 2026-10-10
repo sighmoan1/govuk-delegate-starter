@@ -79,6 +79,11 @@ jobs:
         run: npx vitest run --reporter=default --reporter=junit --outputFile=ci-artifacts/api-junit.xml 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/api-tests.log
       - name: Run browser regression from clean fixtures
         run: npx playwright test --reporter=list,html 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/browser-tests.log
+      - name: Verify the read-only public briefing instance
+        run: |
+          DELEGATE_PUBLIC_URL=https://delegate.example.test HMRC_PUBLIC_URL=https://hmrc.example.test ONELOGIN_PUBLIC_URL=https://login.example.test docker compose --profile public-briefing up -d --build --no-deps about-public
+          for attempt in $(seq 1 30); do curl --fail --silent http://localhost:3306/briefing >/dev/null && break; sleep 2; done
+          PUBLIC_BRIEFING_URL=http://localhost:3306 npx playwright test --config e2e/public-briefing.config.ts
       - name: Verify enabled sensor with missing vendor key makes no vendor calls
         run: bash scripts/ci-fingerprint-missing.sh 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/fingerprint-missing-browser.log
       - name: Restart Observatory and verify UI and schema readiness

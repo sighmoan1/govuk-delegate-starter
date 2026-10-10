@@ -179,6 +179,7 @@ services:
       - "127.0.0.1:3306:3304"
     environment:
       PUBLIC_BRIEFING_MODE: "true"
+      ABOUT_PUBLIC_URL: ${ABOUT_PUBLIC_URL:-http://localhost:3306}
       DELEGATE_URL: ${DELEGATE_PUBLIC_URL:-http://localhost:3300}
       HMRC_URL: ${HMRC_PUBLIC_URL:-http://localhost:3302}
       ONE_LOGIN_URL: ${ONELOGIN_PUBLIC_URL:-http://localhost:3301}
