@@ -1,0 +1,31 @@
+name: WhenIsBins component tests
+on:
+  pull_request:
+    paths: ["apps/whenisbins/**", "packages/whenisbins-*/**", ".github/workflows/whenisbins.yml", "package-lock.json"]
+  push:
+    branches: [main]
+    paths: ["apps/whenisbins/**", "packages/whenisbins-*/**", ".github/workflows/whenisbins.yml", "package-lock.json"]
+permissions:
+  contents: read
+jobs:
+  components:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Install fixture browser only when email adapter exists
+        run: |
+          if test -f packages/whenisbins-email/package.json; then npx playwright install --with-deps chromium; fi
+      - name: Typecheck and test available connector components
+        run: |
+          for component in apps/whenisbins packages/whenisbins-email packages/whenisbins-runner; do
+            if test -f "$component/package.json"; then
+              npm run typecheck -w "$component"
+              npm test -w "$component"
+            fi
+          done
