@@ -60,6 +60,10 @@ describe("scoped synthetic browser email workflow",()=>{
   it("records browser timeout or closure as uncertainty",async()=>{
     await page.close();expect((await execute()).reason).toBe("BROWSER_OR_RESPONSE_UNCERTAIN");
   });
+  it("rejects an invalid runtime operation",async()=>{
+    const invalid={...action,operation:"other"} as unknown as EmailAction;
+    expect((await execute({action:invalid,approvedAction:invalid})).reason).toBe("INVALID_ACTION");expect(page.url()).toBe("about:blank");
+  });
   it("website rejects a forged CSRF submission",async()=>{
     const result=await page.request.post(fixture.config.origin+"/signup",{form:{csrf:"fake",property:action.property,email:action.email,reminderChoice:action.reminderChoice}});
     expect(result.status()).toBe(403);expect(fixture.counts().submissions).toBe(0);

@@ -29,7 +29,7 @@ export async function executeEmailWorkflow(input: EmailWorkflowInput): Promise<E
   const prior = await store.get(operationId);
   if (prior && prior.actionHash !== hash) return { ...prior, status: "refused", reason: "OPERATION_CONFLICT" };
   if (hash !== actionHash(approvedAction)) return save("refused", "EXACT_APPROVAL_MISMATCH");
-  if (!action.property || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(action.email) || !action.reminderChoice || !operationId)
+  if (!["signup", "cancel"].includes(action.operation) || !action.property || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(action.email) || !action.reminderChoice || !operationId)
     return save("refused", "INVALID_ACTION");
   const origin = new URL(config.origin);
   const local = ["localhost", "127.0.0.1", "[::1]"].includes(origin.hostname);
@@ -47,6 +47,7 @@ export async function executeEmailWorkflow(input: EmailWorkflowInput): Promise<E
     const target = new URL(action.operation === "signup" ? config.signupPath : input.cancellationPath ?? "", origin);
     if (target.origin !== origin.origin || (action.operation === "cancel" && !input.cancellationPath)) return save("refused", "INVALID_STOP_FLOW");
     await page.goto(target.href);
+    if (new URL(page.url()).origin !== origin.origin) return save("refused", "UNEXPECTED_FORM_ORIGIN");
     const s = config.selectors;
     if (await page.locator(s.challenge).isVisible()) return save("confirmation_required", "HUMAN_CHALLENGE_REQUIRED");
     if (action.operation === "signup") {
@@ -62,6 +63,7 @@ export async function executeEmailWorkflow(input: EmailWorkflowInput): Promise<E
         return save("refused", "STOP_FLOW_BINDING_MISMATCH");
     }
     await page.locator(s.submit).click();
+    if (new URL(page.url()).origin !== origin.origin) return save("unknown", "UNEXPECTED_RESULT_ORIGIN");
     if (await page.locator(s.refusal).isVisible()) return save("refused", "SERVICE_REFUSAL");
     if (await page.locator(s.challenge).isVisible()) return save("confirmation_required", "HUMAN_CHALLENGE_REQUIRED");
     if (await page.locator(s.confirmationRequired).isVisible()) return save("confirmation_required", "INBOX_CONFIRMATION_REQUIRED");
