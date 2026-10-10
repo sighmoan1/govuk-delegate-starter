@@ -1,0 +1,25 @@
+# Observing our WhenIsBins journeys
+
+Issue #118 adds a deliberately separate `whenisbins_connector` source. It describes our connector, scheduler and controlled runner. It supplies no observations of Tom's other visitors, internal council processing/cost, native browser fingerprints or email delivery unless delivery was actually observed. There is no classifier in this integration and no research result enters an operational decision.
+
+## Contract
+
+The exported `whenisbinsObservation(input, pseudonymKey)` projects internal events into schema version 2. It accepts internal UUID identifiers and emits source-scoped HMAC identifiers. Existing HMRC/Delegate version 1 envelopes remain unchanged. `WhenIsBinsEvent` and `Page` reject unexpected fields and cross-version sources. V2 rejects raw addresses, emails, property/lookup tokens or links, unsubscribe links, credentials and execution labels. UUID research run IDs are caller claims; they do not establish execution truth. All correlation identifiers are derived pseudonyms or explicitly missing.
+
+The additional `whenisbins` object contains action (`lookup`, `email_signup`, `email_cancel`, `schedule`), stage, task/occurrence/outbound-call/effect pseudonyms and `upstream_agent_declared`. Stages distinguish admission, completed lookup, pending/confirmed subscription, observed mail delivery, confirmed cancellation, scheduled task registration, scheduled occurrence, refusal, replay and provider unavailability. An absent completion event remains absent; request admission is never promoted to completion. X-Agent represents our outgoing declaration, not proof WhenIsBins verified Delegate. Verified caller credentials are not an AI execution label; only an explicitly recorded Delegate allow can set the authorised-agent lane. No upstream browser evidence can be asserted by this source.
+
+The connector exports `GET /api/research/events` with `feedAccess`, `feedQuery` and `nextCursor`. Its page must have `schema_version: 2`, the exact source and at most 200 events. Cursor order follows append arrival order, not event clocks. At the end of a scan the cursor returns to null so late arrivals are eventually rescanned. Database uniqueness on source + event ID absorbs duplicates; optimistic cursor generations reject overlapping commits. Failed pages leave the last successful cursor intact. Research export is explicitly enabled, separately keyed, and always disabled in PUBLIC_MODE. Operational work does not call Observatory.
+
+## Collect and inspect
+
+Use an isolated synthetic stack. Set `RESEARCH_INGEST_ENABLED=true`, `WHENISBINS_CONNECTOR_RESEARCH_FEED_URL` and `WHENISBINS_CONNECTOR_RESEARCH_FEED_KEY` in Observatory's private environment. The source is optional: leaving both unset preserves the existing collector behaviour. Run `npm run ingest -w apps/observatory` with its existing environment-file convention. Do not add this endpoint or Observatory to the public tunnel.
+
+Open `/whenisbins` on the private Observatory app and enter the collection key. The read-only `/api/monitoring/whenisbins` endpoint queries only connector snapshots, at most the latest 500 by received time. Its source event/stage counts and distinct observed task/occurrence/outbound/effect-ID counts describe this bounded window. Missing identifiers reduce counts. An effect ID is an observed correlation identifier, not an independently verified business effect; stages remain source reports. The key stays in page memory and is not put in the URL or storage. The view uses a password field, visible label, ordinary keyboard form and wrapping evidence text.
+
+## Protected truth
+
+The existing evaluation ledger now accepts exact connector source/event bindings. Connector bindings are `REQUEST_ONLY`: they correlate independently inspected execution traces without claiming the HMRC-specific write-effect verification applies to external subscriptions or lookup results. Attempts can be verified only through the existing protected evaluation routes and provenance rules. Playwright/fixture runs are SCRIPTED_AUTOMATION; labels never appear in the collection view. Email/signup/scheduler acceptance tests retain their independent effect evidence separately. Further verified-effect aggregation needs a distinct protocol rather than relaxing this rule.
+
+## Validation
+
+Run `npm test -w packages/research-feed`, `npm test -w apps/observatory`, both workspace typechecks and Observatory build. New tests cover projection/missingness, all lifecycle stages, strict minimisation, source isolation, retry/dedup scans, missing effect denominators, request-only truth bindings, role-secret separation and public-mode/read auth gates. Integration runs must additionally exercise durable SQL persistence and connector journey events against the combined issue #115–#119 stack; unit-store restart scans alone do not establish a live study. No live call or upstream repository change is required for these tests.
