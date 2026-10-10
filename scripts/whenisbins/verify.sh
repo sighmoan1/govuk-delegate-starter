@@ -18,4 +18,6 @@ export PUBLIC_MODE=false
 export OBSERVATORY_COLLECTION_KEY=dev-whenisbins-observatory-key-20261010
 export WHENISBINS_CONNECTOR_RESEARCH_FEED_URL=http://127.0.0.1:5710/api/research/events
 export WHENISBINS_CONNECTOR_RESEARCH_FEED_KEY=dev-research-feed-key
+export DELEGATE_RESEARCH_FEED_URL=http://localhost:5700/api/research/events
+export DELEGATE_RESEARCH_FEED_KEY=dev-research-feed-key
 TSX_TSCONFIG_PATH=apps/observatory/tsconfig.json node --import tsx scripts/whenisbins/verify-observatory.ts
