@@ -87,6 +87,8 @@ export default async function Overview({ searchParams }: { searchParams: Promise
 
       <p><Link href="/project-status">See what is implemented, what is in review and what remains unproven</Link>.</p>
 
+      <p><Link href="/briefing">Public Digital concept and design briefings, decks and demonstration guide</Link>.</p>
+
       <h2>Four scenarios</h2>
       <p>The first two scenarios have starting-point buttons. Route findings show previous observations; the swarm runner creates fresh people.</p>
       <ul className="scenarios">
