@@ -51,6 +51,14 @@ describe("scoped synthetic browser email workflow",()=>{
     const cancel={...action,operation:"cancel" as const};
     expect((await execute({action:cancel,approvedAction:cancel,operationId:"cancel",cancellationPath:"https://example.com/stop"})).reason).toBe("INVALID_STOP_FLOW");
   });
+  it("can make a fresh signup after cancellation and deduplicates active retries",async()=>{
+    await execute();fixture.mailbox.confirm(action);const oldStop=fixture.mailbox.stopPath(action);const cancel={...action,operation:"cancel" as const};
+    await execute({action:cancel,approvedAction:cancel,operationId:"cancel-1",cancellationPath:oldStop});
+    expect((await execute({operationId:"new-signup"})).status).toBe("confirmation_required");expect(fixture.counts().submissions).toBe(2);
+    expect(await fixture.reconcile(action)).toBe("unknown");await execute({operationId:"new-signup"});expect(fixture.counts().submissions).toBe(2);
+    fixture.mailbox.confirm(action);expect((await execute({operationId:"new-signup"})).status).toBe("confirmed");expect(fixture.mailbox.stopPath(action)).not.toBe(oldStop);
+    expect(await fixture.reconcile(action)).toBe("confirmed");
+  });
   it("refuses a stop link bound to a different approved recipient",async()=>{
     await execute();fixture.mailbox.confirm(action);
     const cancel={...action,operation:"cancel" as const,email:"wrong@example.invalid"};
