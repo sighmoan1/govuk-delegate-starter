@@ -21,7 +21,7 @@ export function connectorHandler(config:Config,transport:typeof fetch=fetch){
   if(url.pathname!=='/api/collections')return json({error:'NOT_FOUND'},404);
   const now=config.now??Date.now;const started=now(),requestId=randomUUID(),event:Event={sourceEventId:randomUUID(),occurredAt:new Date().toISOString(),requestId,action:'lookup',stage:'refused',decision:'REFUSED',costClass:'read'};
   let check:any;let operationKey:string|undefined;
-  const finish=async(b:unknown,status:number)=>{event.latencyMs=Date.now()-started;await log(event);return json(b,status);};
+  const finish=async(b:unknown,status:number)=>{event.latencyMs=Date.now()-started;await log(event);const delay=(b as any)?.retry_after_seconds??(b as any)?.result?.retry_after_seconds;return json(b,status,[202,429,503].includes(status)&&typeof delay==='number'&&Number.isFinite(delay)?{'Retry-After':String(Math.max(5,Math.ceil(delay)))}:{});};
   try{
    if(req.method!=='POST')return finish({reason:'METHOD_NOT_ALLOWED'},405);
    const token=req.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1],principal=req.headers.get('x-principal-id');
@@ -67,7 +67,7 @@ export function connectorHandler(config:Config,transport:typeof fetch=fetch){
    return finish({decision:state==='failed'?'DENY':'ALLOW',delegate_check_id:check.check_id,result:op.result,replayed:replay,outcome_reported:reported,mode:config.provider.mode},status);
   }catch(e){
    const message=e instanceof Error?e.message:'UNAVAILABLE';
-   if(operationKey)await config.store.transaction(s=>{if(s.operations[operationKey!])s.operations[operationKey!].leaseUntil=undefined;}).catch(()=>{});
+   if(operationKey)await config.store.transaction(s=>{if(s.operations[operationKey!]){s.operations[operationKey!].leaseUntil=undefined;if(e instanceof ProviderFailure)s.operations[operationKey!].nextPollAt=now()+Math.max(5,Number.isFinite(e.retryAfter)?e.retryAfter:30)*1000;}}).catch(()=>{});
    if(message==='IDEMPOTENCY_CONFLICT')return finish({reason:message},409);
    event.stage=message==='DELEGATE_UNAVAILABLE'?'refused':'provider_unavailable';event.outcomeClass='UNAVAILABLE';
    if(e instanceof ProviderFailure)return finish({decision:'DENY',reason:'PROVIDER_UNAVAILABLE',retry_after_seconds:e.retryAfter,provider_status:e.status},e.status===429?429:503);
