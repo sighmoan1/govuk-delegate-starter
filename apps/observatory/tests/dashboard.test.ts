@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
-import { missing, Event } from '@prototype/research-feed';
+import { missing, LegacyEvent } from '@prototype/research-feed';
 vi.mock('@/lib/db',()=>({prisma:{observedEvent:{findMany:vi.fn()},researchBinding:{findMany:vi.fn()}}}));
 import { prisma } from '@/lib/db';
 import { GET } from '../src/app/api/dashboard/route';
 import { summarise, correlatedSensors, sensorLabel } from '../src/lib/dashboard';
-const event=Event.parse({schema_version:1,source_service:'hmrc',source_event_id:'event-1',event_kind:'service_request',occurred_at:{value:'2026-10-09T10:00:00.000Z',status:'known',provenance:'source_clock'},run_id:missing(),correlation:{request_id:missing(),transaction_id:missing(),session_id:missing(),delegate_check_id:missing()},observed:{lane:'UNKNOWN',signature_verified:missing(),latency_ms:missing()},outcome:{decision:'REFUSED',outcome_class:missing(),cost_class:missing()},browser_sensor:{status:'not_run',provenance:'not_collected'}});
+const event=LegacyEvent.parse({schema_version:1,source_service:'hmrc',source_event_id:'event-1',event_kind:'service_request',occurred_at:{value:'2026-10-09T10:00:00.000Z',status:'known',provenance:'source_clock'},run_id:missing(),correlation:{request_id:missing(),transaction_id:missing(),session_id:missing(),delegate_check_id:missing()},observed:{lane:'UNKNOWN',signature_verified:missing(),latency_ms:missing()},outcome:{decision:'REFUSED',outcome_class:missing(),cost_class:missing()},browser_sensor:{status:'not_run',provenance:'not_collected'}});
 const snapshots=vi.mocked(prisma.observedEvent.findMany), bindings=vi.mocked(prisma.researchBinding.findMany);
 const req=(mode='monitoring',key='c'.repeat(32))=>new Request('http://localhost/api/dashboard?mode='+mode,{headers:{[mode==='research'?'x-evaluation-key':'x-collection-key']:key}});
 beforeEach(()=>{vi.stubEnv('PUBLIC_MODE','false');vi.stubEnv('OBSERVATORY_COLLECTION_KEY','c'.repeat(32));vi.stubEnv('OBSERVATORY_EVALUATION_KEY','e'.repeat(32));vi.clearAllMocks();snapshots.mockResolvedValue([{id:'id',sourceService:'hmrc',sourceEventId:'event-1',schemaVersion:1,occurredAt:new Date(event.occurred_at.value),receivedAt:new Date(event.occurred_at.value),snapshot:event}] as never);bindings.mockResolvedValue([]);});
