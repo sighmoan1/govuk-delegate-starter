@@ -1,5 +1,7 @@
 # WhenIsBins connector demonstration
 
+This document describes the isolated fixture regression. For the publicly accessible real-service journeys and their actual results, see [live acceptance](LIVE_ACCEPTANCE.md).
+
 These three journeys run against our synthetic connector and provider fixture. WhenIsBins has not installed Delegate or Observatory. No council is contacted, no real email is sent and no live recurring task is created. This proves our integration controls and observable execution path; it does not prove that a real WhenIsBins email subscription or delivery succeeded.
 
 The local demonstration portal asks the citizen to review permissions in the real Delegate browser flow, which redirects through the local GOV.UK One Login simulator. Requested permissions start unchecked. The connector then checks the current relationship and service-owned property restriction. Real government identity assurance is not provided by the simulator.
@@ -74,7 +76,7 @@ npm run whenisbins:stop
 
 Stopping preserves this demonstration's synthetic database, private receipts and schedules. Restart uses them again. Private files and logs are in `.whenisbins-demo/`; do not publish them or expose the fixture portal through a public tunnel. The launcher seeds only its first start. Its optional Observatory is on http://localhost:5703/whenisbins and requires the local collection key to view evidence.
 
-The email website fixture also persists its synthetic subscription and stop-link state across connector restarts. It never sends mail. Live lookup is a separate explicit configuration in CONNECTOR.md; live website compatibility and real inbox handling remain unvalidated.
+The email website fixture also persists its synthetic subscription and stop-link state across connector restarts. It never sends mail. Live lookup is a separate explicit configuration in CONNECTOR.md; those fixture checks do not establish live website compatibility or real inbox handling. Subsequent actual results are recorded separately in [live acceptance](LIVE_ACCEPTANCE.md).
 
 After the recurring browser journey, verify its trusted source evidence:
 

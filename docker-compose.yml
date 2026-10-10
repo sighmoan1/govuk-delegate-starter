@@ -214,6 +214,7 @@ services:
       ONELOGIN_INTERNAL_URL: http://onelogin:3301
       DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:-}
       WHENISBINS_EVIDENCE_STATUS: ${WHENISBINS_EVIDENCE_STATUS:-Live verification is in progress.}
+      WHENISBINS_EVIDENCE_URL: ${WHENISBINS_EVIDENCE_URL:-}
       WHENISBINS_PROPERTIES_FILE: /run/whenisbins/properties.json
       WHENISBINS_CATALOGUE_FILE: /run/whenisbins/catalogue.json
       WHENISBINS_MAILBOXES_FILE: /run/whenisbins/mailboxes.json

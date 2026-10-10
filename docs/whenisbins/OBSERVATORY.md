@@ -1,5 +1,7 @@
 # Observing our WhenIsBins journeys
 
+Actual ingestion from the publicly deployed live connector was verified on 10 October 2026. See [live acceptance](LIVE_ACCEPTANCE.md) for measured stages, correlations and remaining gaps; fixture lifecycle coverage is not proof of real cancellation.
+
 Issue #118 adds a deliberately separate `whenisbins_connector` source. It describes our connector, scheduler and controlled runner. It supplies no observations of Tom's other visitors, internal council processing/cost, native browser fingerprints or email delivery unless delivery was actually observed. There is no classifier in this integration and no research result enters an operational decision.
 
 ## Contract
@@ -8,7 +10,7 @@ The exported `whenisbinsObservation(input, pseudonymKey)` projects internal even
 
 The additional `whenisbins` object contains action (`lookup`, `email_signup`, `email_cancel`, `schedule`), stage, task/occurrence/outbound-call/effect pseudonyms and `upstream_agent_declared`. Stages distinguish admission, completed lookup, pending/confirmed subscription, observed mail delivery, confirmed cancellation, scheduled task registration, scheduled occurrence, refusal, replay and provider unavailability. An absent completion event remains absent; request admission is never promoted to completion. X-Agent represents our outgoing declaration, not proof WhenIsBins verified Delegate. Verified caller credentials are not an AI execution label; only an explicitly recorded Delegate allow can set the authorised-agent lane. No upstream browser evidence can be asserted by this source.
 
-The connector exports `GET /api/research/events` with `feedAccess`, `feedQuery` and `nextCursor`. Its page must have `schema_version: 2`, the exact source and at most 200 events. Cursor order follows append arrival order, not event clocks. At the end of a scan the cursor returns to null so late arrivals are eventually rescanned. Database uniqueness on source + event ID absorbs duplicates; optimistic cursor generations reject overlapping commits. Failed pages leave the last successful cursor intact. Research export is explicitly enabled, separately keyed, and always disabled in PUBLIC_MODE. Operational work does not call Observatory.
+The connector exports `GET /api/research/events` with `feedAccess`, `feedQuery` and `nextCursor`. Its page must have `schema_version: 2`, the exact source and at most 200 events. Cursor order follows append arrival order, not event clocks. At the end of a scan the cursor returns to null so late arrivals are eventually rescanned. Database uniqueness on source + event ID absorbs duplicates; optimistic cursor generations reject overlapping commits. Failed pages leave the last successful cursor intact. Research export is explicitly enabled and separately keyed. The public listener disables it in PUBLIC_MODE. A live public deployment may additionally run a separately keyed loopback-only private feed listener; it is never routed through the public tunnel. Operational work does not call Observatory.
 
 ## Collect and inspect
 
