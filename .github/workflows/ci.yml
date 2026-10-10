@@ -96,8 +96,8 @@ jobs:
         if: always()
         run: |
           mkdir -p ci-artifacts
-          docker compose ps -a > ci-artifacts/stack-status.txt 2>&1 || true
-          docker compose logs --no-color --timestamps 2>&1 | node scripts/ci-redact.mjs > ci-artifacts/stack.log || true
+          docker compose --profile public-briefing ps -a > ci-artifacts/stack-status.txt 2>&1 || true
+          docker compose --profile public-briefing logs --no-color --timestamps 2>&1 | node scripts/ci-redact.mjs > ci-artifacts/stack.log || true
       - name: Retain reports and failure traces
         if: always()
         uses: actions/upload-artifact@v4
@@ -111,5 +111,5 @@ jobs:
           if-no-files-found: warn
       - name: Remove isolated stack and its fixture volumes
         if: always()
-        run: docker compose down --volumes --remove-orphans
+        run: docker compose --profile public-briefing down --volumes --remove-orphans
 
