@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>What we tested against WhenIsBins</title>
+  <link rel="stylesheet" href="/design.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <main id="main-content" class="container">
+    <h1>What we tested against WhenIsBins</h1>
+    <p>Recorded on 10 October 2026. These tests used the real, unchanged WhenIsBins service. Tom made no integration change.</p>
+    <p>Delegate, GOV.UK sign-in, Sam’s identity and the test phone are simulated. Our connector checks the permission granted in that prototype before contacting WhenIsBins. WhenIsBins does not itself recognise Delegate.</p>
+
+    <h2>Read bin dates</h2>
+    <p>A citizen reviewed and granted permission through the public HTTPS journey. The assistant then obtained real collection dates for the privately designated home. After permission was removed, another request was refused before contacting WhenIsBins.</p>
+    <p>The returned calendar said its source was retrieved on 14 September 2026 and covered a limited period. A successful lookup does not guarantee that the council data is fresh or complete. The assistant shows those qualifications alongside the dates.</p>
+
+    <h2>Request email reminders</h2>
+    <p>A separate permission and approval for the exact home and inbox preceded one signup submission on the native website. Its verification email arrived in the designated Gmail inbox at 10:14:32 Europe/London.</p>
+    <p>Receiving the email did not activate reminders. After another current-authority check, the assistant submitted the native confirmation form. The website showed “Your reminders are on” at 10:28:44 Europe/London. The original operation was reconciled without submitting signup or activation again.</p>
+    <p>The subscription is currently active. Delivery of a future collection reminder has not yet been observed.</p>
+
+    <h2>Run a scheduled check</h2>
+    <p>A weekly task was saved with the citizen’s agreement. The connector was restarted, and its worker completed a real lookup at 10:33:12 Europe/London using the ordinary clock.</p>
+    <p>A separate task became due after its permission had been removed. It was refused at 10:36:12, with no recorded outbound call or effect. Both test schedules were then stopped.</p>
+    <p>This establishes one due execution and one refusal. It does not establish indefinite availability. The agent owns the schedule; Delegate checks authority each time.</p>
+
+    <h2>Observe the journeys</h2>
+    <p>Observatory received 20 redacted events from our deployed connector: 5 admissions, 2 completed lookups, 3 refusals, 5 pending subscription observations, 1 confirmed subscription, 2 schedule registrations and 2 scheduled occurrences.</p>
+    <p>Related records were linked by recorded request, check and task identifiers. Reimporting the same records added no duplicates, and a new database connection retained them. Authentication, redaction and protected monitoring checks passed. Earlier synthetic fixture records were excluded from these counts.</p>
+    <p>This shows that we can observe the activity passing through our connector. It does not measure Tom’s other visitors, identify every AI agent or independently establish every upstream effect. Twenty events are not twenty independent actions.</p>
+    <p>The refusal record omitted its reason. The controlled journey separately established that permission had been removed. The protected monitoring attempt stayed unlabelled, with a request-only event binding; source observations were not promoted to independently verified effects.</p>
+
+    <h2>Cancellation is pending</h2>
+    <p>The verification email and activation page contained no stop link. WhenIsBins supplies that link in a later reminder email. We have not guessed one or claimed cancellation succeeded. The cancellation control is unavailable until the actual stop form and outcome can be verified.</p>
+    <p>Removing Delegate permission stops future agent actions. It does not undo an existing reminder subscription.</p>
+
+    <h2>Access and availability</h2>
+    <p>The address, inbox, credentials and secret email links remain private. Presenter controls require a separate access code; the full Observatory interface and raw source feed are private.</p>
+    <p>The original public services, grants and activity history were retained without reset. This public prototype uses a named tunnel from the presenter’s Mac. It depends on that Mac and Docker remaining available.</p>
+    <p><a href="/">Return to the live test</a></p>
+    <p><a href="https://about-demo.bathos.org/briefing">Read the concept and design briefings</a></p>
+    <p><a href="https://whenisbins.com/v1/guide">WhenIsBins API guide</a></p>
+  </main>
+</body>
+</html>

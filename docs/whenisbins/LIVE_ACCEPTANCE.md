@@ -1,6 +1,6 @@
 # What the real WhenIsBins test has established
 
-Verified on 10 October 2026. Public entry: [Delegate and real bin collections](https://whenisbins-demo.bathos.org). Presenter controls require a private access code. No address, inbox, credential or secret email link appears in this record.
+Verified on 10 October 2026. Public entry: [Delegate and real bin collections](https://whenisbins-demo.bathos.org). The [redacted public evidence record](https://whenisbins-demo.bathos.org/evidence) is readable without repository access. Presenter controls require a private access code. No address, inbox, credential or secret email link appears in this record.
 
 ## What is real
 

@@ -13,6 +13,7 @@ RUN node node_modules/playwright/cli.js install --with-deps chromium
 COPY styles styles
 COPY apps/whenisbins/src apps/whenisbins/src
 COPY apps/whenisbins/service-catalogue.json apps/whenisbins/service-catalogue.json
+COPY apps/whenisbins/evidence.html apps/whenisbins/evidence.html
 COPY apps/whenisbins/properties.json apps/whenisbins/properties.json
 COPY packages/research-feed/src packages/research-feed/src
 COPY packages/whenisbins-email/src packages/whenisbins-email/src
