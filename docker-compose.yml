@@ -55,7 +55,7 @@ services:
       - "3301:3301"
     environment:
       SIMULATOR_INTERNAL_URL: http://simulator:3000
-      ABOUT_URL: http://localhost:3304
+      ABOUT_URL: ${ABOUT_PUBLIC_URL:-http://localhost:3304}
       DEMO_EMAIL: sam.taylor@example.com
       ONELOGIN_DEMO_PASSWORD: ${ONELOGIN_DEMO_PASSWORD:-password}
       DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:-dev-demo-console-key}
@@ -89,7 +89,7 @@ services:
       DEMO_AGENT_CLIENT_ID: demo-personal-agent
       DEMO_AGENT_CLIENT_SECRET: ${AGENT_CLIENT_SECRET:-dev-demo-agent-secret}
       HMRC_SERVICE_KEY: ${HMRC_SERVICE_KEY:-dev-hmrc-service-key}
-      ABOUT_URL: http://localhost:3304
+      ABOUT_URL: ${ABOUT_PUBLIC_URL:-http://localhost:3304}
       DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:-dev-demo-console-key}
 
   hmrc:
@@ -126,7 +126,7 @@ services:
       OBSERVATORY_INTERNAL_URL: http://observatory:3303
       OBSERVATORY_COLLECTION_KEY: ${OBSERVATORY_COLLECTION_KEY:-}
       HMRC_SERVICE_KEY: ${HMRC_SERVICE_KEY:-dev-hmrc-service-key}
-      ABOUT_URL: http://localhost:3304
+      ABOUT_URL: ${ABOUT_PUBLIC_URL:-http://localhost:3304}
       DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:-dev-demo-console-key}
 
   # HMRC's queue worker: records claims HMRC has received (Prefer: respond-async) a little later.
@@ -167,6 +167,22 @@ services:
       ONE_LOGIN_INTERNAL_URL: http://onelogin:3301
       DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:-dev-demo-console-key}
       HMRC_MIDDLEWARE_FILE: ../hmrc/src/lib/delegated-authority.ts
+
+  # Separate read-only briefing surface: no presenter or research credentials.
+  # Enable explicitly with --profile public-briefing; tunnel only this instance.
+  about-public:
+    profiles: ["public-briefing"]
+    build:
+      context: .
+      dockerfile: apps/about/Dockerfile
+    ports:
+      - "127.0.0.1:3306:3304"
+    environment:
+      PUBLIC_BRIEFING_MODE: "true"
+      ABOUT_PUBLIC_URL: ${ABOUT_PUBLIC_URL:-http://localhost:3306}
+      DELEGATE_URL: ${DELEGATE_PUBLIC_URL:-http://localhost:3300}
+      HMRC_URL: ${HMRC_PUBLIC_URL:-http://localhost:3302}
+      ONE_LOGIN_URL: ${ONELOGIN_PUBLIC_URL:-http://localhost:3301}
 
   # Local research only: no inbound dependency from existing applications.
   observatory:
