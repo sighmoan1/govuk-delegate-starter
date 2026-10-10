@@ -93,7 +93,7 @@ export class Runner {
     for (const claim of claims) {
       let outcome: Outcome;
       try { outcome = await this.lookup({ ...claim.job.agreement, idempotencyKey: claim.execution.id }); } catch { outcome = { kind: "unavailable", code: "CONNECTOR_UNAVAILABLE", providerCalls: null }; }
-      if (!["completed", "unchanged", "pending", "refused", "unavailable"].includes(outcome.kind) || (outcome.providerCalls !== null && (!Number.isInteger(outcome.providerCalls) || outcome.providerCalls < 0))) outcome = { kind: "unavailable", code: "INVALID_CONNECTOR_RESPONSE", providerCalls: null };
+      if (!outcome || typeof outcome !== "object" || !["completed", "unchanged", "pending", "refused", "unavailable"].includes(outcome.kind) || (outcome.providerCalls !== null && (!Number.isInteger(outcome.providerCalls) || outcome.providerCalls < 0))) outcome = { kind: "unavailable", code: "INVALID_CONNECTOR_RESPONSE", providerCalls: null };
       results.push(await this.store.transaction(s => {
         const j = s.jobs.find(j => j.id === claim.job.id)!;
         const e = j.executions.find(e => e.id === claim.execution.id)!;

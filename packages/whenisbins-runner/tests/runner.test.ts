@@ -66,11 +66,13 @@ it("unknown provider call counts remain unknown and retries preserve all attempt
 
 it('keeps upstream calls unknown when a response is lost or malformed after provider work', async () => {
  const {metrics}=await import('../src/index');
- for(const malformed of [false,true]){
+ for(const malformed of ['lost','invalid-count','null','undefined']){
   let upstreamCalls=0;
-  const runner=new Runner(new FileJobStore(join(dir,malformed?'malformed':'lost')),async()=>{
+  const runner=new Runner(new FileJobStore(join(dir,malformed)),async()=>{
    upstreamCalls++;
-   if(malformed)return {kind:'completed',providerCalls:-1} as Outcome;
+   if(malformed==='invalid-count')return {kind:'completed',providerCalls:-1} as Outcome;
+   if(malformed==='null')return null as any;
+   if(malformed==='undefined')return undefined as any;
    throw new Error('Response lost after upstream submit');
   },()=>Date.parse('2026-10-10T07:00Z'));
   await runner.create(agreement);const [execution]=await runner.tick();
