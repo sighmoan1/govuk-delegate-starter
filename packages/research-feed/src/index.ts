@@ -1,15 +1,15 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 
-export const Source = z.enum(["hmrc", "delegate"]);
+export const Source = z.enum(["hmrc", "delegate", "whenisbins_connector"]);
 export type SourceService = z.infer<typeof Source>;
 const text = z.string().max(128);
 const observed = <T extends z.ZodType>(value: T) => z.object({
   value: value.nullable(), status: z.enum(["known", "inferred", "missing"]),
   provenance: z.enum(["source_record", "source_clock", "client_claim", "pseudonymised", "not_recorded"]),
 }).strict().refine(v => { const field = v as unknown as { value: unknown; status: string }; return field.status === "missing" ? field.value === null : field.value !== null; }, "Missingness and value must agree");
-export const Event = z.object({
-  schema_version: z.literal(1), source_service: Source, source_event_id: text.min(1),
+export const LegacyEvent = z.object({
+  schema_version: z.literal(1), source_service: z.enum(["hmrc", "delegate"]), source_event_id: text.min(1),
   event_kind: z.enum(["service_request", "authority_check", "browser_sensor"]).default("service_request"),
   occurred_at: z.object({ value: z.iso.datetime(), status: z.literal("known"), provenance: z.literal("source_clock") }).strict(), run_id: observed(text),
   correlation: z.object({ request_id: observed(text), transaction_id: observed(text),
@@ -35,9 +35,37 @@ export const Event = z.object({
         ctx.addIssue({ code: "custom", message: "Vendor identifiers must be marked derived pseudonyms" });
     }),
 }).strict();
+// V2 is deliberately limited to our connector, never upstream WhenIsBins telemetry.
+const digest = z.string().regex(/^[0-9a-f]{64}$/);
+const opaque = observed(digest).superRefine((field, ctx) => {
+  if (field.value !== null && (field.status !== "inferred" || field.provenance !== "pseudonymised"))
+    ctx.addIssue({ code: "custom", message: "Correlation requires derived source pseudonyms" });
+});
+export const WhenIsBinsEvidence = z.object({
+  action: z.enum(["lookup", "email_signup", "email_cancel", "schedule"]),
+  stage: z.enum(["admitted", "lookup_completed", "subscription_pending", "subscription_confirmed", "mail_delivery_observed", "cancellation_confirmed", "schedule_registered", "scheduled_occurrence", "refused", "replay", "provider_unavailable"]),
+  task_id: opaque, occurrence_id: opaque, outbound_call_id: opaque, effect_id: opaque,
+  upstream_agent_declared: observed(z.boolean()),
+}).strict();
+export const WhenIsBinsEvent = LegacyEvent.extend({
+  schema_version: z.literal(2), source_service: z.literal("whenisbins_connector"),
+  source_event_id: z.union([digest, z.uuid()]),
+  run_id: observed(z.union([digest, z.uuid()])),
+  correlation: z.object({ request_id: opaque, transaction_id: opaque, session_id: opaque, delegate_check_id: opaque }).strict(),
+  whenisbins: WhenIsBinsEvidence,
+}).strict().superRefine((event, ctx) => {
+  if (event.browser_sensor.status !== "not_run" || event.browser_sensor.provenance !== "not_collected")
+    ctx.addIssue({ code: "custom", message: "Connector cannot assert upstream browser evidence" });
+  if (event.whenisbins.stage === "refused" && !["DENY", "REFUSED", "THROTTLED", "CHALLENGED"].includes(event.outcome.decision))
+    ctx.addIssue({ code: "custom", message: "Refusal stage requires refused decision" });
+});
+export const Event = z.union([LegacyEvent, WhenIsBinsEvent]);
 export type ResearchEvent = z.infer<typeof Event>;
-export const Page = z.object({ schema_version: z.literal(1), source_service: Source,
-  events: z.array(Event).max(200), next_cursor: z.string().max(1024).nullable() }).strict();
+export type WhenIsBinsResearchEvent = z.infer<typeof WhenIsBinsEvent>;
+export const Page = z.union([
+  z.object({ schema_version: z.literal(1), source_service: z.enum(["hmrc", "delegate"]), events: z.array(LegacyEvent).max(200), next_cursor: z.string().max(1024).nullable() }).strict(),
+  z.object({ schema_version: z.literal(2), source_service: z.literal("whenisbins_connector"), events: z.array(WhenIsBinsEvent).max(200), next_cursor: z.string().max(1024).nullable() }).strict(),
+]);
 export type ResearchPage = z.infer<typeof Page>;
 export const missing = () => ({ value: null, status: "missing" as const, provenance: "not_recorded" as const });
 export const known = <T>(value: T) => value == null ? missing() : ({ value, status: "known" as const, provenance: "source_record" as const });
@@ -78,4 +106,27 @@ export function feedQuery(req: Request, source: SourceService) {
 }
 export function nextCursor(source: SourceService, lastId: string) {
   return Buffer.from(JSON.stringify({ version: 1, source, after: lastId })).toString("base64url");
+}
+
+export interface WhenIsBinsObservationInput {
+  sourceEventId: string; occurredAt: string; action: z.infer<typeof WhenIsBinsEvidence>["action"];
+  stage: z.infer<typeof WhenIsBinsEvidence>["stage"]; decision: ResearchEvent["outcome"]["decision"];
+  requestId?: string | null; delegateCheckId?: string | null; taskId?: string | null;
+  occurrenceId?: string | null; outboundCallId?: string | null; effectId?: string | null;
+  runId?: string | null; authorityVerified?: boolean | null; signatureVerified?: boolean | null; upstreamAgentDeclared?: boolean | null;
+  latencyMs?: number | null; outcomeClass?: ResearchEvent["outcome"]["outcome_class"]["value"];
+  costClass?: ResearchEvent["outcome"]["cost_class"]["value"];
+}
+export function whenisbinsObservation(input: WhenIsBinsObservationInput, pseudonymKey: string): WhenIsBinsResearchEvent {
+  if (!pseudonymKey) throw new Error("PSEUDONYM_KEY_REQUIRED");
+  const p = (namespace: string, value: string | null | undefined) => pseudonym("whenisbins_connector", namespace, value, pseudonymKey);
+  return WhenIsBinsEvent.parse({ schema_version: 2, source_service: "whenisbins_connector", source_event_id: input.sourceEventId,
+    occurred_at: { value: input.occurredAt, status: "known", provenance: "source_clock" }, run_id: runId("whenisbins_connector", input.runId, pseudonymKey),
+    correlation: { request_id: p("request", input.requestId), transaction_id: p("effect", input.effectId), session_id: missing(), delegate_check_id: p("check", input.delegateCheckId) },
+    observed: { lane: input.authorityVerified === true ? "AUTHORISED_AGENT" : input.signatureVerified === true ? "DECLARED_AGENT" : "UNKNOWN", signature_verified: known(input.signatureVerified), latency_ms: known(input.latencyMs) },
+    outcome: { decision: input.decision, outcome_class: known(input.outcomeClass), cost_class: known(input.costClass) },
+    browser_sensor: { status: "not_run", provenance: "not_collected" },
+    whenisbins: { action: input.action, stage: input.stage, task_id: p("task", input.taskId), occurrence_id: p("occurrence", input.occurrenceId),
+      outbound_call_id: p("outbound", input.outboundCallId), effect_id: p("effect", input.effectId), upstream_agent_declared: known(input.upstreamAgentDeclared) },
+  });
 }
