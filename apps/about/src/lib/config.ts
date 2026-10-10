@@ -11,7 +11,10 @@ export const urls = {
   get oneLoginInternal() { return env("ONE_LOGIN_INTERNAL_URL", this.oneLogin); },
 };
 
-export const demoConsoleKey = () => env("DEMO_CONSOLE_KEY", "dev-demo-console-key");
+export const demoConsoleKey = () => {
+  if (process.env.PUBLIC_BRIEFING_MODE === "true") throw new Error("Presenter controls are unavailable on the public briefing instance");
+  return env("DEMO_CONSOLE_KEY", "dev-demo-console-key");
+};
 
 export function hmrcMiddlewareSource(): string {
   try {
