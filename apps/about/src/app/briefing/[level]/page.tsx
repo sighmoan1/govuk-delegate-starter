@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import pack from "@/lib/briefing-content.json";
+import { briefingDownload } from "@/lib/briefing-download";
 import "../briefing.css";
 
 type Level = keyof typeof pack.briefings;
@@ -19,7 +20,7 @@ export default async function Briefing({ params }: { params: Promise<{ level: st
     <p><Link href="/briefing">All briefings</Link></p>
     <h1>{deck.title}</h1><p className="lead">{deck.duration}</p>
     <p>Independent synthetic prototype. Originally prepared {pack.prepared}; status refreshed {pack.statusUpdated}. Observatory PRs 109–110 are merged. Dated screenshots and evidence retain their recorded source. Real vendor acceptance and genuine participant research remain outstanding.</p>
-    <p><a href={`/briefings/${level}.pptx`} download>Download the editable deck</a></p>
+    <p><a href={briefingDownload(level as Level)} download>Download the editable deck</a></p>
     <nav aria-label="Briefing sections"><ol>{deck.slides.map((slide, i) => <li key={slide.title}><a href={`#slide-${i + 1}`}>{slide.title}</a></li>)}</ol></nav>
     {deck.slides.map((slide, i) => {
       const item = slide as typeof slide & { table?: string[][]; image?: string; demo?: string };
