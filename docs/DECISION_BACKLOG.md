@@ -89,7 +89,7 @@ The key distinction is **authority to take an action** versus **authority to dec
 | Subject | Current position | Where recorded | Qualification |
 |---|---|---|---|
 | Identity vs authority | One Login authenticates a person; Delegate manages representation authority | [Decision 2](DECISIONS.md#decision-2--one-login-authenticates-the-principal-delegate-manages-authority) | Mock sign-in is not production identity assurance |
-| Services own business decisions | Each service determines supported operations and domain rules | [Decision 4](DECISIONS.md#decision-4--service-defined-capabilities) and Decision 23 | Live generic catalogue publication is still engineering backlog [#28](https://github.com/sighmoan1/govuk-delegate-starter/issues/28) |
+| Services own business decisions | Each service determines supported operations and domain rules | [Decision 4](DECISIONS.md#decision-4--service-defined-capabilities) and Decision 23 | Authenticated immutable catalogue publication and generic consent are implemented; national catalogue governance remains deferred in DB-09 |
 | Lookup for prototype | Service checks a live Delegate mandate | [Decision 5](DECISIONS.md#decision-5--relationship-lookup-before-portable-credentials) | Not a production commitment; [DB-08](#1-triage-table) remains open |
 | No AI-content detection as security control | Detection is uncertain; identify/verifiably authorise the agent where possible | [Decisions 6–8](DECISIONS.md) | No proof all agents will choose the authorised route |
 | Idempotent claim/answer handling | One retry must not create extra business effects | [Decision 21](DECISIONS.md#decision-21--one-client-operation-at-most-one-committed-business-transaction) | Receiving service's feature; not proof of Delegate's marginal value |
@@ -107,7 +107,7 @@ A suggested sequence to avoid going in circles:
 2. **Then DB-03 + DB-10 (identity, subagents and responsibility).** Clarify what the signer proves and the minimum attribution needed for each class of action.
 3. **Then DB-04 + DB-06 (capacity and the unverified lane).** Challenge business limits separately from throughput and policy friction. These choices affect whether E3 is a fair experiment.
 4. **In parallel: DB-05 (experimental evidence).** Prespecify what success/failure would mean, then run E1/E2/E3. A product value decision should follow evidence.
-5. **After the first cross-service demonstration: DB-07, DB-08, DB-09 and DB-11.** Federation, proof format, service catalogue governance and privacy controls become easier to decide with a second service and an issuer prototype.
+5. **After the first cross-service demonstration: DB-07, DB-08, DB-09 and DB-11.** The independent synthetic council proof is implemented. Federation, proof format, service catalogue governance and privacy controls remain undecided; recognition of an external authority issuer is still a proposed experiment.
 6. **Lastly DB-12.** Grouped cross-service consent is valuable, but should not pre-empt valid independent grants.
 
 This is an order for **discussion and demonstration**, not permission to bypass legal, security or privacy reviews for real citizens.

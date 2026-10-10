@@ -1,4 +1,6 @@
-# Repository and delivery status — 9 October 2026
+# Repository and delivery status
+
+The audit sections below preserve their original dates and revisions. The latest delivery snapshot will follow those historical records.
 
 ## Audit baseline
 
