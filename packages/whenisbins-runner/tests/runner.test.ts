@@ -63,3 +63,39 @@ it("separate processes preserve both jobs through exclusive atomic writes",async
 it("unknown provider call counts remain unknown and retries preserve all attempt receipts",async()=>{
  const {metrics}=await import("../src/index"); let now=Date.parse("2026-10-10T07:00Z"); const runner=new Runner(new FileJobStore(join(dir,"jobs")),async()=>({kind:"pending",providerCalls:null}),()=>now); await runner.create(agreement); await runner.tick(); now+=60000; await runner.tick(); now+=120000; await runner.tick(); const counts=metrics((await runner.store.list())[0]); expect(counts).toMatchObject({occurrences:1,attempts:3,observedAttempts:3,completed:0,providerCalls:0,providerCallsUnknown:3});
 });
+
+it('keeps upstream calls unknown when a response is lost or malformed after provider work', async () => {
+ const {metrics}=await import('../src/index');
+ for(const malformed of [false,true]){
+  let upstreamCalls=0;
+  const runner=new Runner(new FileJobStore(join(dir,malformed?'malformed':'lost')),async()=>{
+   upstreamCalls++;
+   if(malformed)return {kind:'completed',providerCalls:-1} as Outcome;
+   throw new Error('Response lost after upstream submit');
+  },()=>Date.parse('2026-10-10T07:00Z'));
+  await runner.create(agreement);const [execution]=await runner.tick();
+  expect(upstreamCalls).toBe(1);expect(execution.outcome).toMatchObject({kind:'unavailable',providerCalls:null});
+  expect(metrics((await runner.store.list())[0])).toMatchObject({attempts:1,providerCalls:0,providerCallsUnknown:1});
+ }
+});
+it('counts missing crash receipts as unknown and does not invent zero calls on exhausted leases', async () => {
+ const {metrics}=await import('../src/index');const now=Date.parse('2026-10-10T07:00Z');
+ const store=new FileJobStore(join(dir,'crashed'));let calls=0;
+ const runner=new Runner(store,async()=>{calls++;return good;},()=>now);const job=await runner.create(agreement);
+ await store.transaction(s=>s.jobs[0].executions.push({id:`${job.id}:2026-10-10`,dueAt:new Date(now).toISOString(),attempt:3,state:'running',leaseUntil:new Date(now-1).toISOString()}));
+ expect(await runner.tick()).toEqual([]);expect(calls).toBe(0);
+ const saved=(await store.list())[0];expect(saved.executions[0].outcome).toMatchObject({code:'RETRY_EXHAUSTED',providerCalls:null});
+ expect(metrics(saved)).toMatchObject({attempts:3,observedAttempts:0,providerCalls:0,providerCallsUnknown:3});
+});
+it('distinguishes fresh unchanged provider reads from durable completed replays in receipts and metrics', async () => {
+ const {metrics}=await import('../src/index');let now=Date.parse('2026-10-10T07:00Z');let responses=0;
+ const lookup=connectorLookup('http://localhost:3310',async()=> 'token',async()=>Response.json(
+  responses++===0
+   ? {result:{status:'done',unchanged:true},replayed:true,provider_calls:0}
+   : {result:{status:'done'},unchanged:true,replayed:false,provider_calls:1}
+ ));
+ const runner=new Runner(new FileJobStore(join(dir,'classification')),lookup,()=>now);await runner.create(agreement);
+ const [replay]=await runner.tick();expect(replay.outcome).toMatchObject({kind:'completed',replayed:true});
+ now+=86400000;const [unchanged]=await runner.tick();expect(unchanged.outcome).toMatchObject({kind:'unchanged',replayed:false});
+ expect(metrics((await runner.store.list())[0])).toMatchObject({completed:0,unchanged:1,replayed:1,providerCalls:1,providerCallsUnknown:0});
+});

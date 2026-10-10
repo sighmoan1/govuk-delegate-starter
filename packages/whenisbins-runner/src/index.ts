@@ -3,7 +3,7 @@ import { dirname, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 
 export type Agreement = { principalId: string; agentId: string; propertyId: string; grantReference: string; credentialEnv: string; frequency: "daily" | "weekly"; weekday?: number; hour: number; minute: number; timezone: "Europe/London"; startsAt: string; endsAt: string; agreed: true };
-export type Outcome = { kind: "completed" | "unchanged" | "pending" | "refused" | "unavailable"; code?: string; providerCalls: number | null; retryAfterSeconds?: number };
+export type Outcome = { kind: "completed" | "unchanged" | "pending" | "refused" | "unavailable"; code?: string; providerCalls: number | null; replayed?: boolean; retryAfterSeconds?: number };
 export type Execution = { id: string; dueAt: string; attempt: number; state: "running" | "finished"; leaseUntil: string; outcome?: Outcome; retryAt?: string; receipts?: { attempt: number; at: string; outcome: Outcome }[] };
 export type Job = { id: string; agreement: Agreement; state: "active" | "paused" | "stopped" | "ended" | "authority-refused"; createdAt: string; executions: Execution[] };
 type State = { version: 1; jobs: Job[] };
@@ -78,7 +78,7 @@ export class Runner {
         if (pending) {
           const due = pending.state === "running" ? pending.leaseUntil : pending.retryAt!;
           if (now < Date.parse(due)) continue;
-          if (pending.attempt >= MAX_ATTEMPTS) { pending.state = "finished"; pending.retryAt = undefined; pending.outcome = { kind: "unavailable", code: "RETRY_EXHAUSTED", providerCalls: 0 }; continue; }
+          if (pending.attempt >= MAX_ATTEMPTS) { pending.state = "finished"; pending.retryAt = undefined; pending.outcome = { kind: "unavailable", code: "RETRY_EXHAUSTED", providerCalls: null }; continue; }
           pending.attempt++; pending.state = "running"; pending.retryAt = undefined; pending.leaseUntil = iso(now + LEASE_MS); claimed.push({ job, execution: pending }); continue;
         }
         const occurrence = latestOccurrence(job.agreement, now);
@@ -92,13 +92,13 @@ export class Runner {
     // Each call is fresh; this runner never caches an authorisation decision.
     for (const claim of claims) {
       let outcome: Outcome;
-      try { outcome = await this.lookup({ ...claim.job.agreement, idempotencyKey: claim.execution.id }); } catch { outcome = { kind: "unavailable", code: "CONNECTOR_UNAVAILABLE", providerCalls: 0 }; }
-      if (!["completed", "unchanged", "pending", "refused", "unavailable"].includes(outcome.kind) || (outcome.providerCalls !== null && (!Number.isInteger(outcome.providerCalls) || outcome.providerCalls < 0))) outcome = { kind: "unavailable", code: "INVALID_CONNECTOR_RESPONSE", providerCalls: 0 };
+      try { outcome = await this.lookup({ ...claim.job.agreement, idempotencyKey: claim.execution.id }); } catch { outcome = { kind: "unavailable", code: "CONNECTOR_UNAVAILABLE", providerCalls: null }; }
+      if (!["completed", "unchanged", "pending", "refused", "unavailable"].includes(outcome.kind) || (outcome.providerCalls !== null && (!Number.isInteger(outcome.providerCalls) || outcome.providerCalls < 0))) outcome = { kind: "unavailable", code: "INVALID_CONNECTOR_RESPONSE", providerCalls: null };
       results.push(await this.store.transaction(s => {
         const j = s.jobs.find(j => j.id === claim.job.id)!;
         const e = j.executions.find(e => e.id === claim.execution.id)!;
         if (e.attempt !== claim.execution.attempt || e.state !== "running") return e;
-        e.state = "finished"; e.outcome = { kind: outcome.kind, providerCalls: outcome.providerCalls, retryAfterSeconds: Number.isFinite(outcome.retryAfterSeconds) ? outcome.retryAfterSeconds : undefined, code: outcome.code?.replace(/[^A-Z0-9_]/g, "").slice(0, 80) };
+        e.state = "finished"; e.outcome = { kind: outcome.kind, providerCalls: outcome.providerCalls, replayed: outcome.replayed === true, retryAfterSeconds: Number.isFinite(outcome.retryAfterSeconds) ? outcome.retryAfterSeconds : undefined, code: outcome.code?.replace(/[^A-Z0-9_]/g, "").slice(0, 80) };
         (e.receipts ||= []).push({ attempt: e.attempt, at: iso(this.clock()), outcome: e.outcome });
         if (outcome.kind === "refused" && j.state === "active") j.state = "authority-refused";
         if (["unavailable", "pending"].includes(outcome.kind) && e.attempt < MAX_ATTEMPTS) e.retryAt = iso(this.clock() + Math.min(3600, Math.max(60, outcome.retryAfterSeconds || 60 * e.attempt)) * 1000);
@@ -109,4 +109,17 @@ export class Runner {
   }
 }
 
-export function metrics(job: Job) { const receipts = job.executions.flatMap(e => e.receipts || []); return { occurrences: job.executions.length, attempts: job.executions.reduce((n,e) => n + e.attempt,0), observedAttempts: receipts.length, completed: receipts.filter(r => r.outcome.kind === "completed").length, unchanged: receipts.filter(r => r.outcome.kind === "unchanged").length, refused: receipts.filter(r => r.outcome.kind === "refused").length, providerCalls: receipts.reduce((n,r) => n + (r.outcome.providerCalls || 0),0), providerCallsUnknown: receipts.filter(r => r.outcome.providerCalls === null).length }; }
+export function metrics(job: Job) {
+  const receipts = job.executions.flatMap(e => e.receipts || []);
+  const attempts = job.executions.reduce((n, e) => n + e.attempt, 0);
+  return {
+    occurrences: job.executions.length, attempts, observedAttempts: receipts.length,
+    completed: receipts.filter(r => r.outcome.kind === "completed" && !r.outcome.replayed).length,
+    unchanged: receipts.filter(r => r.outcome.kind === "unchanged" && !r.outcome.replayed).length,
+    replayed: receipts.filter(r => r.outcome.replayed).length,
+    refused: receipts.filter(r => r.outcome.kind === "refused").length,
+    providerCalls: receipts.reduce((n, r) => n + (r.outcome.providerCalls || 0), 0),
+    // Missing receipts (for example a crashed request) also leave upstream work unknown.
+    providerCallsUnknown: attempts - receipts.length + receipts.filter(r => r.outcome.providerCalls === null).length,
+  };
+}

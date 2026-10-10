@@ -5,12 +5,12 @@ export function connectorLookup(baseUrl: string, getToken: (reference: string) =
   if (base.protocol !== "https:" && !(base.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(base.hostname))) throw new Error("Use HTTPS or a loopback connector");
   return async request => {
     const response = await fetcher(new URL("/api/collections", base), { method: "POST", redirect: "error", signal: AbortSignal.timeout(30000), headers: { Authorization: `Bearer ${await getToken(request.credentialEnv)}`, "x-principal-id": request.principalId, "Idempotency-Key": request.idempotencyKey, "Content-Type": "application/json" }, body: JSON.stringify({ property_id: request.propertyId, grant_reference: request.grantReference }) });
-    const data = await response.json().catch(() => ({})) as { reason?: string; code?: string; result?: { status?: string }; replayed?: boolean; provider_calls?: number };
+    const data = await response.json().catch(() => ({})) as { reason?: string; code?: string; result?: { status?: string }; replayed?: boolean; unchanged?: boolean; provider_calls?: number };
     const retry = Number(response.headers.get("Retry-After"));
     const common = { providerCalls: Number.isInteger(data.provider_calls) && data.provider_calls! >= 0 ? data.provider_calls! : null, retryAfterSeconds: Number.isFinite(retry) && retry > 0 ? retry : undefined };
     if (response.status === 403 || response.status === 401) return { ...common, kind: "refused", code: data.reason || data.code || "AUTHORITY_REFUSED" };
     if (response.status === 202 || ["queued", "running"].includes(data.result?.status || "")) return { ...common, kind: "pending", code: "LOOKUP_PENDING" };
-    if (response.ok && data.result?.status === "done") return { ...common, kind: data.replayed ? "unchanged" : "completed" };
+    if (response.ok && data.result?.status === "done") return { ...common, kind: data.unchanged === true ? "unchanged" : "completed", replayed: data.replayed === true };
     return { ...common, kind: "unavailable", code: response.status === 409 ? "IDEMPOTENCY_CONFLICT" : data.result?.status === "partial" ? "PARTIAL_LOOKUP" : "LOOKUP_UNAVAILABLE" } satisfies Outcome;
   };
 }
