@@ -23,6 +23,7 @@ export async function executeWhenIsBinsEmailWorkflow(input:NativeEmailInput):Pro
    const [activated]=await Promise.all([page.waitForResponse(r=>r.request().method()==='POST'&&r.url()===verification.href),activation.getByRole('button',{name:'Turn on reminders',exact:true}).click()]);
    if(activated.status()>=500)return save('unknown','CONFIRMATION_RESPONSE_UNCERTAIN');
    if(activated.status()>=400)return save('refused','NATIVE_CONFIRMATION_REFUSAL');
+   if(new URL(page.url()).origin===origin&&await page.getByRole('heading',{name:'Your reminders are on',exact:true}).count()===1)return save('confirmed','NATIVE_CONFIRMATION_OBSERVED');
    return save('submitted','CONFIRMATION_POST_AWAITING_INDEPENDENT_EVIDENCE');
   }catch{return save('unknown','CONFIRMATION_RESPONSE_UNCERTAIN');}
  }if(observed!=='absent')return prior;}
