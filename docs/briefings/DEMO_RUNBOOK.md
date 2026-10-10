@@ -1,10 +1,12 @@
 # Presenter runbook and feature coverage
 
+Start with the [current demo guide](../DEMO_GUIDE.md) for public/private URLs and the core journey. This runbook supplies operator preparation, exact client commands and optional scenes.
+
 ## Before the meeting
 
 Use a dedicated synthetic stack. Retain the shared demo database and avoid reset-heavy testing against it. The recorded combined Observatory review used applications on 5300–5305 and PostgreSQL on 55434. Those are an existing isolated review setup, not guaranteed permanent endpoints. Standard Compose uses 3300–3305.
 
-Rehearse the concept walkthrough once with the actual environment and note the source revision, date and outcomes. Check Delegate, mock One Login, HMRC, the About app and queue worker. Council is needed for the optional portability demonstration. The Observatory scene additionally requires PRs #109–110 or their reviewed integration branch. They remain unmerged when this pack was prepared. Do not suggest they are already on main.
+Rehearse the concept walkthrough once with the actual environment and note the source revision, date and outcomes. Check Delegate, mock One Login, HMRC, the About app and queue worker. Council is needed for the optional portability demonstration. The Observatory dashboard and classifier contract (PRs #109–110) are now merged. The scene needs a configured isolated Observatory instance with private access keys and feeds; merging source does not start that instance. The original preparation baseline and screenshot remain dated evidence.
 
 For an existing standard installation, use README's reviewed fast-forward/rebuild instructions. For a new isolated installation use its development setup instructions. Do not delete a database volume or copy credentials into presentation material. Fresh stack provisioning and resets belong to the operator, before the meeting. Public mode changes sign-in and disables research feeds. Keep the Observatory and local reset/phone tools off public tunnels.
 
@@ -103,7 +105,7 @@ Request `council-casework` / `view_case_status` through the existing agent-reque
 | Retry storm / polling flood | Optional B | E/F workload |
 | Discovery and real-agent route choice | Optional | `/ask-your-agent` and original `/which-route` observations |
 | Second service and scope isolation | Mention | D |
-| Observation, immutable inputs/results | C | Reviewed PRs #109–110, SQL immutability/rerun evidence |
+| Observation, immutable inputs/results | C | Merged PRs #109–110, SQL immutability/rerun evidence |
 | Genuine participants / learned fusion | Outstanding | Pilot proposal, issues #71/#73/#75 |
 | Real Fingerprint events | Outstanding | Issue #68's actual configured vendor acceptance |
 | Grouped consent / federated issuers | Open design | Issues #34/#43 and DB-07/12 |

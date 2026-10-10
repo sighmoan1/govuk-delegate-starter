@@ -2,7 +2,7 @@
 
 About 10 minutes with demonstration. Prepared 10 October 2026.
 
-Independent synthetic prototype. Baseline main `6b4f3895f246cfe9e274059c57e4dc1ea7989650`. Observatory PRs #109–110 remain unmerged at preparation.
+Independent synthetic prototype. Original preparation baseline main `6b4f3895f246cfe9e274059c57e4dc1ea7989650`. Status refreshed 10 October 2026: Observatory PRs #109–110 are merged. Dated screenshots/evidence retain their recorded source; vendor validation and genuine participant research remain outstanding.
 
 ## 1. Delegate
 
@@ -85,9 +85,9 @@ Comparing several clues may improve understanding. Sensor coverage and recorded 
 
 ### Speaker notes
 
-Demo C requires the unmerged dashboard and classifier PRs in a reviewed isolated stack. Use the read-only monitoring view first. Ground truth in research view describes audited scripted execution, not an inferred label. Combining clues is the proposed approach; its accuracy still needs testing on varied agents and people. Protected execution labels remain separate from predictions. The current deterministic signature stub reports observed signature evidence. It is not a trained AI detector. Actual vendor validation remains outstanding.
+Demo C uses the merged Observatory dashboard and classifier contract (PRs 110 and 109) in a configured isolated stack. Use the read-only monitoring view first. Ground truth in research view describes audited scripted execution, not an inferred label. Combining clues is the proposed approach; its accuracy still needs testing on varied agents and people. Protected execution labels remain separate from predictions. The current deterministic signature stub reports observed signature evidence. It is not a trained AI detector. Actual vendor validation remains outstanding.
 
-Sources: [Observatory dashboard, PR 110, unmerged at preparation](https://github.com/sighmoan1/govuk-delegate-starter/pull/110), [Blind classifier contract, PR 109, unmerged at preparation](https://github.com/sighmoan1/govuk-delegate-starter/pull/109), [Real vendor validation still outstanding, issue 68](https://github.com/sighmoan1/govuk-delegate-starter/issues/68).
+Sources: [Observatory dashboard, PR 110, merged](https://github.com/sighmoan1/govuk-delegate-starter/pull/110), [Blind classifier contract, PR 109, merged](https://github.com/sighmoan1/govuk-delegate-starter/pull/109), [Real vendor validation still outstanding, issue 68](https://github.com/sighmoan1/govuk-delegate-starter/issues/68).
 
 ## 8. Independent work appeared alongside this project
 

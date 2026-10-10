@@ -1,9 +1,12 @@
 # Documentation index
 
-The current prototype uses synthetic One Login, Delegate and mock HMRC, with an About site. Start with [current behaviour](CURRENT_BEHAVIOUR.md); the original DWP brief is preserved as history.
+The current prototype uses synthetic One Login, Delegate and mock HMRC, with an About site. For a demonstration, start with the [current demo guide](DEMO_GUIDE.md) and [public briefing](https://about-demo.bathos.org/briefing). For engineering, start with [current behaviour](CURRENT_BEHAVIOUR.md); the original DWP brief is preserved as history.
 
 | Document | Purpose |
 |---|---|
+| [Agent work guide](AGENT_WORK.md) | Coordinated issue claims, isolated branches and review handoff |
+| [Local runtime inventory](LOCAL_RUNTIME.md) | Stack ownership, safe retirement and retained data |
+| [CI policy](CI.md) | Local/automatic verification and included-only spending preference |
 | [Current behaviour](CURRENT_BEHAVIOUR.md) | Implemented journeys, integration contract and limitations |
 | [Repository status](REPOSITORY_STATUS.md) | Dated local/remote and branch audit, validation and runtime status |
 | [Architecture](ARCHITECTURE.md) | Responsibility boundaries and current versus target features |
@@ -14,11 +17,11 @@ The current prototype uses synthetic One Login, Delegate and mock HMRC, with an 
 | [Validation](VALIDATION.md) | Experimental protocol and fair comparator |
 | [Evidence](EVIDENCE.md) | Recorded evidence and limits on claims |
 | [Observatory research protocol](observatory/RESEARCH_PROTOCOL.md) | Preregistered labels, ground truth and measurement boundaries; actual participant study remains open |
-| [Demo guide](DEMO_GUIDE.md) | Stakeholder walkthrough and defensible claims |
+| [Demo guide](DEMO_GUIDE.md) | Canonical routes, three-minute walkthrough, presenter links and defensible claims |
 | [Federated authority](FEDERATED_AUTHORITY.md) | Open central/federated/hybrid authority question |
 | [Build specification](BUILD_SPEC.md) / [prototype content](PROTOTYPE_CONTENT.md) | Preserved original briefs; superseded examples are not current requirements |
 
-The About site at http://localhost:3304 presents these ideas to visitors. `/project-status` explains delivery status, `/how-it-works` describes the implementation, `/delegate-orchestrate` explains the architecture boundary, and `/evidence` distinguishes observations from proof. The root README documents setup, updates and test commands.
+The public About site at https://about-demo.bathos.org/briefing presents these ideas to visitors. The private presenter dashboard is http://localhost:3304; temporary protected research instances are documented in [local runtime inventory](LOCAL_RUNTIME.md). On the private dashboard, `/project-status` explains delivery status, `/how-it-works` describes the implementation, `/delegate-orchestrate` explains the architecture boundary, and `/evidence` distinguishes observations from proof. The root README documents setup, updates and test commands.
 
 ## Delivery contracts
 

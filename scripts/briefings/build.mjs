@@ -46,7 +46,7 @@ for(const [slug,deck] of Object.entries(pack.briefings)){
   text(slide,'disclosure','Independent synthetic prototype',72,668,960,25,18,false,colors.muted);
   text(slide,'page',String(i+1),1150,668,58,25,18,false,colors.muted);
   const cites=s.sources.map(id=>`${pack.sources[id].title}: ${pack.sources[id].url}`).join('\n');
-  slide.speakerNotes.text=`${s.notes}\n\nSources\n${cites}\n\nPrepared ${pack.prepared}. Main baseline ${pack.baseline}. Observatory PRs 109–110 unmerged at preparation.`;
+  slide.speakerNotes.text=`${s.notes}\n\nSources\n${cites}\n\nPrepared ${pack.prepared}. Original preparation baseline ${pack.baseline}. Status refreshed ${pack.statusUpdated}: Observatory PRs 109–110 merged. Dated evidence remains at its recorded revision.`;
  }
  const privateDir=path.join(workspaceDir,slug);await fs.mkdir(privateDir,{recursive:true});
  for(const [i,slide] of p.slides.items.entries()){

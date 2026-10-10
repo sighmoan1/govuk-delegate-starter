@@ -4,6 +4,50 @@
 >
 > **Status:** Demo script, **not** an experimentally verified business case.
 
+## Start here
+
+Visitors: open the [public briefing](https://about-demo.bathos.org/briefing), then its [demonstration guide](https://about-demo.bathos.org/briefing/demo). This is the current guide for the short demo; the [presenter runbook](briefings/DEMO_RUNBOOK.md) supplies preparation, client commands and optional scenes. The seven-minute stakeholder discussion below extends that same journey.
+
+Operators: open [the private dashboard](http://localhost:3304) on the presenter computer for scenario controls and [agent prompts](http://localhost:3304/ask-your-agent). Reset controls change the shared synthetic state: rehearse on an isolated stack and coordinate before resetting. Public pages expose explanations, not reset controls or Sam's phone details.
+
+### Public visitor routes
+
+| URL | Purpose |
+|---|---|
+| [Briefing](https://about-demo.bathos.org/briefing) | Project explanation, concept/design briefings and editable decks |
+| [Demo guide](https://about-demo.bathos.org/briefing/demo) | Short consent → action → revocation walkthrough and optional scenes |
+| [Delegate account](https://delegate-demo.bathos.org/account/delegates) | Approve requests, inspect permissions/outcomes and remove access |
+| [Mock HMRC](https://hmrc-demo.bathos.org) / [agent entry](https://hmrc-demo.bathos.org/act-for-someone) | Synthetic tax service and browser-agent request route |
+| [One Login simulator](https://login-demo.bathos.org) | Synthetic sign-in, normally reached from HMRC or Delegate |
+| [WhenIsBins demo](https://whenisbins-demo.bathos.org) / [evidence](https://whenisbins-demo.bathos.org/evidence) | Separate bin-service connector and its qualified evidence; presenter controls require access |
+
+These named tunnel addresses depend on the presenter Mac, Docker and tunnel process staying available. A URL is not an uptime promise. HMRC/identity data is synthetic. The WhenIsBins connector can contact an external provider; follow its [limits](whenisbins/CONNECTOR.md) before provider actions. Real cancellation remains disabled/unverified in #132; removing Delegate authority does not unsubscribe an existing reminder.
+
+### Private operator and research routes
+
+| URL | Purpose and availability |
+|---|---|
+| [Local dashboard](http://localhost:3304) | Presenter controls, scenarios and prompts; private to the presenter computer |
+| [Sam's phone](http://localhost:3304/sams-phone) | Private mock sign-in/code tooling; keep off public tunnels and screen sharing |
+| [Local swarm](http://localhost:3304/swarm) | Synthetic load demonstration with service outcomes and labelled simulations |
+| `http://localhost:3303` | Standard Observatory port when configured/running; protected research workbench |
+| `http://localhost:5303` | Temporary protected Observatory review instance, not a permanent visitor destination |
+| `http://localhost:5703/whenisbins` | Temporary protected connector research instance, not a permanent visitor destination |
+| `http://localhost:3305` | Independent synthetic council, available when the council app is started |
+
+Research instances need their configured access keys and feed setup. Obtain the actual instance address from the operator; do not assume a recorded port is running. Runtime inventory and retirement belong in [LOCAL_RUNTIME.md](LOCAL_RUNTIME.md). Never put keys in this guide.
+
+## The three-minute core demonstration
+
+1. A compatible browser agent starts at HMRC's agent entry, or the presenter uses the runbook's scripted API client. Create a fresh request and open its returned consent URL.
+2. Sign in as Sam using the private synthetic sign-in setup. Select tax-code access and job-expenses claims; leave employment changes unchecked. Review and allow. The agent checks request status after approval.
+3. Through the same agent identity, read the tax code and submit a synthetic claim. HMRC checks current Delegate authority and its own domain rules. Show the receipt/outcome; distinguish received work from later recorded work.
+4. Try the ungranted employment action. Show the authority refusal rather than a malformed-request validation error.
+5. In Delegate, inspect the scope, original approval and service activity. Remove access and confirm.
+6. Retry the tax-code action through the same agent. Show the revoked-authority refusal and its activity event.
+
+The account manages permission; the agent/client sends service actions. The [runbook](briefings/DEMO_RUNBOOK.md#a-citizen-permission-and-service-enforcement-about-three-minutes) gives exact preparation and client commands. Existing accepted work can finish after revocation. A prior claim can trigger HMRC's one-claim-per-tax-year rule; prepare a fresh isolated synthetic principal for rehearsal instead of resetting shared state.
+
 ## The opening story (about 60 seconds)
 
 **Problem:** Agents can drastically increase requests to government services. Some are worthwhile, lawful citizen work; some are retries and inefficient polling; others lack authority or contain invalid submissions. Treating all automated requests as one “flood” risks keeping out people who deserve service.
@@ -56,6 +100,6 @@ Never give an unmeasured numerical “saving” or an accuracy percentage withou
 
 ## Where to leave someone after the demo
 
-Share the **About site's “Evidence and experiments”** page (once this change is deployed), then the exact run links in [EVIDENCE.md](EVIDENCE.md). When new evidence changes the proposition, update the evidence register and demonstration claims, not the past run.
+Share the [public briefing](https://about-demo.bathos.org/briefing) and the exact run links in [EVIDENCE.md](EVIDENCE.md). The fuller “Evidence and experiments” page is available on the private About dashboard at `/evidence`; it is outside the public briefing allowlist. When new evidence changes the proposition, update the evidence register and demonstration claims, not the past run.
 
 **Open questions are allowed.** Delegate/Orchestrate boundaries, federated authority and technical decision mechanisms are separate architecture decisions. The evidence programme should survive whichever architecture is chosen.

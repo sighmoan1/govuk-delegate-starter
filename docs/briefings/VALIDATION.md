@@ -66,3 +66,14 @@ node_modules/.bin/vitest run tests/delegation.test.ts tests/hmrc.test.ts
 These are synthetic development credentials. The shared demonstration databases and recorded raw evidence were not reset or rewritten.
 
 The browser-driven rehearsal on the fresh isolated stack passed: sign-in, unchecked consent with two permissions selected, approval, tax-code read 200, claim submission 200, excluded employment action 403 `PERMISSION_MISSING`, account outcomes shown as “Done”, browser removal and subsequent tax-code refusal 403 `AUTHORISATION_REVOKED`. About home and both briefing levels showed updated branding; home at 1280 pixels and briefing pages at 320 pixels had no horizontal overflow. Both deck downloads returned HTTP 200 with bytes matching the validated exports. T3 preview snapshot capture failed repeatedly; DOM inspection and browser interactions worked, so no new website screenshot is claimed.
+
+
+## Current-copy refresh — 10 October 2026, issue #140
+
+This addendum leaves the original preparation/rehearsal record above unchanged. Observatory PRs #109 and #110 are merged. The current guide, website copy, Markdown briefing notes and PPTX speaker notes now reflect that status; original baseline, screenshot and research claims remain dated provenance.
+
+Verification on the issue #140 branch: `npm run typecheck -w apps/about` and `npm run build -w apps/about` passed. `npx vitest run tests/public-briefing.test.ts` passed all 3 allowlist tests. `git diff --check` passed. The build retains the existing CSS/root-tracing warnings.
+
+Both decks were regenerated with `scripts/briefings/build.mjs` using the bundled Artifact Tool runtime. Package integrity, layout/font checks and first-party reimport passed for 11 concept and 18 design slides. XML comparison against the prior decks confirmed unchanged visible text, geometry and embedded media after excluding generated creation/relationship identifiers; the edits are speaker-note status and source labels. The Observatory slide was rendered and inspected. Private validation receipts are in `/tmp/delegate-briefings-140`, outside Git.
+
+Coordinated T3 browser review of the isolated public-mode production About server at localhost:6140 passed `/briefing`, `/briefing/demo`, `/briefing/high-level` and `/briefing/detailed` at 1280px and 320px without horizontal overflow or stale branding/status terms. Both deck downloads returned HTTP 200 with the PowerPoint MIME type; `/console` returned 404. This is presentation/boundary verification, not a new authority journey, live provider action or research run. No public deployment or database reset was performed for this refresh.

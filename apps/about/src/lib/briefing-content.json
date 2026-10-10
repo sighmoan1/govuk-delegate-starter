@@ -64,11 +64,11 @@
       "url": "https://github.com/sighmoan1/govuk-delegate-starter/issues/90#issuecomment-6090819665"
     },
     "dashboard": {
-      "title": "Observatory dashboard, PR 110, unmerged at preparation",
+      "title": "Observatory dashboard, PR 110, merged",
       "url": "https://github.com/sighmoan1/govuk-delegate-starter/pull/110"
     },
     "classifiers": {
-      "title": "Blind classifier contract, PR 109, unmerged at preparation",
+      "title": "Blind classifier contract, PR 109, merged",
       "url": "https://github.com/sighmoan1/govuk-delegate-starter/pull/109"
     },
     "vendor": {
@@ -203,7 +203,7 @@
             "The event explorer connects service attempts with recorded authority checks and outcomes.",
             "Comparing several clues may improve understanding. Sensor coverage and recorded predictions stay visible."
           ],
-          "notes": "Demo C requires the unmerged dashboard and classifier PRs in a reviewed isolated stack. Use the read-only monitoring view first. Ground truth in research view describes audited scripted execution, not an inferred label. Combining clues is the proposed approach; its accuracy still needs testing on varied agents and people. Protected execution labels remain separate from predictions. The current deterministic signature stub reports observed signature evidence. It is not a trained AI detector. Actual vendor validation remains outstanding.",
+          "notes": "Demo C uses the merged Observatory dashboard and classifier contract (PRs 110 and 109) in a configured isolated stack. Use the read-only monitoring view first. Ground truth in research view describes audited scripted execution, not an inferred label. Combining clues is the proposed approach; its accuracy still needs testing on varied agents and people. Protected execution labels remain separate from predictions. The current deterministic signature stub reports observed signature evidence. It is not a trained AI detector. Actual vendor validation remains outstanding.",
           "sources": [
             "dashboard",
             "classifiers",
@@ -293,7 +293,7 @@
             "Implemented safeguards, service boundaries and questions for a government trial.",
             "Synthetic prototype. Production ownership and recognition remain open."
           ],
-          "notes": "This briefing supports a twenty-five to thirty minute discussion after the concept walkthrough. Choose supporting demonstrations according to the audience's questions. The coverage map identifies what the short demonstration leaves out. The source baseline is main 6b4f389, plus explicitly labelled unmerged Observatory work.",
+          "notes": "This briefing supports a twenty-five to thirty minute discussion after the concept walkthrough. Choose supporting demonstrations according to the audience's questions. The coverage map identifies what the short demonstration leaves out. The original source baseline is main 6b4f389 plus Observatory review work. PRs 109–110 have since merged; the dated screenshot and evidence still describe their recorded revision.",
           "sources": [
             "behaviour",
             "decisions"
@@ -598,5 +598,6 @@
         }
       ]
     }
-  }
+  },
+  "statusUpdated": "10 October 2026"
 }

@@ -2,7 +2,7 @@
 
 About 25–30 minutes with discussion. Prepared 10 October 2026.
 
-Independent synthetic prototype. Baseline main `6b4f3895f246cfe9e274059c57e4dc1ea7989650`. Observatory PRs #109–110 remain unmerged at preparation.
+Independent synthetic prototype. Original preparation baseline main `6b4f3895f246cfe9e274059c57e4dc1ea7989650`. Status refreshed 10 October 2026: Observatory PRs #109–110 are merged. Dated screenshots/evidence retain their recorded source; vendor validation and genuine participant research remain outstanding.
 
 ## 1. Delegate: design review
 
@@ -11,7 +11,7 @@ Synthetic prototype. Production ownership and recognition remain open.
 
 ### Speaker notes
 
-This briefing supports a twenty-five to thirty minute discussion after the concept walkthrough. Choose supporting demonstrations according to the audience's questions. The coverage map identifies what the short demonstration leaves out. The source baseline is main 6b4f389, plus explicitly labelled unmerged Observatory work.
+This briefing supports a twenty-five to thirty minute discussion after the concept walkthrough. Choose supporting demonstrations according to the audience's questions. The coverage map identifies what the short demonstration leaves out. The original source baseline is main 6b4f389 plus Observatory review work. PRs 109–110 have since merged; the dated screenshot and evidence still describe their recorded revision.
 
 Sources: [Implemented behaviour at the briefing baseline](https://github.com/sighmoan1/govuk-delegate-starter/blob/6b4f3895f246cfe9e274059c57e4dc1ea7989650/docs/CURRENT_BEHAVIOUR.md), [Open national decisions](https://github.com/sighmoan1/govuk-delegate-starter/blob/6b4f3895f246cfe9e274059c57e4dc1ea7989650/docs/DECISION_BACKLOG.md).
 
@@ -173,7 +173,7 @@ Sources: [Independent council integration](https://github.com/sighmoan1/govuk-de
 
 Demo C: start in monitoring view, inspect a source event and its outcome. Sensor absence is visible. Research labels require separate evaluation access. Frozen evidence/configuration and append-only results support repeatable review in PR 109. The signature-observation stub cannot tell a hidden AI agent from a human browser. Training and signal ablation remain future work.
 
-Sources: [Observatory dashboard, PR 110, unmerged at preparation](https://github.com/sighmoan1/govuk-delegate-starter/pull/110), [Blind classifier contract, PR 109, unmerged at preparation](https://github.com/sighmoan1/govuk-delegate-starter/pull/109), [Protected execution ledger](https://github.com/sighmoan1/govuk-delegate-starter/blob/6b4f3895f246cfe9e274059c57e4dc1ea7989650/docs/observatory/GROUND_TRUTH.md), [Real vendor validation still outstanding, issue 68](https://github.com/sighmoan1/govuk-delegate-starter/issues/68).
+Sources: [Observatory dashboard, PR 110, merged](https://github.com/sighmoan1/govuk-delegate-starter/pull/110), [Blind classifier contract, PR 109, merged](https://github.com/sighmoan1/govuk-delegate-starter/pull/109), [Protected execution ledger](https://github.com/sighmoan1/govuk-delegate-starter/blob/6b4f3895f246cfe9e274059c57e4dc1ea7989650/docs/observatory/GROUND_TRUTH.md), [Real vendor validation still outstanding, issue 68](https://github.com/sighmoan1/govuk-delegate-starter/issues/68).
 
 ## 15. Contemporaneous observations
 
@@ -184,7 +184,7 @@ Observatory supports repeatable collection and inspection in a controlled synthe
 
 Tom describes one tester and a small account sample. We should compare equivalent agents, tools and routes. More regression checks establish software coverage, while agent generalisation requires diverse real runs. Multi-signal improvements remain a testable proposal. Correlated weak clues may add little.
 
-Sources: [Tom Loosemore: How Agents Show Up, 9 October 2026](https://loosemore.com/2026/10/09/how-agents-show-up-what-muse-and-other-agents-reveal-when-they-use-whenisbins/), [Blind classifier contract, PR 109, unmerged at preparation](https://github.com/sighmoan1/govuk-delegate-starter/pull/109), [Existing exploratory route observations](https://github.com/sighmoan1/govuk-delegate-starter/blob/6b4f3895f246cfe9e274059c57e4dc1ea7989650/apps/about/src/app/which-route/page.tsx).
+Sources: [Tom Loosemore: How Agents Show Up, 9 October 2026](https://loosemore.com/2026/10/09/how-agents-show-up-what-muse-and-other-agents-reveal-when-they-use-whenisbins/), [Blind classifier contract, PR 109, merged](https://github.com/sighmoan1/govuk-delegate-starter/pull/109), [Existing exploratory route observations](https://github.com/sighmoan1/govuk-delegate-starter/blob/6b4f3895f246cfe9e274059c57e4dc1ea7989650/apps/about/src/app/which-route/page.tsx).
 
 ## 16. Centralisation and standards remain open
 
