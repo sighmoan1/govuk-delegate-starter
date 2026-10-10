@@ -1,13 +1,13 @@
 name: E2 controlled technical comparison
 on:
-  pull_request:
-    paths:
-      - scripts/e2/**
-      - docs/experiments/E2_HARNESS.md
-      - .github/workflows/e2.yml
   workflow_dispatch:
+
 permissions:
   contents: read
+concurrency:
+  group: e2-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   comparison:
     runs-on: ubuntu-24.04

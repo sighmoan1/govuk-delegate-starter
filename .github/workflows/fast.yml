@@ -1,0 +1,54 @@
+name: Fast code checks
+
+# One automatic check per ready code PR; no duplicate push-to-main build.
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+    paths:
+      - 'apps/**'
+      - '!apps/**/*.md'
+      - 'packages/**'
+      - '!packages/**/*.md'
+      - 'styles/**'
+      - 'scripts/**'
+      - '!scripts/**/*.md'
+      - 'tests/**'
+      - 'e2e/**'
+      - 'research-tests/**'
+      - '.github/workflows/**'
+      - 'package*.json'
+      - '*config*'
+      - 'Dockerfile*'
+      - '*compose*.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: fast-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  code:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Prepare clean synthetic environments (no running services)
+        run: bash scripts/ci-prepare.sh
+      - run: npm ci
+      - name: Check types, build and run database-free regression
+        run: bash scripts/ci-fast.sh

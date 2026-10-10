@@ -1,12 +1,13 @@
 name: WhenIsBins isolated integration
 on:
-  pull_request:
-    paths: ['apps/whenisbins/**', 'packages/whenisbins-*/**', 'packages/research-feed/**', 'apps/observatory/**', 'e2e/whenisbins*', 'scripts/whenisbins/**', '.github/workflows/whenisbins-integration.yml', 'package-lock.json']
-  push:
-    branches: [main]
-    paths: ['apps/whenisbins/**', 'packages/whenisbins-*/**', 'packages/research-feed/**', 'apps/observatory/**', 'scripts/whenisbins/**']
+  workflow_dispatch:
+
 permissions:
   contents: read
+concurrency:
+  group: whenisbins-integration-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   journeys:
     runs-on: ubuntu-24.04

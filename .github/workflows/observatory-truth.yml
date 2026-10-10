@@ -1,13 +1,16 @@
 name: Observatory protected ground truth
 on:
-  pull_request:
-  push:
-    branches: [main]
+  workflow_dispatch:
+
 defaults:
   run:
     shell: bash
 permissions:
   contents: read
+concurrency:
+  group: observatory-truth-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   protected-ledger:
     runs-on: ubuntu-latest

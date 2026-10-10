@@ -1,12 +1,13 @@
 name: WhenIsBins component tests
 on:
-  pull_request:
-    paths: ["apps/whenisbins/**", "packages/whenisbins-*/**", ".github/workflows/whenisbins.yml", "package-lock.json"]
-  push:
-    branches: [main]
-    paths: ["apps/whenisbins/**", "packages/whenisbins-*/**", ".github/workflows/whenisbins.yml", "package-lock.json"]
+  workflow_dispatch:
+
 permissions:
   contents: read
+concurrency:
+  group: whenisbins-components-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   components:
     runs-on: ubuntu-24.04
