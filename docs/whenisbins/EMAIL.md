@@ -6,7 +6,7 @@ The browser adapter demonstrates signing up a confirmed property and a designate
 
 `packages/whenisbins-email/src/index.ts` exports `executeEmailWorkflow` and `EmailAction`. An action contains `operation` (`signup` or `cancel`), `property`, `email` and `reminderChoice`. The connector resolves these from its approved property/mailbox bindings, checks current Delegate authority and exact-action approval, and passes an identical `approvedAction`. The adapter refuses changed values before navigation. Hashes are binding identifiers, not anonymisation: keep receipts access-controlled because enumerable values can be guessed.
 
-The caller supplies a Playwright `Page`, a unique `operationId` and a durable `ReceiptStore` with `get` and `put`. **Serialise operations sharing an ID** before invoking the adapter; the store interface alone is not a distributed lock. The synthetic `MemoryReceiptStore` is only for tests. The connector owns durable receipts, authority checks, attempt events and locking. This package has no authority-check bypass route.
+The caller supplies an isolated Playwright `Page` (fresh browser context and bounded timeouts), a unique `operationId` and a durable `ReceiptStore` with `get` and `put`. **Serialise operations sharing an ID** before invoking the adapter; the store interface alone is not a distributed lock. The synthetic `MemoryReceiptStore` is only for tests. The connector owns durable receipts, authority checks, attempt events and locking. This package has no authority-check bypass route.
 
 A configured origin, signup path and exact selectors describe one supported website form. Arbitrary site execution is not exposed. Localhost is enabled for the fixture. A non-local target requires HTTPS and explicitly designated matching property/email in `allowLive`. These controls are a test gate, not permission to run a live trial. Browser sessions use normal forms and website protections, including CSRF, cookies and origin checks. Human verification is handed back to the user; the adapter does not solve challenges or read real inboxes.
 
@@ -36,7 +36,7 @@ npm run typecheck -w packages/whenisbins-email
 npm test -w packages/whenisbins-email
 ```
 
-Fourteen browser tests pass: real signup/inbox/cancellation, four exact payload replacements, human challenge, submitted-only receipt, service refusal, lost acknowledgement/reconciliation with no duplicate send, operation conflict, live designation/foreign stop refusal, wrong stop recipient, browser uncertainty and forged CSRF. Authority refusal, event completeness and revocation-after-signup are connector integration acceptance tests, not claims made by this isolated package.
+Fifteen browser tests pass: real signup/inbox/cancellation, four exact payload replacements, human challenge, submitted-only receipt, service refusal, lost acknowledgement/reconciliation with no duplicate send, operation conflict, live designation/foreign stop refusal, wrong stop recipient, browser uncertainty forged CSRF and invalid runtime operation. Authority refusal, event completeness and revocation-after-signup are connector integration acceptance tests, not claims made by this isolated package.
 
 ## Live compatibility remains unvalidated
 
