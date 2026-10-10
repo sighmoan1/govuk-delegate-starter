@@ -22,7 +22,7 @@ Only the latest eligible missed occurrence runs after downtime; earlier missed d
 
 London civil time applies: the missing spring hour is skipped; the repeated autumn hour runs once, at its first real instant. No work starts at or after the agreement's end. A live tick snapshots the end and pause/stop state when claiming work; changes made after a claim affect subsequent claims.
 
-`metrics(job)` separates occurrences, attempts, observed attempt receipts, completed lookups, unchanged results, refusals, reported provider calls and receipts whose provider-call count is unknown. A timeout or crash cannot establish how much upstream work occurred. The agent execution receipts are research evidence about this runner, not observations of all WhenIsBins traffic.
+`metrics(job)` separates occurrences, attempts, observed attempt receipts, completed lookups, unchanged results, durable replays, refusals, reported provider calls and attempts whose provider-call count is unknown. The connector envelope’s `unchanged: true` means this request made a conditional provider read and received an unchanged result; `replayed: true` means the same operation was replayed from the connector store. Replays are counted separately from completed and unchanged reads. Ambiguous transport/response failures and attempts without receipts retain unknown provider-call counts rather than claiming zero. A timeout or crash cannot establish how much upstream work occurred. The agent execution receipts are research evidence about this runner, not observations of all WhenIsBins traffic.
 
 ## Local synthetic use
 
