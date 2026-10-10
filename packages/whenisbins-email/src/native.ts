@@ -1,7 +1,7 @@
 import type {Page} from '@playwright/test';
 import {actionHash,type EmailAction,type EmailReceipt,type ReceiptStore} from './index';
 export type NativeProperty={postcode:string;address:string;propertyId?:string;websiteLookupId?:string};
-export type NativeEmailInput={page:Page;action:EmailAction;approvedAction:EmailAction;operationId:string;store:ReceiptStore;property:NativeProperty;designated:NativeProperty&{email:string};cancellationPath?:string;reconcile?:(action:EmailAction)=>Promise<'confirmed'|'absent'|'unknown'>};
+export type NativeEmailInput={page:Page;action:EmailAction;approvedAction:EmailAction;operationId:string;store:ReceiptStore;property:NativeProperty;designated:NativeProperty&{email:string};cancellationPath?:string;confirmationPath?:string;reconcile?:(action:EmailAction)=>Promise<'confirmed'|'absent'|'unknown'>};
 const origin='https://whenisbins.com';
 /** Actual unchanged WhenIsBins HTML flow; requires a privately designated property/inbox and caller-enforced Delegate approval. */
 export async function executeWhenIsBinsEmailWorkflow(input:NativeEmailInput):Promise<EmailReceipt>{
@@ -10,7 +10,16 @@ export async function executeWhenIsBinsEmailWorkflow(input:NativeEmailInput):Pro
  const prior=await store.get(operationId);
  if(prior&&prior.actionHash!==hash)return {...prior,status:'refused',reason:'OPERATION_CONFLICT'};
  if(hash!==actionHash(approvedAction)||property.address!==action.property||designated.address!==property.address||designated.postcode!==property.postcode||designated.propertyId!==property.propertyId||designated.email!==action.email||action.reminderChoice!=='evening_before'||!['signup','cancel'].includes(action.operation)||!operationId)return save('refused','EXACT_APPROVAL_MISMATCH');
- if(prior){if(['confirmed','refused'].includes(prior.status))return prior;const observed=await input.reconcile?.(action).catch(()=>'unknown' as const)??'unknown';if(observed==='confirmed')return save('confirmed','INDEPENDENT_SERVICE_OR_MAILBOX_EVIDENCE');if(observed!=='absent')return prior;}
+ if(prior){if(['confirmed','refused'].includes(prior.status))return prior;const observed=await input.reconcile?.(action).catch(()=>'unknown' as const)??'unknown';if(observed==='confirmed')return save('confirmed','INDEPENDENT_SERVICE_OR_MAILBOX_EVIDENCE');if(input.confirmationPath){
+  if(action.operation!=='signup'||!['submitted','confirmation_required'].includes(prior.status)||prior.reason==='CONFIRMATION_VISIT_AWAITING_INDEPENDENT_EVIDENCE')return prior;
+  let verification:URL;try{verification=new URL(input.confirmationPath);}catch{return {...prior,status:'refused',reason:'INVALID_CONFIRMATION_FLOW'};}
+  if(verification.origin!==origin||verification.username||verification.password||verification.search||verification.hash||!/^\/verify\/[^/]+$/.test(verification.pathname))return {...prior,status:'refused',reason:'INVALID_CONFIRMATION_FLOW'};
+  await save('unknown','CONFIRMATION_VISIT_IN_PROGRESS');
+  try{page.setDefaultNavigationTimeout(20000);const response=await page.goto(verification.href);if(!response||response.status()>=400||new URL(page.url()).origin!==origin)return save('unknown','CONFIRMATION_RESPONSE_UNCERTAIN');
+   return save('submitted','CONFIRMATION_VISIT_AWAITING_INDEPENDENT_EVIDENCE');
+  }catch{return save('unknown','CONFIRMATION_RESPONSE_UNCERTAIN');}
+ }if(observed!=='absent')return prior;}
+ if(input.confirmationPath)return save('refused','OWNED_PENDING_SIGNUP_REQUIRED');
  await save('unknown','SUBMISSION_IN_PROGRESS');
  try{
   page.setDefaultTimeout(10000);page.setDefaultNavigationTimeout(20000);
@@ -37,7 +46,7 @@ export async function executeWhenIsBinsEmailWorkflow(input:NativeEmailInput):Pro
    return save('confirmation_required','STOP_FORM_MAPPING_REQUIRED');
   }
   if(new URL(page.url()).origin!==origin)return save('unknown','UNEXPECTED_RESULT_ORIGIN');
-  // The real post-signup success/refusal DOM is mapped only after the first separately approved live submission.
+  if(await page.getByRole('heading',{name:'Check your email',exact:true}).count())return save('confirmation_required','INBOX_CONFIRMATION_REQUIRED');
   return save('submitted','NATIVE_FORM_SUBMITTED_AWAITING_INDEPENDENT_EVIDENCE');
  }catch{return save('unknown','BROWSER_OR_RESPONSE_UNCERTAIN');}
 }
