@@ -1,3 +1,4 @@
+import {designStylesheetHref} from '../src/assets';
 import {it,expect,vi,afterEach} from 'vitest';
 import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
@@ -21,7 +22,7 @@ it('rejects missing sessions, cross-origin writes and forged CSRF values',async(
 });
 it('uses retained private agent credentials, keeps capability requests bounded and restores sessions',async()=>{
  const calls:any[]=[];vi.stubGlobal('fetch',async(url:string,init:RequestInit)=>{calls.push({url,body:JSON.parse(init.body as string)});if(url.endsWith('/api/agent/token'))return Response.json({access_token:'NEVER_SHOW_THIS_TOKEN',delegate_id:'registered-agent'});return Response.json({id:'request-1',consent_url:'http://localhost:5700/consent/request-1'});});
- const {handler,dir}=await fixture();const page=(await handler(request('/')))!;const html=await page.text();const csrf=html.match(/name="csrf" value="([^"]+)"/)![1],cookie=page.headers.get('set-cookie')!.split(';')[0];
+ const {handler,dir}=await fixture();const page=(await handler(request('/')))!;const html=await page.text();expect(html).toContain('href="'+designStylesheetHref+'"');expect(html).not.toContain('href="/design.css"');const csrf=html.match(/name="csrf" value="([^"]+)"/)![1],cookie=page.headers.get('set-cookie')!.split(';')[0];
  const response=await handler(request('/demo/prepare',{method:'POST',headers:{origin:'http://127.0.0.1:5710',cookie,'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({csrf,journey:'lookup'})}));const out=await response!.text();expect(out).toContain('Review permissions');expect(out).not.toContain('NEVER_SHOW_THIS');expect(calls[1].body).toMatchObject({service:'whenisbins-connector',catalogue_version:2,capabilities:['read_collection_dates'],constraints:{read_collection_dates:{property_id:['home-sam']}}});
  const restarted=createDemoHandler({mode:'fixture',origin:'http://127.0.0.1:5710',delegateUrl:'http://localhost:5700',agentClientId:'agent',agentClientSecret:'secret',stateFile:join(dir,'sessions'),jobsFile:join(dir,'jobs'),dispatch:async()=>Response.json({})});expect(await (await restarted(request('/',{headers:{cookie}})))!.text()).toContain('request-1');
 });

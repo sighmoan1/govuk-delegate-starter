@@ -3,6 +3,7 @@ import {mkdtemp,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
+import {designStylesheetHref} from '../src/assets';
 import {createLivePresenter, type LiveConfig} from '../src/live';
 import {FileJobStore} from '../../../packages/whenisbins-runner/src/index';
 let dir:string,config:LiveConfig,calls:Array<{url:string;body:any}>,dispatch:ReturnType<typeof vi.fn>;
@@ -17,6 +18,7 @@ describe('private live presenter',()=>{
  it('bounds anonymous HTTP sessions, expires them, and preserves an owned job across cleanup',async()=>{vi.useFakeTimers();vi.setSystemTime(new Date('2026-10-10T09:00:00Z'));const p=createLivePresenter(config),owner=await login(p);await owner.post('prepare',{journey:'schedule'});await owner.post('schedule',{agreed:'true',time:'08:15'});for(let i=0;i<100;i++)expect((await p.handler(new Request(origin+'/live/login')))!.status).toBe(200);expect((await p.handler(new Request(origin+'/live/login')))!.status).toBe(429);let state=JSON.parse(await readFile(config.stateFile,'utf8'));expect(Object.keys(state)).toHaveLength(101);const owned=Object.values(state).find((s:any)=>s.jobId) as any;vi.setSystemTime(new Date('2026-10-10T11:00:01Z'));expect((await p.handler(new Request(origin+'/live/login')))!.status).toBe(200);state=JSON.parse(await readFile(config.stateFile,'utf8'));expect(Object.keys(state)).toHaveLength(2);expect(Object.values(state).find((s:any)=>s.jobId)).toMatchObject({id:owned.id,jobId:owned.jobId});expect((await new FileJobStore(config.jobsFile+'.'+owned.id).list())[0].state).toBe('active');expect(dispatch).not.toHaveBeenCalled();});
  it('permits only same-origin fonts while preserving live page resource and form restrictions',async()=>{
   const response=(await createLivePresenter(config).handler(new Request(origin)))!;
+  expect(await response.clone().text()).toContain('href="'+designStylesheetHref+'"');
   expect(response.headers.get('content-security-policy')).toBe("default-src 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'");
  });
  it('permits the trusted Compose backend but requires secure public origins',()=>{expect(()=>createLivePresenter({...config,delegateInternalUrl:'http://delegate:3300'})).not.toThrow();expect(()=>createLivePresenter({...config,delegateInternalUrl:'http://untrusted.example'})).toThrow();expect(()=>createLivePresenter({...config,origin:'http://public.example'})).toThrow();expect(()=>createLivePresenter({...config,delegatePublicUrl:'http://public.example'})).toThrow();});
