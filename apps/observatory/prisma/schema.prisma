@@ -106,3 +106,36 @@ model ResearchSession {
   attempt   ResearchAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   @@map("research_session")
 }
+
+// Blind inference storage. No relation to protected execution truth.
+model EvidenceSnapshot {
+  id String @id @default(uuid())
+  sourceService String @map("source_service")
+  sourceEventId String @map("source_event_id")
+  schemaVersion String @map("schema_version")
+  digest String @unique
+  record Json
+  createdAt DateTime @default(now()) @map("created_at")
+  runs ClassificationRun[]
+  @@unique([sourceService, sourceEventId, schemaVersion])
+  @@map("evidence_snapshot")
+}
+model ClassifierConfig {
+  id String @id @default(uuid())
+  digest String @unique
+  record Json
+  createdAt DateTime @default(now()) @map("created_at")
+  runs ClassificationRun[]
+  @@map("classifier_config")
+}
+model ClassificationRun {
+  id String @id @default(uuid())
+  snapshotId String @map("snapshot_id")
+  configId String @map("config_id")
+  result Json
+  createdAt DateTime @default(now()) @map("created_at")
+  snapshot EvidenceSnapshot @relation(fields: [snapshotId], references: [id])
+  config ClassifierConfig @relation(fields: [configId], references: [id])
+  @@index([snapshotId, createdAt])
+  @@map("classification_run")
+}
