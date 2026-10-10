@@ -157,7 +157,9 @@ async function update() {
   writeFileSync(ENV_FILE,nextEnv,{mode:0o600});chmodSync(ENV_FILE,0o600);
   console.log("Building the public update; existing database volumes and credentials are retained…");
   sh("docker",["compose","--profile","public-briefing","--env-file",ENV_FILE,"up","--build","-d","onelogin","delegate","hmrc","hmrc-worker","about","about-public"]);
-  for (const port of [3300,3301,3302,3304,3306]) await waitFor(`http://localhost:${port}/`);
+  // Check the public instance locally before switching ingress; its root redirects
+  // to the public address, which is not routed to this instance yet.
+  for (const port of [3300,3301,3302,3304,3306]) await waitFor(`http://localhost:${port}${port === 3306 ? "/briefing" : "/"}`);
   // Switch the named ingress only after the read-only surface is ready.
   writeNamedIngress(named,tunnelsFor(named));
   if (pids.tunnel) {
