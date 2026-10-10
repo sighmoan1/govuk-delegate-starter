@@ -6,7 +6,8 @@ export default function BriefingIndex() {
   return <div className="two-thirds">
     <h1>Delegate briefings</h1>
     <p className="lead">A concept demonstration and a detailed discussion of the design.</p>
-    <p>Independent synthetic prototype. Prepared 10 October 2026. The Observatory dashboard and classifier contract are ready for review in PRs 110 and 109 and remain unmerged at preparation.</p>
+    <p>Independent synthetic prototype. Prepared 10 October 2026. The Observatory dashboard and classifier contract (PRs 110 and 109) are merged. Dated evidence and screenshots retain their original source; vendor validation and genuine participant research remain outstanding.</p>
+    <p><Link href="/briefing/demo">Start with the current demo guide and available URLs</Link></p>
     <h2>Concept briefing</h2>
     <p>Delegation, government precedents, citizen control and the limits of observation. About ten minutes with the demonstration.</p>
     <p><Link href="/briefing/high-level">Read the concept briefing and speaker notes</Link></p>

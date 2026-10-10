@@ -18,7 +18,7 @@ export default async function Briefing({ params }: { params: Promise<{ level: st
   return <article className="briefing-copy">
     <p><Link href="/briefing">All briefings</Link></p>
     <h1>{deck.title}</h1><p className="lead">{deck.duration}</p>
-    <p>Independent synthetic prototype. Prepared {pack.prepared}. Observatory PRs 109–110 remain unmerged at preparation. Real vendor acceptance and genuine participant research remain outstanding.</p>
+    <p>Independent synthetic prototype. Originally prepared {pack.prepared}; status refreshed {pack.statusUpdated}. Observatory PRs 109–110 are merged. Dated screenshots and evidence retain their recorded source. Real vendor acceptance and genuine participant research remain outstanding.</p>
     <p><a href={`/briefings/${level}.pptx`} download>Download the editable deck</a></p>
     <nav aria-label="Briefing sections"><ol>{deck.slides.map((slide, i) => <li key={slide.title}><a href={`#slide-${i + 1}`}>{slide.title}</a></li>)}</ol></nav>
     {deck.slides.map((slide, i) => {

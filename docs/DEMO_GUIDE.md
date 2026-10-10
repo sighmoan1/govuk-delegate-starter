@@ -100,6 +100,6 @@ Never give an unmeasured numerical “saving” or an accuracy percentage withou
 
 ## Where to leave someone after the demo
 
-Share the [public evidence page](https://about-demo.bathos.org/evidence), then the exact run links in [EVIDENCE.md](EVIDENCE.md). When new evidence changes the proposition, update the evidence register and demonstration claims, not the past run.
+Share the [public briefing](https://about-demo.bathos.org/briefing) and the exact run links in [EVIDENCE.md](EVIDENCE.md). The fuller “Evidence and experiments” page is available on the private About dashboard at `/evidence`; it is outside the public briefing allowlist. When new evidence changes the proposition, update the evidence register and demonstration claims, not the past run.
 
 **Open questions are allowed.** Delegate/Orchestrate boundaries, federated authority and technical decision mechanisms are separate architecture decisions. The evidence programme should survive whichever architecture is chosen.

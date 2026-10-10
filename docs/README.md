@@ -18,7 +18,7 @@ The current prototype uses synthetic One Login, Delegate and mock HMRC, with an 
 | [Federated authority](FEDERATED_AUTHORITY.md) | Open central/federated/hybrid authority question |
 | [Build specification](BUILD_SPEC.md) / [prototype content](PROTOTYPE_CONTENT.md) | Preserved original briefs; superseded examples are not current requirements |
 
-The public About site at https://about-demo.bathos.org/briefing presents these ideas to visitors. The private presenter dashboard is http://localhost:3304; temporary protected research instances are documented in [local runtime inventory](LOCAL_RUNTIME.md). `/project-status` explains delivery status, `/how-it-works` describes the implementation, `/delegate-orchestrate` explains the architecture boundary, and `/evidence` distinguishes observations from proof. The root README documents setup, updates and test commands.
+The public About site at https://about-demo.bathos.org/briefing presents these ideas to visitors. The private presenter dashboard is http://localhost:3304; temporary protected research instances are documented in [local runtime inventory](LOCAL_RUNTIME.md). On the private dashboard, `/project-status` explains delivery status, `/how-it-works` describes the implementation, `/delegate-orchestrate` explains the architecture boundary, and `/evidence` distinguishes observations from proof. The root README documents setup, updates and test commands.
 
 ## Delivery contracts
 
