@@ -8,7 +8,7 @@ import type {Property} from "./provider";
 const canonical=(v:unknown):string=>Array.isArray(v)?"["+v.map(canonical).join(",")+"]":v&&typeof v==="object"?"{"+Object.keys(v).sort().map(k=>JSON.stringify(k)+":"+canonical((v as Record<string,unknown>)[k])).join(",")+"}":JSON.stringify(v);
 type Metadata={mailboxId?:string;grantId?:string;receipt?:EmailReceipt;proposalId?:string;reservationId?:string;completionReported?:boolean;leaseId?:string};
 export type Mailbox={id:string;subject:string;email:string;label:string};
-export type LiveEmailBackend={mode:"live";declaresAgent?:boolean;execute:(input:{page:Page;action:EmailAction;approvedAction:EmailAction;operationId:string;store:ReceiptStore;property:Property;cancellationPath?:string})=>Promise<EmailReceipt>;reconcile:(action:EmailAction,operationId?:string)=>Promise<"confirmed"|"absent"|"unknown">;cancellationPath:(action:EmailAction)=>Promise<string|undefined>};
+export type LiveEmailBackend={mode:"live";declaresAgent?:boolean;execute:(input:{page:Page;action:EmailAction;approvedAction:EmailAction;operationId:string;store:ReceiptStore;property:Property;cancellationPath?:string;confirmationPath?:string})=>Promise<EmailReceipt>;confirmationPath?:(action:EmailAction,operationId:string)=>Promise<string|undefined>;reconcile:(action:EmailAction,operationId?:string)=>Promise<"confirmed"|"absent"|"unknown">;cancellationPath:(action:EmailAction)=>Promise<string|undefined>};
 export type EmailHandlerConfig={delegateUrl:string;serviceKey:string;properties:Property[];store:Store;catalogue?:{service:string;version:number;capabilities:unknown[]};fixture?:Awaited<ReturnType<typeof startEmailFixture>>;mailboxes?:Mailbox[];live?:LiveEmailBackend;pageFactory:()=>Promise<{page:Page;close:()=>Promise<void>}>};
 const response=(body:unknown,status=200)=>Response.json(body,{status,headers:{"cache-control":"private, no-store"}});
 /** Checks consent and exact approval before either fixture or explicitly configured native browser work. */
@@ -79,20 +79,22 @@ export function createEmailHandler(config:EmailHandlerConfig,transport:typeof fe
      let stop:string|undefined;
      if(operation==="cancel")try{stop=config.live?await config.live.cancellationPath({...action,operation:"signup"}):config.fixture!.mailbox.stopPath({...action,operation:"signup"});if(!stop)throw Error("Mailbox evidence required");}catch{return await finish({reason:"INBOX_CONFIRMATION_REQUIRED",status:"confirmation_required"},202);}
      const observed=metadata.receipt?await reconcile(action,operationKey):"absent";
-     const needsBrowser=!metadata.receipt||observed==="absent";
-     if(needsBrowser&&check.step_up.state==="REDEEMED")return await finish({reason:"STEP_UP_ALREADY_USED"},409);
+     const confirmationPath=operation==="signup"&&metadata.receipt&&["submitted","confirmation_required"].includes(metadata.receipt.status)&&["NATIVE_FORM_SUBMITTED_AWAITING_INDEPENDENT_EVIDENCE","INBOX_CONFIRMATION_REQUIRED","REAL_VERIFICATION_EMAIL_DELIVERY_OBSERVED"].includes(metadata.receipt.reason)?await config.live?.confirmationPath?.(action,operationKey):undefined;
+     const needsSubmission=!metadata.receipt||observed==="absent",needsBrowser=needsSubmission||Boolean(confirmationPath);
+     // A received verification link continues this exact owned signup. It never resubmits the form or opens a new proposal.
+     if(needsSubmission&&check.step_up.state==="REDEEMED")return await finish({reason:"STEP_UP_ALREADY_USED"},409);
      const reservationId=metadata.reservationId??randomUUID();const proposalId=metadata.proposalId??check.step_up.proposal_id;
-     if(needsBrowser){
+     if(needsSubmission){
        const reserved=await post("/api/step-ups/reserve",{...base,capability,proposal,reservation_id:reservationId});
        if(reserved.reserved!==true||reserved.proposal_id!==proposalId)return await finish({reason:reserved.reason??"STEP_UP_NOT_APPROVED"},409);
        await config.store.transaction(s=>{s.operations[operationKey!].result={...s.operations[operationKey!].result,proposalId,reservationId};});
-       event.outboundCallId=randomUUID();event.upstreamAgentDeclared=config.live?.declaresAgent??false;await append({...event,sourceEventId:randomUUID(),stage:"admitted",decision:"ALLOWED"});
      }
+     if(needsBrowser){event.outboundCallId=randomUUID();event.upstreamAgentDeclared=config.live?.declaresAgent??false;await append({...event,sourceEventId:randomUUID(),stage:"admitted",decision:"ALLOWED"});}
      let browser:Awaited<ReturnType<EmailHandlerConfig["pageFactory"]>>|undefined;
      let receipt:EmailReceipt;
      try{
        browser=await config.pageFactory();browser.page.setDefaultTimeout(config.live?15000:5000);browser.page.setDefaultNavigationTimeout(config.live?30000:5000);
-       receipt=config.live?await config.live.execute({page:browser.page,action,approvedAction:action,operationId:operationKey,store:receiptStore,property,cancellationPath:stop}):await executeEmailWorkflow({page:browser.page,action,approvedAction:action,operationId:operationKey,store:receiptStore,config:browserConfig!,cancellationPath:stop,reconcile});
+       receipt=config.live?await config.live.execute({page:browser.page,action,approvedAction:action,operationId:operationKey,store:receiptStore,property,cancellationPath:stop,confirmationPath}):await executeEmailWorkflow({page:browser.page,action,approvedAction:action,operationId:operationKey,store:receiptStore,config:browserConfig!,cancellationPath:stop,reconcile});
      }finally{await browser?.close();}
      const committed=receipt.status==="confirmed"||receipt.status==="submitted"||receipt.reason==="INBOX_CONFIRMATION_REQUIRED";
      if(committed){await post("/api/step-ups/complete",{proposal_id:proposalId,reference:operationKey});await config.store.transaction(s=>{const o=s.operations[operationKey!];o.effectId??=randomUUID();o.result={...o.result,completionReported:true};});}

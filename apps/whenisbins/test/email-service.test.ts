@@ -1,6 +1,7 @@
 import {chromium,type Browser} from "@playwright/test";
 import {afterAll,afterEach,beforeAll,beforeEach,describe,expect,it,vi} from "vitest";
-import {createEmailHandler,confirmOwnedMailbox} from "../src/email-service";
+import {createEmailHandler,confirmOwnedMailbox,type LiveEmailBackend} from "../src/email-service";
+import {actionHash} from "@prototype/whenisbins-email";
 import {MemoryStore,FileStore} from "../src/store";
 import {startEmailFixture} from "../../../packages/whenisbins-email/src/fixture";
 import {catalogueDigest} from "../src/service";
@@ -26,7 +27,7 @@ function setup(store:MemoryStore|FileStore=new MemoryStore()){
    return Response.json({released:true});
  });
  const handler=createEmailHandler({delegateUrl:"http://delegate",serviceKey:"own-key",properties:[{id:"home-sam",subject:"sam",label:"Sam",postcode:"ZZ1 1ZZ",address:"Synthetic"}],store,fixture,pageFactory:async()=>{const context=await browser.newContext();return {page:await context.newPage(),close:()=>context.close()};}},transport);
- return {handler,store,bodies,setDenied:(v?:string)=>{denied=v;},setPending:(v:boolean)=>{pending=v;},setSignupOnly:()=>{writeOnlySignup=true;},setReadOnly:()=>{readOnly=true;},setReserveRefused:()=>{reserveRefused=true;},setCompleteUnavailable:(v:boolean)=>{completeUnavailable=v;},resetApproval:()=>{redeemed=false;},setGrant:(v:string)=>{grant=v;}};
+ return {handler,store,bodies,transport,setDenied:(v?:string)=>{denied=v;},setPending:(v:boolean)=>{pending=v;},setSignupOnly:()=>{writeOnlySignup=true;},setReadOnly:()=>{readOnly=true;},setReserveRefused:()=>{reserveRefused=true;},setCompleteUnavailable:(v:boolean)=>{completeUnavailable=v;},resetApproval:()=>{redeemed=false;},setGrant:(v:string)=>{grant=v;}};
 }
 const req=(operation="signup",key="email-operation-0001",body:any={property_id:"home-sam",mailbox_id:"mailbox-sam",reminder_choice:"evening_before"},headers:Record<string,string>={})=>new Request("http://connector/api/reminders/"+operation,{method:"POST",headers:{authorization:"Bearer token","x-principal-id":"principal","idempotency-key":key,...headers},body:JSON.stringify(body)});
 const action={operation:"signup" as const,property:"synthetic-property-1",email:"sam.test@example.invalid",reminderChoice:"evening_before"};
@@ -90,4 +91,21 @@ describe("email connector authority, exact approval and durable browser work",()
  it("concurrent stable-key requests create one signup with private durable state",async()=>{
    const directory=await mkdtemp(join(tmpdir(),"wb-email-"));try{const x=setup(new FileStore(join(directory,"state.json")));const answers=await Promise.all([x.handler(req()),x.handler(req())]);expect(answers.every(x=>[202,200].includes(x.status))).toBe(true);expect(fixture.counts().submissions).toBe(1);expect(Object.values((await new FileStore(join(directory,"state.json")).snapshot()).operations)[0].result).toMatchObject({receipt:{status:"confirmation_required"}});}finally{await rm(directory,{recursive:true,force:true});}
  });
+});
+
+it("continues an owned real verification link under fresh authority without resubmitting or spending a second proposal",async()=>{
+ const x=setup(),store=x.store;let ownedMail=false;
+ const confirmationPath="https://whenisbins.com/verify/private-owned-token";
+ const execute=vi.fn<LiveEmailBackend["execute"]>(async input=>{
+  const receipt={operationId:input.operationId,actionHash:actionHash(input.action),status:input.confirmationPath?"confirmed" as const:"confirmation_required" as const,reason:input.confirmationPath?"NATIVE_CONFIRMATION_OBSERVED":"INBOX_CONFIRMATION_REQUIRED",updatedAt:new Date().toISOString()};
+  await input.store.put(receipt);return receipt;
+ });
+ const handler=createEmailHandler({delegateUrl:"http://delegate",serviceKey:"own",store,properties:[{id:"home-sam",subject:"sam",label:"Designated",postcode:"AA1 1AA",address:"Designated private address"}],mailboxes:[{id:"mailbox-sam",subject:"sam",label:"Designated inbox",email:"designated@example.invalid"}],live:{mode:"live",execute,reconcile:async()=>"unknown",confirmationPath:async()=>ownedMail?confirmationPath:undefined,cancellationPath:async()=>undefined},pageFactory:async()=>{const context=await browser.newContext();return {page:await context.newPage(),close:()=>context.close()};}},x.transport);
+ expect((await handler(req())).status).toBe(202);expect(execute).toHaveBeenCalledTimes(1);expect(execute.mock.calls[0][0].confirmationPath).toBeUndefined();
+ ownedMail=true;x.setDenied("AUTHORISATION_REVOKED");expect((await handler(req())).status).toBe(403);expect(execute).toHaveBeenCalledTimes(1);
+ x.setDenied();expect((await handler(req())).status).toBe(200);expect(execute).toHaveBeenCalledTimes(2);expect(execute.mock.calls[1][0].confirmationPath).toBe(confirmationPath);expect(execute.mock.calls[1][0].operationId).toBe(execute.mock.calls[0][0].operationId);
+ expect(x.bodies.filter(b=>b.path.endsWith("/reserve"))).toHaveLength(1);
+ expect((await store.snapshot()).events.filter(e=>e.outboundCallId&&e.stage==="admitted")).toHaveLength(2);
+ expect((await handler(req())).status).toBe(200);expect(execute).toHaveBeenCalledTimes(2);
+ expect(JSON.stringify((await store.snapshot()).events)).not.toContain("private-owned-token");
 });
