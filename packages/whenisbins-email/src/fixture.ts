@@ -42,7 +42,7 @@ export async function startEmailFixture(stateFile?:string) {
         const action: EmailAction = { operation:"signup", property:fields.get("property")!, email:fields.get("email")!, reminderChoice:fields.get("reminderChoice")! };
         if (action.property !== "synthetic-property-1" || action.email !== "sam.test@example.invalid" || action.reminderChoice !== "evening_before") return reply(400, '<p data-state="refused">Unexpected fixture payload</p>');
         const key = `${action.property}:${action.email}`;
-        if (!subscriptions.has(key)) { submissions++; subscriptions.set(key, {action,confirmed:false,active:true,stop:randomUUID()}); }
+        if (!subscriptions.has(key) || !subscriptions.get(key)!.active) { submissions++; subscriptions.set(key, {action,confirmed:false,active:true,stop:randomUUID()}); }
         persist();
         if (mode === "lost") return reply(200, ""); // Mutation happened; acknowledgement was lost.
         return reply(200, mode === "submitted" ? '<p data-state="submitted">Request received</p>' : '<p data-state="confirmation_required">Check your inbox to confirm</p>');
@@ -62,7 +62,7 @@ export async function startEmailFixture(stateFile?:string) {
   const key = (a: EmailAction) => `${a.property}:${a.email}`;
   return { config, setMode(value: typeof mode) { mode=value; }, counts:()=>({submissions,cancellations}),
     /** Controlled synthetic mailbox evidence; no mail delivery claim or public endpoint. */
-    mailbox: { confirm(a: EmailAction) { const s=subscriptions.get(key(a)); if (!s) throw new Error("No message"); s.confirmed=true;persist(); }, stopPath(a: EmailAction) { const s=subscriptions.get(key(a)); if (!s?.confirmed) throw new Error("Inbox not confirmed"); return `/stop/${s.stop}`; } },
+    mailbox: { confirm(a: EmailAction) { const s=subscriptions.get(key(a)); if (!s?.active) throw new Error("No active confirmation message"); s.confirmed=true;persist(); }, stopPath(a: EmailAction) { const s=subscriptions.get(key(a)); if (!s?.confirmed) throw new Error("Inbox not confirmed"); return `/stop/${s.stop}`; } },
     async reconcile(a: EmailAction): Promise<"confirmed"|"absent"|"unknown"> { const s=subscriptions.get(key(a)); if (!s) return "absent"; if (a.operation === "cancel") return s.active ? "absent" : "confirmed"; return s.confirmed && s.active ? "confirmed" : "unknown"; },
     close:()=>new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve())) };
 }

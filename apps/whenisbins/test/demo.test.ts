@@ -37,3 +37,14 @@ it('uses only persisted runner task/occurrence identity and tolerates observatio
  expect(events).toHaveLength(2);expect(events[0]).toMatchObject({stage:'schedule_registered'});expect(events[1]).toMatchObject({stage:'scheduled_occurrence',taskId:events[0].taskId,occurrenceId:contexts[0].occurrenceId});
  expect(contexts[0].taskId).toMatch(/^[0-9a-f-]{36}$/);expect(contexts[0].occurrenceId).toMatch(new RegExp('^'+contexts[0].taskId+':\\d{4}-\\d{2}-\\d{2}$'));
 });
+it('binds simulated mailbox confirmation to the approved session, original grant and actual registered agent',async()=>{
+ let approved=false;const confirmed:any[]=[];
+ vi.stubGlobal('fetch',async(url:string)=>url.endsWith('/api/agent/token')?Response.json({access_token:'PRIVATE_TOKEN',delegate_id:'actual-registered-agent'}):url.includes('/api/authorisation-requests/')?Response.json(approved?{status:'APPROVED',principal_id:'approved-person',authorisation_id:'original-approved-grant'}:{status:'PENDING'}):Response.json({id:'email-request',consent_url:'http://localhost:5700/consent/email-request'}));
+ const {handler,dir}=await fixture({confirmMailbox:async context=>{confirmed.push(context);return {status:'confirmed',token:'DO_NOT_SHOW_PRIVATE_TOKEN'};}});
+ const page=(await handler(request('/')))!;const csrf=(await page.text()).match(/name="csrf" value="([^"]+)"/)![1],cookie=page.headers.get('set-cookie')!.split(';')[0];
+ const post=(path:string,body:Record<string,string>={})=>handler(request(path,{method:'POST',headers:{origin:'http://127.0.0.1:5710',cookie,'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({csrf,...body})}));
+ await post('/demo/prepare',{journey:'email'});await post('/demo/mailbox-confirm');expect(confirmed).toHaveLength(0);
+ approved=true;const response=(await post('/demo/mailbox-confirm'))!;expect(response.status).toBe(200);expect(await response.text()).not.toContain('DO_NOT_SHOW_PRIVATE_TOKEN');
+ const sessions=JSON.parse(await (await import('node:fs/promises')).readFile(join(dir,'sessions'),'utf8'));const id=cookie.slice('bins-demo='.length);
+ expect(confirmed).toEqual([{sessionId:id,principal:'approved-person',grant:'original-approved-grant',actKey:sessions[id].actKey,agentId:'actual-registered-agent'}]);
+});

@@ -35,11 +35,11 @@ export function connectorHandler(config:Config,transport:typeof fetch=fetch){
    if(typeof check.check_id!=='string')throw Error('DELEGATE_UNAVAILABLE');event.delegateCheckId=check.check_id;
    if(!check.authorised)return finish({decision:'DENY',reason:check.reason,delegate_check_id:check.check_id},403);
    if(body.grant_reference!==undefined&&body.grant_reference!==check.authorisation_id)return finish({decision:'DENY',reason:'GRANT_MISMATCH',delegate_check_id:check.check_id},403);
-   event.authorityVerified=true;
    const resource=config.properties.find(p=>p.id===body.property_id&&p.subject===check.subject);
    const restrictions=check.constraints?.[CAPABILITY],provenance=check.constraint_provenance;
    const keys=restrictions?Object.keys(restrictions):[];
    if(!resource||keys.length!==1||keys[0]!=='property_id'||!Array.isArray(restrictions.property_id)||!restrictions.property_id.includes(resource.id)||restrictions.property_id.some((v:unknown)=>!permittedIds.includes(String(v)))||provenance?.catalogue?.digest!==supportedDigest||provenance?.catalogue?.version!==supported.version||provenance?.mandate_id!==check.authorisation_id||provenance?.delegation_id!==check.chain?.delegation_id)return finish({decision:'DENY',reason:'PROPERTY_SCOPE_REFUSED',delegate_check_id:check.check_id},403);
+   event.authorityVerified=true;
    const key=req.headers.get('idempotency-key');if(!key||!/^[A-Za-z0-9_:-]{8,128}$/.test(key))return finish({reason:'IDEMPOTENCY_KEY_REQUIRED'},400);
    operationKey=createHash('sha256').update(principal+':'+check.delegate.id+':'+key).digest('hex');
    const digest=createHash('sha256').update(canonical({property_id:body.property_id})).digest('hex');
@@ -54,7 +54,7 @@ export function connectorHandler(config:Config,transport:typeof fetch=fetch){
     const prior=(await config.store.snapshot()).operations;
     const saved=Object.values(prior).reverse().find(x=>x!==op&&x.owner===principal&&x.property===resource.id&&x.state==='done'&&x.result?.status==='done'&&(x.result.result as any)?.property_id);
     if(!op.lookupId&&saved&&config.provider.stored){
-     try{const stored=await config.provider.stored(String((saved.result!.result as any).property_id),saved.etag);lookup={status:'done' as const,lookup_id:saved.lookupId!,result:stored.unchanged?saved.result!.result as Record<string,unknown>:stored.result};op.etag=stored.etag;op.effectId=saved.effectId;}catch(e){if(!(e instanceof ProviderFailure)||e.status!==404)throw e;}
+     try{const stored=await config.provider.stored(String((saved.result!.result as any).property_id),saved.etag);lookup={status:'done' as const,lookup_id:saved.lookupId!,result:stored.unchanged?saved.result!.result as Record<string,unknown>:stored.result};op.etag=stored.etag;op.effectId=stored.unchanged?saved.effectId:undefined;}catch(e){if(!(e instanceof ProviderFailure)||e.status!==404)throw e;}
     }
     lookup??=op.lookupId?await config.provider.poll(op.lookupId):await config.provider.submit(resource,op.key);
     op.leaseUntil=undefined;op.nextPollAt=now()+Math.max(5,lookup.retry_after_seconds??5)*1000;op.lookupId=lookup.lookup_id;op.result={...lookup};op.state=['done','failed'].includes(lookup.status)?'done':'pending';if(lookup.status==='done')op.effectId??=randomUUID();

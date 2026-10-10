@@ -99,3 +99,21 @@ export function createEmailHandler(config:EmailHandlerConfig,transport:typeof fe
    finally{if(operationKey&&leaseId)await config.store.transaction(s=>{const o=s.operations[operationKey!];if((o?.result as Metadata)?.leaseId===leaseId){o.leaseUntil=undefined;o.result={...o.result,leaseId:undefined};}}).catch(()=>{});}
  };
 }
+
+/** Controlled synthetic inbox handoff. This records mailbox evidence, not a fresh authority check or email delivery. */
+export async function confirmOwnedMailbox(config:Pick<EmailHandlerConfig,"store"|"fixture">,input:{principal:string;agentId:string;grant:string;actKey:string}){
+ const operationKey=createHash("sha256").update(JSON.stringify(["email",input.principal,input.agentId,"subscribe_reminders",input.actKey])).digest("hex");
+ return config.store.transaction(async state=>{
+   const op=state.operations[operationKey],metadata=op?.result as Metadata|undefined;
+   if(!op||op.owner!==input.principal||op.property!=="home-sam"||metadata?.grantId!==input.grant||!metadata.receipt||!["confirmation_required","submitted","confirmed"].includes(metadata.receipt.status))throw Error("MAILBOX_OPERATION_NOT_OWNED");
+   if((op.leaseUntil??0)>Date.now())throw Error("MAILBOX_OPERATION_IN_PROGRESS");
+   if(metadata.receipt.status==="confirmed")return {status:"confirmed",evidence:"simulated_inbox",real_mail_delivered:false,duplicate:true};
+   const action:EmailAction={operation:"signup",property:"synthetic-property-1",email:"sam.test@example.invalid",reminderChoice:"evening_before"};
+   config.fixture.mailbox.confirm(action);
+   if(await config.fixture.reconcile(action)!=="confirmed")throw Error("MAILBOX_CONFIRMATION_NOT_OBSERVED");
+   metadata.receipt={...metadata.receipt,status:"confirmed",reason:"CONTROLLED_MAILBOX_CONFIRMATION",updatedAt:new Date().toISOString()};
+   op.result={...op.result,...metadata};op.effectId??=randomUUID();
+   state.events.push({sourceEventId:randomUUID(),occurredAt:new Date().toISOString(),requestId:randomUUID(),action:"email_signup",stage:"subscription_confirmed",decision:"OBSERVED",taskId:operationKey,effectId:op.effectId,outcomeClass:"UNIQUE_OPERATION",costClass:"write"});
+   return {status:"confirmed",evidence:"simulated_inbox",real_mail_delivered:false,duplicate:false};
+ });
+}

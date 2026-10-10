@@ -1,6 +1,6 @@
 import {chromium,type Browser} from "@playwright/test";
 import {afterAll,afterEach,beforeAll,beforeEach,describe,expect,it,vi} from "vitest";
-import {createEmailHandler} from "../src/email-service";
+import {createEmailHandler,confirmOwnedMailbox} from "../src/email-service";
 import {MemoryStore,FileStore} from "../src/store";
 import {startEmailFixture} from "../../../packages/whenisbins-email/src/fixture";
 import {catalogueDigest} from "../src/service";
@@ -72,6 +72,16 @@ describe("email connector authority, exact approval and durable browser work",()
    const x=setup();expect((await x.handler(req("signup",undefined,undefined,{"x-grant-reference":"other"}))).status).toBe(403);expect(fixture.counts().submissions).toBe(0);
    await x.handler(req("signup",undefined,undefined,{"x-grant-reference":"grant"}));fixture.mailbox.confirm(action);x.setGrant("replacement-grant");x.resetApproval();
    expect((await x.handler(req("signup",undefined,undefined,{"x-grant-reference":"replacement-grant"}))).status).toBe(403);expect(fixture.counts().submissions).toBe(1);
+ });
+ it("binds simulated inbox confirmation to the submitted owner, agent and grant with one evidence event",async()=>{
+   const x=setup();const config={store:x.store,fixture};const owned={principal:"principal",agentId:"agent",grant:"grant",actKey:"email-operation-0001"};
+   await expect(confirmOwnedMailbox(config,owned)).rejects.toThrow("MAILBOX_OPERATION_NOT_OWNED");
+   await x.handler(req());
+   for(const change of [{principal:"other"},{agentId:"other"},{grant:"other"},{actKey:"another-operation"}])await expect(confirmOwnedMailbox(config,{...owned,...change})).rejects.toThrow("MAILBOX_OPERATION_NOT_OWNED");
+   expect(await confirmOwnedMailbox(config,owned)).toMatchObject({status:"confirmed",real_mail_delivered:false,duplicate:false});
+   const state=await x.store.snapshot();const evidence=state.events.filter(e=>e.stage==="subscription_confirmed");expect(evidence).toHaveLength(1);expect(evidence[0].authorityVerified).toBeUndefined();
+   expect(await confirmOwnedMailbox(config,owned)).toMatchObject({duplicate:true});expect((await x.store.snapshot()).events.filter(e=>e.stage==="subscription_confirmed")).toHaveLength(1);
+   expect(fixture.counts().submissions).toBe(1);
  });
  it("rejects a non-synthetic email target at configuration time",()=>{
    const foreign={...fixture,config:{...fixture.config,origin:"https://whenisbins.com"}};

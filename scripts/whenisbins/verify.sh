@@ -10,6 +10,7 @@ export AGENT_TOKEN_SECRET=dev-agent-token-secret
 export OIDC_PRIVATE_KEY_FILE=dev/oidc-client-private.pem
 npx tsx --tsconfig apps/delegate/tsconfig.json scripts/whenisbins/verify-authority.ts
 npx playwright test --config e2e/whenisbins.config.ts
+npx tsx scripts/whenisbins/verify-scheduled-evidence.ts
 export DATABASE_URL=postgresql://observatory:observatory@localhost:55435/observatory
 export RESEARCH_INGEST_ENABLED=true
 export PUBLIC_MODE=false

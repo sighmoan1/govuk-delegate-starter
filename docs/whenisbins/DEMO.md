@@ -53,7 +53,7 @@ Schedule registration and occurrence observations use IDs obtained from the pers
 The Observatory acceptance verifier checks the real connector feed, collection boundary and private research database after the three journeys have generated evidence:
 
 ```sh
-WHENISBINS_REQUIRE_ALL_JOURNEYS=true TSX_TSCONFIG_PATH=apps/observatory/tsconfig.json \
+TSX_TSCONFIG_PATH=apps/observatory/tsconfig.json \
 node --env-file=apps/observatory/.env --import tsx scripts/whenisbins/verify-observatory.ts
 ```
 
@@ -75,3 +75,15 @@ npm run whenisbins:stop
 Stopping preserves this demonstration's synthetic database, private receipts and schedules. Restart uses them again. Private files and logs are in `.whenisbins-demo/`; do not publish them or expose the fixture portal through a public tunnel. The launcher seeds only its first start. Its optional Observatory is on http://localhost:5703/whenisbins and requires the local collection key to view evidence.
 
 The email website fixture also persists its synthetic subscription and stop-link state across connector restarts. It never sends mail. Live lookup is a separate explicit configuration in CONNECTOR.md; live website compatibility and real inbox handling remain unvalidated.
+
+After the recurring browser journey, verify its trusted source evidence:
+
+```sh
+WHENISBINS_URL=http://127.0.0.1:5710 npx tsx scripts/whenisbins/verify-scheduled-evidence.ts
+```
+
+The check requires one actual registered job, three distinct occurrence IDs, two completed lookups and the final revoked occurrence's correlated refusal with zero provider-call evidence. The authority verifier also asserts the exact reason for each refusal, including `UNKNOWN_DELEGATE`; a generic authentication failure does not satisfy that case.
+
+The final scheduler-specific rerun passed after trusted IDs were retained on early refusals. The read-only scheduled-evidence verifier passed: one actual registered job, three distinct persisted occurrences, two completed lookups and the third revoked occurrence's correlated refusal with zero provider-call events. The full four-browser suite had also passed again in 7.4 seconds, and the seven authority cases passed with exact refusal-reason assertions.
+
+The simulated inbox confirmation is bound to the portal session's approved principal, original grant, actual registered agent ID and signup operation key. Having a portal cookie or a different approved journey does not identify another session's pending subscription. Before citizen approval, the confirmation callback is not invoked. The portal never sends a raw email address or agent token to the browser; the exact-action approval screen remains responsible for showing the citizen what they are authorising.

@@ -35,9 +35,9 @@ async function action(page: Page, path: string) {
   await page.locator(`form[action="${path}"]`).getByRole("button").click();
 }
 async function approveAction(page: Page) {
-  const link = page.getByRole("link", { name: "Approve this action" });
+  const link = page.getByRole("link", { name: /Approve this action/ });
   await expect(link).toBeVisible();
-  await link.click();
+  await page.goto((await link.getAttribute("href"))!);
   await expect(page.getByRole("button", { name: /Approve|Allow/ }).first()).toBeVisible();
   await page.getByRole("button", { name: /Approve|Allow/ }).first().click();
   await page.goto(`${BINS}/demo/status`);
