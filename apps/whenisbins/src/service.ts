@@ -56,7 +56,7 @@ export function connectorHandler(config:Config,transport:typeof fetch=fetch){
      try{const stored=await config.provider.stored(String((saved.result!.result as any).property_id),saved.etag);lookup={status:'done' as const,lookup_id:saved.lookupId!,result:stored.unchanged?saved.result!.result as Record<string,unknown>:stored.result,unchanged:stored.unchanged===true};
       validateSchedule(lookup.result,String((saved.result!.result as any).property_id));
       if(stored.unchanged&&!saved.etag)throw Error('INVALID_PROVIDER_RESPONSE');
-      op.etag=stored.etag;op.effectId=saved.effectId;}catch(e){if(!(e instanceof ProviderFailure)||e.status!==404)throw e;}
+      op.etag=stored.etag;op.effectId=stored.unchanged?saved.effectId:undefined;}catch(e){if(!(e instanceof ProviderFailure)||e.status!==404)throw e;}
     }
     lookup??=op.lookupId?await config.provider.poll(op.lookupId,resource):await config.provider.submit(resource,op.key);
     if(lookup.status==='done')validateSchedule(lookup.result,resource.propertyId??(op.result?.result as any)?.property_id);
