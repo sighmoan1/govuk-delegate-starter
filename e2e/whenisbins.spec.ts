@@ -97,6 +97,10 @@ test("portal keeps synthetic/private boundaries, keyboard access and 320px reflo
   await page.setViewportSize({ width: 320, height: 700 });
   await page.goto(BINS);
   await expect(page.locator("main")).toContainText(/synthetic|fixture/i);
+  await expect(page.locator("main")).toHaveClass("width-container main-wrapper");
+  const gutter=await page.locator("main").evaluate(element=>{const rect=element.getBoundingClientRect();return {left:rect.left,right:window.innerWidth-rect.right};});
+  expect(gutter.left).toBeGreaterThanOrEqual(12);expect(gutter.right).toBeGreaterThanOrEqual(12);
+  expect(await page.evaluate(async()=>{await document.fonts.ready;return document.fonts.check('700 24px "Lexend Deca"');})).toBe(true);
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
