@@ -62,3 +62,22 @@ it.each([
  const snapshot=await store.snapshot();expect(snapshot.operations[operationId].result?.receipt).toEqual(activationReceipt);expect(snapshot.events.map(e=>e.stage)).toEqual(['subscription_pending']);
  expect(await evidence.reconcile(action,operationId)).toBe('unknown');
 });
+
+it('requires fresh exact inactive-form proof for the GET-only confirmation state',async()=>{
+ const updatedAt=new Date(Date.now()-1000).toISOString(),activation={...receipt,status:'submitted' as const,reason:'CONFIRMATION_VISIT_AWAITING_INDEPENDENT_EVIDENCE',updatedAt};
+ await store.transaction(s=>{s.operations[operationId].result={...s.operations[operationId].result,receipt:activation};});
+ for(const bad of [
+  {confirmationFormObservedAt:updatedAt},
+  {confirmationFormObservedAt:'not-a-date',confirmationFormSource:'native_browser_form'},
+  {confirmationFormObservedAt:new Date(Date.parse(updatedAt)-1).toISOString(),confirmationFormSource:'native_browser_form'}
+ ]){await write([{...proof,...bad}]);expect(await confirm()).toMatchObject({subscription_confirmed:false});expect((await store.snapshot()).operations[operationId].result?.receipt).toEqual(activation);}
+ const observed={...proof,confirmationFormObservedAt:new Date().toISOString(),confirmationFormSource:'native_browser_form'};
+ await write([{...observed,recipient:'different@example.invalid'}]);expect(await confirm()).toMatchObject({real_mail_delivered:false,subscription_confirmed:false});expect((await store.snapshot()).operations[operationId].result?.receipt).toEqual(activation);
+ await write([observed]);expect(await confirm()).toMatchObject({status:'confirmation_required',real_mail_delivered:true,subscription_confirmed:false});
+ const pending=(await store.snapshot()).operations[operationId].result?.receipt;expect(pending).toMatchObject({status:'confirmation_required',reason:'NATIVE_CONFIRMATION_FORM_REQUIRED'});expect(await evidence.reconcile(action,operationId)).toBe('unknown');
+ await confirm();expect((await store.snapshot()).operations[operationId].result?.receipt).toEqual(pending);expect((await store.snapshot()).events.map(e=>e.stage)).toEqual(['subscription_pending']);
+});
+it('does not let inactive-form proof erase an uncertain mutation response',async()=>{
+ const activation={...receipt,status:'unknown' as const,reason:'CONFIRMATION_RESPONSE_UNCERTAIN'};await store.transaction(s=>{s.operations[operationId].result={...s.operations[operationId].result,receipt:activation};});
+ await write([{...proof,confirmationFormObservedAt:new Date().toISOString(),confirmationFormSource:'native_browser_form'}]);await confirm();await confirm();expect((await store.snapshot()).operations[operationId].result?.receipt).toEqual(activation);expect(await evidence.reconcile(action,operationId)).toBe('unknown');expect((await store.snapshot()).events.map(e=>e.stage)).toEqual(['subscription_pending']);
+});

@@ -5,7 +5,7 @@ import type {Store} from './store';
 import type {Property} from './provider';
 import type {Mailbox} from './email-service';
 /** Private receipts imported after reading the designated inbox, never supplied through the public API. */
-export type MailboxEvidence={operationId:string;actionHash:string;source:'gmail_connector';messageId:string;receivedAt:string;recipient:string;property:string;confirmationURL?:string;stopURL?:string;delivered:true;confirmedAt?:string;confirmationSource?:'native_browser_confirmed';cancelledAt?:string;cancellationSource?:'native_browser_confirmed'};
+export type MailboxEvidence={operationId:string;actionHash:string;source:'gmail_connector';messageId:string;receivedAt:string;recipient:string;property:string;confirmationURL?:string;stopURL?:string;delivered:true;confirmedAt?:string;confirmationSource?:'native_browser_confirmed';confirmationFormObservedAt?:string;confirmationFormSource?:'native_browser_form';cancelledAt?:string;cancellationSource?:'native_browser_confirmed'};
 const validDate=(value:unknown):value is string=>typeof value==='string'&&Number.isFinite(Date.parse(value));
 const nativeConfirmed=(e:MailboxEvidence)=>e.confirmationSource==='native_browser_confirmed'&&validDate(e.confirmedAt);
 function privateLink(value:string,kind:'verify'|'stop'){
@@ -48,8 +48,11 @@ export async function confirmVerifiedMailbox(config:{store:Store;evidence:FileMa
    return {status:'confirmed',evidence:'native_confirmation',real_mail_delivered:true,subscription_confirmed:true,duplicate:false};
   }
   const duplicate=metadata.mailDeliveryObserved===true;
-  // Mail receipt cannot make an uncertain native activation visit repeatable.
-  if(!metadata.receipt.reason.startsWith('CONFIRMATION_'))metadata.receipt={...metadata.receipt,status:'confirmation_required',reason:'REAL_VERIFICATION_MAIL_DELIVERY_OBSERVED',updatedAt:new Date().toISOString()};
+  // Only a separately observed inactive form can reconcile the exact GET-only state.
+  const observedInactiveForm=metadata.receipt.reason==='CONFIRMATION_VISIT_AWAITING_INDEPENDENT_EVIDENCE'&&proof.confirmationFormSource==='native_browser_form'&&validDate(proof.confirmationFormObservedAt)&&validDate(metadata.receipt.updatedAt)&&Date.parse(proof.confirmationFormObservedAt)>=Date.parse(metadata.receipt.updatedAt);
+  if(observedInactiveForm)metadata.receipt={...metadata.receipt,status:'confirmation_required',reason:'NATIVE_CONFIRMATION_FORM_REQUIRED',updatedAt:new Date().toISOString()};
+  // Mail receipt cannot make any other uncertain native activation visit repeatable.
+  if(!metadata.receipt.reason.startsWith('CONFIRMATION_')&&metadata.receipt.reason!=='NATIVE_CONFIRMATION_FORM_REQUIRED')metadata.receipt={...metadata.receipt,status:'confirmation_required',reason:'REAL_VERIFICATION_MAIL_DELIVERY_OBSERVED',updatedAt:new Date().toISOString()};
   metadata.mailDeliveryObserved=true;op.result={...op.result,...metadata};
   if(!duplicate)state.events.push({sourceEventId:randomUUID(),occurredAt:new Date().toISOString(),requestId:randomUUID(),action:'email_signup',stage:'subscription_pending',decision:'OBSERVED',taskId:operationId});
   return {status:'confirmation_required',evidence:'received_verification_email',real_mail_delivered:true,subscription_confirmed:false,duplicate};
