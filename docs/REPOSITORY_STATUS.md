@@ -4,9 +4,17 @@ The audit sections below preserve their original dates and revisions. The latest
 
 ## Delivery snapshot — 10 October 2026
 
+Confirmed merged code baseline: `fd2bb5f778a440af7485a97a82ee47005aaf8cfc`, containing PRs #108, #109, #110, #124, #125 and #126. This is a source/delivery reconciliation, not a claim that the shared or public runtime has been rebuilt.
+
 The core comprises six apps: One Login, Delegate, HMRC, About, Observatory and an independent synthetic council service. The council proof, catalogue-driven consent, immutable original approval evidence and service-owned restrictions are implemented. The earlier branch inventories below describe their original audit revision rather than the current backlog.
 
 The protected Observatory dashboard/event explorer ([PR #110](https://github.com/sighmoan1/govuk-delegate-starter/pull/110)) and optional one-off WhenIsBins connector ([PR #126](https://github.com/sighmoan1/govuk-delegate-starter/pull/126)) are merged. The connector is additional to the six core apps and checks Delegate authority locally; it does not imply native upstream Delegate checks.
+
+The blind classification contract ([PR #109](https://github.com/sighmoan1/govuk-delegate-starter/pull/109)) is also merged. Its deterministic integration stub describes recorded signature evidence; it is not a trained statistical detector or proof of AI execution.
+
+The agent-owned durable recurring lookup runner ([PR #124](https://github.com/sighmoan1/govuk-delegate-starter/pull/124)) is merged. Its agreements, occurrence receipts and deliberately started worker are external to Delegate; every connector execution rechecks authority. No unattended job is installed by merging it.
+
+The minimised connector research source and private evidence view ([PR #125](https://github.com/sighmoan1/govuk-delegate-starter/pull/125)) are merged. They preserve HMRC/Delegate version-one feeds and report connector stages/correlation counts without exporting evaluator truth or claiming independently verified effects. Connector ledger bindings remain REQUEST_ONLY; existing classifier adapters do not accept this source.
 
 The genuine-participant pilot document ([PR #108](https://github.com/sighmoan1/govuk-delegate-starter/pull/108)) is merged as a proposal and handoff. It does not launch a study or approve participant recruitment. Genuine participant research, model training/evaluation and real Fingerprint vendor validation remain outstanding. The bounded B/C comparison remains technical evidence with no measured citizen-effort, financial or field benefit.
 
