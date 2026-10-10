@@ -28,17 +28,18 @@ export function connectorHandler(config:Config,transport:typeof fetch=fetch){
    if(!token||!principal)return finish({decision:'DENY',reason:'AGENT_IDENTITY_REQUIRED'},401);
    const raw=await req.text();if(raw.length>4096)return finish({reason:'INVALID_REQUEST'},400);
    let body:Record<string,unknown>;try{body=JSON.parse(raw);}catch{return finish({reason:'INVALID_REQUEST'},400);}
-   if(!body||Array.isArray(body)||Object.keys(body).some(k=>!['property_id','occurrence_id','task_id'].includes(k))||typeof body.property_id!=='string'||[body.occurrence_id,body.task_id].some(v=>v!==undefined&&(typeof v!=='string'||!/^[-0-9a-f]{36}$/i.test(v))))return finish({reason:'INVALID_REQUEST'},400);
+   if(!body||Array.isArray(body)||Object.keys(body).some(k=>!['property_id','occurrence_id','task_id','grant_reference'].includes(k))||typeof body.property_id!=='string'||(body.grant_reference!==undefined&&typeof body.grant_reference!=='string')||[body.occurrence_id,body.task_id].some(v=>v!==undefined&&(typeof v!=='string'||!/^[-0-9a-f]{36}$/i.test(v))))return finish({reason:'INVALID_REQUEST'},400);
    // Caller tags are not trusted task or occurrence identity. Backend operation keys supply correlation.
 
    check=await post('/api/authorisations/check',{agent_token:token,principal_id:principal,capability:CAPABILITY,catalogue_version:supported.version});
    if(typeof check.check_id!=='string')throw Error('DELEGATE_UNAVAILABLE');event.delegateCheckId=check.check_id;
    if(!check.authorised)return finish({decision:'DENY',reason:check.reason,delegate_check_id:check.check_id},403);
+   if(body.grant_reference!==undefined&&body.grant_reference!==check.authorisation_id)return finish({decision:'DENY',reason:'GRANT_MISMATCH',delegate_check_id:check.check_id},403);
    const resource=config.properties.find(p=>p.id===body.property_id&&p.subject===check.subject);
    const restrictions=check.constraints?.[CAPABILITY],provenance=check.constraint_provenance;
    const keys=restrictions?Object.keys(restrictions):[];
    if(!resource||keys.length!==1||keys[0]!=='property_id'||!Array.isArray(restrictions.property_id)||!restrictions.property_id.includes(resource.id)||restrictions.property_id.some((v:unknown)=>!permittedIds.includes(String(v)))||provenance?.catalogue?.digest!==supportedDigest||provenance?.catalogue?.version!==supported.version||provenance?.mandate_id!==check.authorisation_id||provenance?.delegation_id!==check.chain?.delegation_id)return finish({decision:'DENY',reason:'PROPERTY_SCOPE_REFUSED',delegate_check_id:check.check_id},403);
-   const key=req.headers.get('idempotency-key');if(!key||!/^[A-Za-z0-9_-]{8,128}$/.test(key))return finish({reason:'IDEMPOTENCY_KEY_REQUIRED'},400);
+   const key=req.headers.get('idempotency-key');if(!key||!/^[A-Za-z0-9_:-]{8,128}$/.test(key))return finish({reason:'IDEMPOTENCY_KEY_REQUIRED'},400);
    operationKey=createHash('sha256').update(principal+':'+check.delegate.id+':'+key).digest('hex');
    const digest=createHash('sha256').update(canonical({property_id:body.property_id})).digest('hex');
    let replay=false,busy=false;
