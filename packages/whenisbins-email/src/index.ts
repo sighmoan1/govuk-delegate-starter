@@ -72,3 +72,5 @@ export async function executeEmailWorkflow(input: EmailWorkflowInput): Promise<E
     return save("unknown", "NO_CONFIRMATION_EVIDENCE");
   } catch { return save("unknown", "BROWSER_OR_RESPONSE_UNCERTAIN"); }
 }
+
+export {executeWhenIsBinsEmailWorkflow,type NativeEmailInput,type NativeProperty} from './native';
