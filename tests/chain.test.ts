@@ -4,7 +4,7 @@ import { prisma, newPrincipal, authorise, check, DELEGATE, SERVICE, demoAgent, c
 afterAll(() => prisma.$disconnect());
 
 // Identify the agent. Authorise the mandate. (Limits on the person live in the service: see check-spends-nothing.test.ts.)
-// These tests talk to GOV.UK Delegate over HTTP; set-up reaches into its code.
+// These tests talk to Delegate over HTTP; set-up reaches into its code.
 
 async function subDelegate(token: string, principalId: string, capabilities: string[], label?: string) {
   const res = await fetch(`${DELEGATE}/api/delegations`, {

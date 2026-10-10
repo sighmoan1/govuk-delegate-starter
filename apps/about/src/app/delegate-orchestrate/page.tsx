@@ -14,7 +14,7 @@ const RESPONSIBILITIES = [
     status: "In the prototype",
   },
   {
-    name: "GOV.UK Delegate",
+    name: "Delegate",
     question: "Who can act for them, and within which boundaries?",
     work: "Records service-scoped, revocable permission for a representative. Checks current authority, not a task plan.",
     status: "In the prototype; richer mandates proposed",
@@ -87,7 +87,7 @@ export default function DelegateOrOrchestrate() {
         </div>
         <p className="boundary-flow__arrow" aria-hidden="true">↓ asks for authority / operates within its grant</p>
         <div className="boundary-flow__box boundary-flow__box--authority">
-          <strong>GOV.UK Delegate</strong>
+          <strong>Delegate</strong>
           <p>Citizen approves through One Login. Delegate records service-defined capabilities, conditions and revocation.</p>
         </div>
         <p className="boundary-flow__arrow" aria-hidden="true">↕ authority check; results reported back</p>

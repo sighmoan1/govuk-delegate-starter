@@ -1,4 +1,4 @@
-# GOV.UK Delegate — decision backlog
+# Delegate — decision backlog
 
 > **Status:** Working decision register, 9 October 2026. **DEFERRED** items below are not approved product, policy or legal decisions. This is where to resume the *unresolved questions*. Decisions already taken (including historical or superseded ones) are recorded in [DECISIONS.md](DECISIONS.md); code issues implement *approved* directions. Hypotheses and measured evidence belong in the [validation programme (PR #46)](https://github.com/sighmoan1/govuk-delegate-starter/pull/46).
 >

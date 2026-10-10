@@ -14,7 +14,7 @@ Taking part is voluntary. You can ask questions, skip a task or stop. [Approved 
 
 ### What is the study?
 
-We are testing GOV.UK Delegate, an independent prototype that records what an assistant has permission to do and lets a person remove that permission. We want to see how people understand and complete its steps. The software uses synthetic accounts and tax records. You are testing the prototype, not your ability to use a computer.
+We are testing Delegate, an independent prototype that records what an assistant has permission to do and lets a person remove that permission. We want to see how people understand and complete its steps. The software uses synthetic accounts and tax records. You are testing the prototype, not your ability to use a computer.
 
 [Named study owner and organisation] is responsible for this study. Contact [research contact] with questions or [approved privacy/complaints contact] about the information we keep. This study is a small feasibility test. It will not prove that Delegate saves money or that a computer can reliably detect AI use.
 

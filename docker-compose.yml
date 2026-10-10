@@ -1,4 +1,4 @@
-# GOV.UK Delegate prototype: six applications, so the boundaries are real.
+# Delegate prototype: six applications, so the boundaries are real.
 #   docker compose up --build            everything
 #   docker compose up -d db simulator    just the dependencies, for `npm run dev`
 #   npm run public / npm run public:stop  the same stack on temporary public URLs (see scripts/public.mjs)

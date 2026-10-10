@@ -185,7 +185,7 @@ export async function processClaimed(job: Claimed, run: Processor, opts: { now?:
   }
 }
 
-/** Items that reached COMPLETED or FAILED and whose outcome GOV.UK Delegate has not been told (agent submissions only). */
+/** Items that reached COMPLETED or FAILED and whose outcome Delegate has not been told (agent submissions only). */
 export const unreportedOutcomes = (limit = 50) =>
   prisma.transaction.findMany({
     where: { status: { in: ["COMPLETED", "FAILED"] }, outcomeReported: false, delegateCheckId: { not: null } },

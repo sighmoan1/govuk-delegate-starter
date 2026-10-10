@@ -1,12 +1,12 @@
 import { demoConsoleKey, urls } from "./config";
 
-// Swarm experiments, run for real: HMRC's actual API, GOV.UK Delegate's actual check, a real queue and a real worker,
+// Swarm experiments, run for real: HMRC's actual API, Delegate's actual check, a real queue and a real worker,
 // all over HTTP, with fresh synthetic people each run. Every number here is MEASURED from that integration run.
 // (The policy comparison in swarm-sim.ts is the opposite: simulated, seeded, labelled as such.)
 //
 // The point of the accounting is to keep two things apart that "requests allowed" blurs together:
 //
-//   technical load      what reached HMRC and what it cost: HTTP requests, GOV.UK Delegate authority checks, 429 and
+//   technical load      what reached HMRC and what it cost: HTTP requests, Delegate authority checks, 429 and
 //                       503 answers, back-end work that passed admission, how long requests took
 //   service outcomes    what happened to the claims people actually wanted to make: received, queued, recorded, how long
 //                       they waited and how long the worker took, and how many duplicate requests were absorbed
@@ -136,7 +136,7 @@ export type ScenarioResult = {
   transport: Transport;
   server: ServerStats | null;
   timeline: Timeline;
-  /** The synthetic people (GOV.UK Delegate principal ids) the scenario used, so a test can look them up on the Delegate side. */
+  /** The synthetic people (Delegate principal ids) the scenario used, so a test can look them up on the Delegate side. */
   principalIds: string[];
   /** Depends on which demo limits. */
   limits: (keyof typeof DEMO_LIMITS)[];
@@ -446,13 +446,13 @@ export function invariantsOf(id: ScenarioId, demanded: number, t: Transport, s: 
     { id: "all_wanted_received", ok: q.received === demanded, text: `Every claim someone wanted was received: ${q.received} of ${demanded}. A 429 on a claim is a request to try later, not a loss.` },
     { id: "all_recorded", ok: completed === q.received && q.openNow === 0 && (q.byStatus.FAILED ?? 0) === 0, text: `Everything received was recorded: ${completed} of ${q.received}, ${q.openNow} still waiting, ${q.byStatus.FAILED ?? 0} failed.` },
     { id: "log_matches_client", ok: e.httpRequests >= t.attempts - t.networkErrors && e.httpRequests <= t.attempts, text: `HMRC’s own log counted ${e.httpRequests} requests; the client attempted ${t.attempts}, including ${t.networkErrors} lost connections whose arrival is unknown.` },
-    { id: "checks_are_not_claims", ok: e.authorisedChecks >= t.agentAttempts - t.agentNetworkErrors - e.authorityRefusals && e.authorisedChecks <= t.agentAttempts - e.authorityRefusals, text: `GOV.UK Delegate authorised ${e.authorisedChecks} of ${t.agentAttempts} agent requests. That is a count of checks, and it is a different number from the ${q.received} claims.` },
+    { id: "checks_are_not_claims", ok: e.authorisedChecks >= t.agentAttempts - t.agentNetworkErrors - e.authorityRefusals && e.authorisedChecks <= t.agentAttempts - e.authorityRefusals, text: `Delegate authorised ${e.authorisedChecks} of ${t.agentAttempts} agent requests. That is a count of checks, and it is a different number from the ${q.received} claims.` },
     { id: "receipts_match_claims", ok: t.byOp.claim.received + t.byOp.claim.replay === 0 || t.receipts === q.received, text: `The receipts handed out point at ${t.receipts} claim${t.receipts === 1 ? "" : "s"}; HMRC holds ${q.received}. A repeat gets the original receipt, never a new one.` },
     { id: "throttle_not_entitlement", ok: t.throttleSaidEntitlementAffected === 0, text: "Every 429 and 503 said the person’s entitlement was not affected, and changed nothing." },
     { id: "429_say_when", ok: t.throttledWithoutRetryAfter === 0 && e.throttlesWithoutRetryAfter === 0, text: "Every 429 and 503 carried a Retry-After." },
   ];
   if (id === "A" || id === "B" || id === "Bp") list.push({ id: "duplicates_absorbed", ok: q.received === 1 && t.byOp.claim.received === 1, text: `${t.byOp.claim.duplicate} duplicate attempts at the same claim were refused with nothing created; one claim was received.` });
-  if (id === "Bp") list.push({ id: "hidden_no_checks", ok: e.authorisedChecks === 0, text: "Hidden sessions used no agent credential, so GOV.UK Delegate was asked nothing." });
+  if (id === "Bp") list.push({ id: "hidden_no_checks", ok: e.authorisedChecks === 0, text: "Hidden sessions used no agent credential, so Delegate was asked nothing." });
   if (id === "D") list.push({ id: "retries_absorbed", ok: t.byOp.claim.replay >= demanded - 1, text: `Each person’s second send was answered with the original receipt: ${t.byOp.claim.replay} replays, ${demanded - 1} expected (the bystander sent once).` });
   if (id === "E") list.push({ id: "storm_one_claim", ok: q.received === 1 && t.byOp.claim.received === 1 && t.byOp.claim.replay + t.byOp.claim.throttled === t.attempts - 1, text: `${t.attempts} requests for one claim made ${q.received} claim; ${t.byOp.claim.replay} were answered with the original receipt and ${t.byOp.claim.throttled} held back for traffic.` });
   if (id === "F" && bystander) list.push({ id: "bystander_unaffected", ok: bystander.ok && bystander.throttled === 0, text: bystander.note });

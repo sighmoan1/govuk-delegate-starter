@@ -1,6 +1,6 @@
 // SIMULATED, not measured. A deterministic, seeded model that compares ways of protecting a service from bursts of
 // traffic while keeping legitimate demand: an agent-level throttle, a person-level technical throttle, and fair
-// scheduling of the work. Nothing here talks to HMRC or GOV.UK Delegate; the same seed always gives the same table.
+// scheduling of the work. Nothing here talks to HMRC or Delegate; the same seed always gives the same table.
 //
 // What it is for: showing that "fewer allowed requests" and "less harm" are different questions, and what each policy
 // costs the people who were doing nothing wrong. What it is not: evidence of how a real service behaves. Every number
@@ -10,7 +10,7 @@
 // Held the same for every policy (it is HMRC's real behaviour from issues #18 and #21, not a policy under test):
 //   - a retry carrying a key HMRC already holds is answered from the stored outcome and does no new work;
 //   - a second claim for something already received is refused as a duplicate and creates nothing;
-//   - authority is checked with GOV.UK Delegate before any traffic limit, because the limit needs to know who is asking;
+//   - authority is checked with Delegate before any traffic limit, because the limit needs to know who is asking;
 //   - clients that are doing legitimate work honour Retry-After and try again, a limited number of times.
 // What differs: whether and where a request is turned away with 429, and in what order the queue is worked.
 
@@ -132,7 +132,7 @@ type Win = { start: number; count: number };
 export type SimMetrics = {
   /** Requests that reached HMRC, retries and polls included. */
   attempts: number;
-  /** GOV.UK Delegate checks: every agent request, before any limit. A throttle does not reduce them. */
+  /** Delegate checks: every agent request, before any limit. A throttle does not reduce them. */
   authorityChecks: number;
   throttled429: number;
   /** Writes and reads that passed admission and reached the business layer (replays and polls are reads). */

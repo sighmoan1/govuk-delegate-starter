@@ -1,7 +1,7 @@
 const ONELOGIN = process.env.ONELOGIN_URL ?? "http://localhost:3301";
 import { test, expect, type Page } from "@playwright/test";
 
-// GOV.UK Delegate on its own: consent through the real One Login simulator,
+// Delegate on its own: consent through the real One Login simulator,
 // then the account page and the internal operations view.
 const DELEGATE = process.env.DELEGATE_URL ?? "http://localhost:3300";
 const CLIENT_ID = process.env.DEMO_AGENT_CLIENT_ID ?? "demo-personal-agent";

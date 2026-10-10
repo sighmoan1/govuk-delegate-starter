@@ -3,7 +3,7 @@
 > Preserved original brief. DWP and Example AI examples are historical, and later numbered decisions supersede these requirements. Use [CURRENT_BEHAVIOUR.md](CURRENT_BEHAVIOUR.md), [ARCHITECTURE.md](ARCHITECTURE.md) and the current code for implementation work.
 ## 1. Goal
 
-Build a working technical prototype of **GOV.UK Delegate**.
+Build a working technical prototype of **Delegate**.
 
 The prototype must demonstrate that a person authenticated through a One Login-compatible flow can:
 
@@ -48,7 +48,7 @@ HMRC's pattern is approximately:
 
 `taxpayer ↔ registered tax agent ↔ tax service`
 
-GOV.UK Delegate generalises this to:
+Delegate generalises this to:
 
 `principal ↔ delegate ↔ government service ↔ capability`
 
@@ -89,7 +89,7 @@ They can approve all, remove individual permissions, reject the request, or leav
 
 The agent authenticates as itself and calls the mock DWP service.
 
-The DWP service checks GOV.UK Delegate before performing the action.
+The DWP service checks Delegate before performing the action.
 
 Examples:
 
@@ -122,7 +122,7 @@ Every attempt appears in an activity view.
               │ OIDC
               ▼
 ┌───────────────────────────┐
-│ GOV.UK Delegate           │
+│ Delegate                  │
 │                           │
 │ authorisation requests    │
 │ relationship registry     │
@@ -434,7 +434,7 @@ Reusable middleware should:
 
 1. authenticate the delegate;
 2. identify the principal it claims to represent;
-3. ask GOV.UK Delegate whether the relationship is active;
+3. ask Delegate whether the relationship is active;
 4. ask whether the required capability is present;
 5. write an activity event;
 6. allow or reject the action.

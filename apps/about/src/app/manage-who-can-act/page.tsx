@@ -14,7 +14,7 @@ export default async function Manage({ searchParams }: { searchParams: Promise<{
         <p className="lead">Sam wants to see which apps and people can deal with government for her, check what they’ve done, and take access away.</p>
         <p>
           <strong>What it shows:</strong> permission lives in Sam’s GOV.UK account, not inside each app. When she removes it, the very next
-          request is refused, because services ask GOV.UK Delegate every time.
+          request is refused, because services ask Delegate every time.
         </p>
       </div>
 

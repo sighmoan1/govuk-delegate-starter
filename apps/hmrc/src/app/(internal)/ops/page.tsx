@@ -101,7 +101,7 @@ export default async function Ops({ searchParams }: { searchParams: Promise<{ li
       <h2>What the requests were</h2>
       <p>
         Traffic and business decisions are counted separately. A throttle is about load and can be retried; a business refusal is a decision about the transaction.
-        Authorised checks are GOV.UK Delegate saying yes, which spends nothing.
+        Authorised checks are Delegate saying yes, which spends nothing.
       </p>
       <MetricsTable rows={[["Last 60 seconds", s.metricsLastMinute], ["Last 24 hours", s.metricsLastDay]]} />
 
@@ -126,7 +126,7 @@ export default async function Ops({ searchParams }: { searchParams: Promise<{ li
           <thead><tr><th scope="col">Lane</th><th scope="col">Identified by</th><th scope="col">Limit</th><th scope="col">Response</th></tr></thead>
           <tbody>
             <tr><th scope="row">Signed-in person</th><td>GOV.UK One Login session</td><td>{lim.operator.human.all}/min</td><td>Full service; 429 with Retry-After if exceeded</td></tr>
-            <tr><th scope="row">Authorised agent</th><td>Agent token, checked with GOV.UK Delegate per request</td><td>{lim.operator.agent.all}/min</td><td>Full API, JSON errors; 429 with Retry-After if exceeded</td></tr>
+            <tr><th scope="row">Authorised agent</th><td>Agent token, checked with Delegate per request</td><td>{lim.operator.agent.all}/min</td><td>Full API, JSON errors; 429 with Retry-After if exceeded</td></tr>
             <tr><th scope="row">Agent without permission</th><td>Signed with Web Bot Auth</td><td>{LANE_LIMITS.DECLARED_AGENT}/min</td><td>Structured refusal pointing to the proper route</td></tr>
             <tr><th scope="row">Not identified</th><td>None</td><td>{LANE_LIMITS.UNTRUSTED}/min</td><td>{UNTRUSTED_DELAY_MS / 1000}s delay, plain-text refusal, web challenge</td></tr>
           </tbody>

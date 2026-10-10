@@ -8,7 +8,7 @@ afterAll(() => prisma.$disconnect());
 
 // Can a swarm beat the system? Measured two ways, kept apart.
 //
-//   REAL        runExperiments() runs the seven scenarios through HMRC's real API, GOV.UK Delegate's real check, the real
+//   REAL        runExperiments() runs the seven scenarios through HMRC's real API, Delegate's real check, the real
 //               queue and worker, with fresh synthetic people. What it counts is technical load (requests, authority
 //               checks, 429s and 503s, back-end work) separately from service outcomes (claims received, queued, recorded,
 //               duplicates absorbed). The same function drives the about site's page.
@@ -119,7 +119,7 @@ describe("real: the seven scenarios at N = 10 (every check holds, claims and tra
     }
   });
 
-  it("GOV.UK Delegate's own record of checks matches HMRC's count of authorised checks (A, C)", async () => {
+  it("Delegate's own record of checks matches HMRC's count of authorised checks (A, C)", async () => {
     for (const x of [r.A, r.C]) {
       const delegateSide = await prisma.activityEvent.count({ where: { principalId: { in: x.principalIds }, decision: "ALLOW", capability: { not: null } } });
       expect(delegateSide, `${x.id}`).toBe(x.server!.events!.authorisedChecks);

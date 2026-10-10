@@ -35,7 +35,7 @@ export default async function Swarm({ searchParams }: { searchParams: Promise<{ 
         </p>
         <p>
           The page keeps two kinds of number apart, because mixing them gives the wrong idea of harm. <strong>Technical load</strong> is what reached
-          HMRC and what it cost: requests, checks with GOV.UK Delegate, 429 and 503 answers, back-end work. <strong>Service outcomes</strong> are what
+          HMRC and what it cost: requests, checks with Delegate, 429 and 503 answers, back-end work. <strong>Service outcomes</strong> are what
           happened to the claims: received, waiting, recorded, how long it took. A check that says “yes” is not a claim. A request that was answered is
           not a claim. A 429 is not a lost claim.
         </p>
@@ -43,7 +43,7 @@ export default async function Swarm({ searchParams }: { searchParams: Promise<{ 
 
       <h2>How to read the labels</h2>
       <ul>
-        <li><Real /> Counted from a run of the actual prototype just now: HMRC’s API, GOV.UK Delegate’s check, a real queue and worker, fresh synthetic people. The numbers will differ a little each time. They depend on the machine it runs on.</li>
+        <li><Real /> Counted from a run of the actual prototype just now: HMRC’s API, Delegate’s check, a real queue and worker, fresh synthetic people. The numbers will differ a little each time. They depend on the machine it runs on.</li>
         <li><Limit /> The result is shaped by a limit chosen for the demo, such as “60 tax-code lookups an hour” or “one claim per tax year”. These are illustrative and provisional. They are not decided policy, and no test here asserts them as a rule.</li>
         <li><Sim /> From a seeded model, the same every time, that never touches HMRC or Delegate. It compares ways of protecting a service. It is not evidence of how a real service behaves.</li>
       </ul>
@@ -60,7 +60,7 @@ export default async function Swarm({ searchParams }: { searchParams: Promise<{ 
         </table>
       </div>
       <p>
-        Every request goes to HMRC’s real API, and every agent request is checked with GOV.UK Delegate. In A to C and E, the claim attempts use
+        Every request goes to HMRC’s real API, and every agent request is checked with Delegate. In A to C and E, the claim attempts use
         the asynchronous route (<code>Prefer: respond-async</code> with an <code>Idempotency-Key</code>), so “received” means a <code>202</code> receipt and “recorded”
         means the worker has finished. Each run uses new synthetic people, so you can run it again without resetting. A request that stands for a claim someone
         wants (C, D, and the claims in E and F) waits as long as <code>Retry-After</code> says after a 429 or 503 and sends the same request again. Redundant copies, retry storms and polls do not.
@@ -90,7 +90,7 @@ export default async function Swarm({ searchParams }: { searchParams: Promise<{ 
       <h2>What this does not show</h2>
       <ul>
         <li><strong>It is not a load test.</strong> The services run as development servers on one machine with a five-connection database pool. Timings show the shape (a queue that fills and empties, a worker that takes milliseconds), not capacity.</li>
-        <li><strong>Authority checks are not free, and nothing here limits them.</strong> HMRC asks GOV.UK Delegate before it decides anything else, so a throttle further in turns away requests that have already cost a check. The check API has no limits of its own yet.</li>
+        <li><strong>Authority checks are not free, and nothing here limits them.</strong> HMRC asks Delegate before it decides anything else, so a throttle further in turns away requests that have already cost a check. The check API has no limits of its own yet.</li>
         <li><strong>The limits are placeholders.</strong> Changing a number changes the tables. The point of the page is how the accounting is kept (technical load apart from outcomes, duplicates apart from demand), not which numbers are right.</li>
         <li><strong>Unknown traffic is still unknown.</strong> Nothing here helps with traffic that has no identity and no person behind it. That needs abuse controls of its own, which this prototype only stands in for.</li>
       </ul>
@@ -159,7 +159,7 @@ function Results({ run: res }: { run: SwarmRun }) {
 
       <h3>Technical load: what it cost</h3>
       <p className="small">
-        Requests include every retry. “Authority checks” is how many times HMRC asked GOV.UK Delegate; hidden sessions use no agent credential, so they cause none. Back-end work
+        Requests include every retry. “Authority checks” is how many times HMRC asked Delegate; hidden sessions use no agent credential, so they cause none. Back-end work
         is what passed HMRC’s traffic admission and reached its business layer, by kind.
       </p>
       <div className="table-container">

@@ -1,6 +1,6 @@
 # Briefing pack validation, 10 October 2026
 
-Run: `briefing-20261010-01`. Branch: `codex/issue-111-public-digital-briefings`. Baseline: main `6b4f3895f246cfe9e274059c57e4dc1ea7989650`.
+Run: `briefing-20261010-01`. Original delivery: issue #111. Baseline: main `6b4f3895f246cfe9e274059c57e4dc1ea7989650`.
 
 ## Presentation exports
 

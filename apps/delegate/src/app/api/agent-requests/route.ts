@@ -6,7 +6,7 @@ import { createServiceInitiatedRequest } from "@/lib/agent-requests";
 
 /**
  * A service raises a request for an agent that has arrived without its own
- * GOV.UK Delegate credentials (an agent in a browser).
+ * Delegate credentials (an agent in a browser).
  *   { service, agent: { web_bot_auth_agent } | { name, provider }, capabilities }
  * The service tells Delegate whether it verified the agent's signature;
  * otherwise the agent's identity is recorded as declared.

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Evidence and experiments",
-  description: "How the independent GOV.UK Delegate prototype will test whether authorised agent access helps government handle automated demand.",
+  description: "How the independent Delegate prototype will test whether authorised agent access helps government handle automated demand.",
 };
 
 const EXPERIMENTS = [
@@ -58,7 +58,7 @@ export default function EvidencePage() {
   return (
     <div>
       <div className="two-thirds">
-        <h1>What would prove GOV.UK Delegate works?</h1>
+        <h1>What would prove Delegate works?</h1>
         <p className="lead">
           Our proposition is that easier, verifiable, revocable agent access could help government handle growing automated demand
           without blocking legitimate citizens. We have built a prototype; we have not yet demonstrated the full economic or
@@ -92,7 +92,7 @@ export default function EvidencePage() {
           <tbody>
             <tr><th scope="row">A. Human-facing service</th><td>Current journey effort and outcomes for context.</td></tr>
             <tr><th scope="row">B. Good agent API with service-local delegated access</th><td>Benefit from a suitable interface, while keeping legitimate authorisation and service safeguards.</td></tr>
-            <tr><th scope="row">C. The same API + GOV.UK Delegate</th><td>Incremental benefit (and costs) of reusable, independent citizen-controlled authority.</td></tr>
+            <tr><th scope="row">C. The same API + Delegate</th><td>Incremental benefit (and costs) of reusable, independent citizen-controlled authority.</td></tr>
           </tbody>
         </table>
       </div>

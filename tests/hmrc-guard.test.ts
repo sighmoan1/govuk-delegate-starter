@@ -69,7 +69,7 @@ describe("requireViewer, approved agent", () => {
   });
 
   it("fails closed when Delegate is down", async () => {
-    m.askDelegate.mockRejectedValue(new Error("GOV.UK Delegate answered 503"));
+    m.askDelegate.mockRejectedValue(new Error("Delegate answered 503"));
     expect(await redirectOf(requireViewer("/claim", "claim_job_expenses"))).toBe("/act-for-someone?denied=DELEGATE_UNAVAILABLE");
     expect(m.logEvent).toHaveBeenCalledWith(expect.objectContaining({ outcome: "REFUSED", reason: "DELEGATE_UNAVAILABLE" }));
     expect(m.logEvent).not.toHaveBeenCalledWith(expect.objectContaining({ outcome: "ALLOWED" }));

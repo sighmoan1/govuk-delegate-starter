@@ -12,7 +12,7 @@ import { POST as employmentApi } from "@/app/api/employment/route";
 import { POST as respondApi } from "@/app/api/claims/respond/route";
 
 // Issue #23: GET /api/claims/progress with ETag / If-None-Match / 304, freshness and back-off guidance,
-// private no-store, and per-person isolation. GOV.UK Delegate is a separate service, so its check is
+// private no-store, and per-person isolation. Delegate is a separate service, so its check is
 // replaced by a table (token -> person), and which answers have been disputed is controlled by the test.
 const delegate = vi.hoisted(() => ({
   agents: new Map<string, { delegateId: string; subject: string }>(),

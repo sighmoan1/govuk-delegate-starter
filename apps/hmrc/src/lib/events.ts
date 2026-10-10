@@ -33,7 +33,7 @@ export async function logEvent(e: {
   costClass?: string | null;
   throttleScope?: string | null;
   retryAfterSeconds?: number | null;
-  /** GOV.UK Delegate's check authorised this request (agent calls only). */
+  /** Delegate's check authorised this request (agent calls only). */
   authorisedCheck?: boolean;
 }) {
   return prisma.serviceEvent.create({
@@ -79,7 +79,7 @@ export async function logEvent(e: {
  *   BUSINESS_REFUSAL    the transaction isn't permissible (duplicate, new evidence needed, open-case limit...)
  *   INVALID_REQUEST     malformed request or Idempotency-Key misuse
  *   TECHNICAL_THROTTLE  too much traffic; retry later (429)
- *   UNAVAILABLE         HMRC or GOV.UK Delegate couldn't take it just now; retry later (503)
+ *   UNAVAILABLE         HMRC or Delegate couldn't take it just now; retry later (503)
  *   AUTHORITY_REFUSAL   identity or permission (401/403)
  */
 export type OutcomeClass = "UNIQUE_OPERATION" | "REPLAY" | "BUSINESS_REFUSAL" | "INVALID_REQUEST" | "TECHNICAL_THROTTLE" | "UNAVAILABLE" | "AUTHORITY_REFUSAL";
@@ -101,7 +101,7 @@ type MetricRow = { outcome: Outcome; reason: string | null; outcomeClass: string
 /**
  * The numbers that must not be confused, all from HMRC's own log:
  *   httpRequests       every request that reached a route
- *   authorisedChecks   requests where GOV.UK Delegate's check said yes (it spends nothing)
+ *   authorisedChecks   requests where Delegate's check said yes (it spends nothing)
  *   uniqueOperations   admitted requests that ran, excluding idempotent replays
  *   businessRefusals   transactions HMRC would not do (a statement about the transaction)
  *   technicalThrottles requests turned away for traffic, 429 (says nothing about entitlement)

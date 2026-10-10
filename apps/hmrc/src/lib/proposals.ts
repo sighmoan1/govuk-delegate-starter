@@ -8,7 +8,7 @@
 // that approval.
 import { isValidKey } from "./idempotency-key";
 
-/** The capabilities GOV.UK Delegate requires the person's approval for. HMRC does not decide that; it only needs to know which ones to describe. */
+/** The capabilities Delegate requires the person's approval for. HMRC does not decide that; it only needs to know which ones to describe. */
 export const STEP_UP_CAPABILITIES: ReadonlySet<string> = new Set(["change_refund_account", "change_address"]);
 
 type Field = { key: string; required: boolean; max: number; normalise: (v: string) => string; valid: (v: string) => boolean };

@@ -79,7 +79,7 @@ model ClaimQuery {
   confirmedByPerson Boolean     @default(false) @map("confirmed_by_person")
   mandateId         String?     @map("mandate_id")
   delegationId      String?     @map("delegation_id")
-  // GOV.UK Delegate's record of what the agent said the person agreed to.
+  // Delegate's record of what the agent said the person agreed to.
   receiptId         String?     @map("receipt_id")
   answerWithdrawn   Boolean     @default(false) @map("answer_withdrawn")
   // Which submission of the answer this is; goes up when the person disputes one, so each gets its own receipt.
@@ -138,7 +138,7 @@ model ServiceEvent {
   costClass          String?  @map("cost_class")             // read | status_poll | write | expensive_query
   throttleScope      String?  @map("throttle_scope")         // operator | principal | service (technical throttles only)
   retryAfterSeconds  Int?     @map("retry_after_seconds")    // set on 429 and 503
-  authorisedCheck    Boolean  @default(false) @map("authorised_check") // GOV.UK Delegate's check authorised this request
+  authorisedCheck    Boolean  @default(false) @map("authorised_check") // Delegate's check authorised this request
   // Evidence about who or what was on the other end.
   userAgent          String?  @map("user_agent")
   signatureAgent     String?  @map("signature_agent")
@@ -230,7 +230,7 @@ model Transaction {
   completedAt    DateTime? @map("completed_at")
   failedAt       DateTime? @map("failed_at")
   lastError      String?   @map("last_error") // for operators; never shown to the client
-  // Whether GOV.UK Delegate has been told the final outcome (agent submissions only).
+  // Whether Delegate has been told the final outcome (agent submissions only).
   outcomeReported Boolean @default(false) @map("outcome_reported")
 
   @@index([subject, status])

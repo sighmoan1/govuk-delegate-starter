@@ -15,7 +15,7 @@ export const config = {
   get oidcClientId() { return need("OIDC_CLIENT_ID", "delegate-dev-client"); },
   get oidcPrivateKeyPem() { return readFileSync(need("OIDC_PRIVATE_KEY_FILE", "../../dev/oidc-client-private.pem"), "utf8"); },
   get sessionSecret() { return new TextEncoder().encode(need("SESSION_SECRET")); },
-  // What HMRC got when it registered with GOV.UK Delegate, once.
+  // What HMRC got when it registered with Delegate, once.
   get delegateUrl() { return need("DELEGATE_URL", "http://localhost:3300"); },
   get delegateInternalUrl() { return need("DELEGATE_INTERNAL_URL", this.delegateUrl); },
   get serviceSlug() { return need("DELEGATE_SERVICE_SLUG", "hmrc-personal-tax"); },

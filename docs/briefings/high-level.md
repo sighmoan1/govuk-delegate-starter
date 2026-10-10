@@ -4,7 +4,7 @@ About 10 minutes with demonstration. Prepared 10 October 2026.
 
 Independent synthetic prototype. Baseline main `6b4f3895f246cfe9e274059c57e4dc1ea7989650`. Observatory PRs #109–110 remain unmerged at preparation.
 
-## 1. GOV.UK Delegate
+## 1. Delegate
 
 A person gives an assistant limited permission to deal with government.
 The service checks that permission. The person can inspect the activity and remove access.
@@ -127,7 +127,7 @@ The technical comparison used twenty synthetic citizen fixtures across four bloc
 
 Sources: [Recorded E2 comparison and preserved raw records](https://github.com/sighmoan1/govuk-delegate-starter/blob/6b4f3895f246cfe9e274059c57e4dc1ea7989650/docs/evidence/RUN-20261009-E2-01.md), [Recorded combined validation and manual walkthrough](https://github.com/sighmoan1/govuk-delegate-starter/issues/90#issuecomment-6090819665), [Protected execution ledger](https://github.com/sighmoan1/govuk-delegate-starter/blob/6b4f3895f246cfe9e274059c57e4dc1ea7989650/docs/observatory/GROUND_TRUTH.md).
 
-## 11. Discussion with Public Digital
+## 11. Discussion
 
 Could you use this demonstration to explain delegated agent access to a service team?
 Which citizen task would make the next experiment useful, and which department could help test it?

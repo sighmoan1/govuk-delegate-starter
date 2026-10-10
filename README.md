@@ -1,4 +1,4 @@
-# GOV.UK Delegate
+# Delegate
 
 > Independent prototype — not an official GOV.UK service. Synthetic data only.
 
@@ -15,7 +15,7 @@ The pattern copies HMRC's agent authorisation: an agent asks, the person approve
 | Product boundary | Responsibility |
 |---|---|
 | **One Login** | Authenticate the person |
-| **GOV.UK Delegate** | Record scoped, revocable authority for their chosen representative |
+| **Delegate** | Record scoped, revocable authority for their chosen representative |
 | **HMRC / other government services** | Define delegable actions and enforce the underlying business rules |
 | **Citizen's assistant / model provider** | Understand goals, plan and execute tasks within granted authority |
 | **GOV.UK Orchestrate (hypothetical)** | Potential future provider-neutral task continuity and cross-service coordination, **not built** |
@@ -49,7 +49,7 @@ The core includes One Login, Delegate, HMRC, About, Observatory and an independe
 | System | Port | What it does | What it had to add |
 |---|---|---|---|
 | GOV.UK One Login (`apps/onelogin` in front of the official simulator) | 3301 | Signs people in, for Delegate and for HMRC: "Enter your email address", "Enter your password". The official simulator (internal, :3399) does the OIDC work | Prototype sign-in screens and simulator proxy; no delegation logic in authentication |
-| **GOV.UK Delegate** (`apps/delegate`) | 3300 | Part of the GOV.UK account: consent screen, "Who can act for you", agent and service registry, one check API. Internal view at `/ops` | New |
+| **Delegate** (`apps/delegate`) | 3300 | Part of the GOV.UK account: consent screen, "Who can act for you", agent and service registry, one check API. Internal view at `/ops` | New |
 | **Example council** (`apps/council`) | 3305 | A separate synthetic service with local case records and a read-only agent API | Its own catalogue, credential, case-ownership rule and Delegate checks |
 | **HMRC: Claim tax relief for your job expenses** (`apps/hmrc`) | 3302 | A One Login relying party with a human journey and an API for agents. Three lanes: signed-in person, authorised agent, not identified. Internal view at `/ops` | Authority checks; request creation/polling; agent sessions and browser guards; discovery; domain/traffic controls; receipts, disputes and outcome reporting |
 
@@ -115,7 +115,7 @@ The core idea, in one line: **identify the agent, authorise the mandate, limit t
 
 ## Validation and evidence
 
-**The working experiment plan is [docs/VALIDATION.md](docs/VALIDATION.md).** It frames GOV.UK Delegate as a falsifiable proposition: can identified, authorised agents improve the management of legitimate automated demand **beyond what a good API and service-local authorisation already deliver**?
+**The working experiment plan is [docs/VALIDATION.md](docs/VALIDATION.md).** It frames Delegate as a falsifiable proposition: can identified, authorised agents improve the management of legitimate automated demand **beyond what a good API and service-local authorisation already deliver**?
 
 - [Experimental protocol](docs/VALIDATION.md) — hypotheses, seven experiments (E1–E7), fair API-only comparator, metrics, controls and falsification criteria.
 - [Evidence register](docs/EVIDENCE.md) — what is exploratory, what exists only as technical test source, and links to independently recorded experimental runs when available.

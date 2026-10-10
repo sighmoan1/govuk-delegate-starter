@@ -11,7 +11,7 @@ import { GET as progressApi } from "@/app/api/claims/progress/route";
 import { POST as claimApi } from "@/app/api/job-expenses/route";
 import { POST as respondApi } from "@/app/api/claims/respond/route";
 
-// GOV.UK Delegate is a separate service. These tests are about HMRC's own
+// Delegate is a separate service. These tests are about HMRC's own
 // admission and rules, so its check is replaced by a table: token -> who it is
 // and which person it acts for. Delegate's checks spend nothing either way.
 const delegate = vi.hoisted(() => ({
@@ -195,7 +195,7 @@ describe("routes: 429 and 503 are machine-readable, retryable and distinct from 
     expect(await claimsOf(t)).toBe(1);
   });
 
-  it("GOV.UK Delegate being down is also 503 with Retry-After, not a refusal of authority", async () => {
+  it("Delegate being down is also 503 with Retry-After, not a refusal of authority", async () => {
     const t = await person();
     delegate.down = true;
     const res = await j(await claimApi(asAgent(agentFor(t, "x"), t, "/api/job-expenses", { method: "POST", body: {} })));

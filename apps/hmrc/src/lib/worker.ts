@@ -39,7 +39,7 @@ export async function workOne(o: WorkerOptions = {}): Promise<Processed | null> 
 }
 
 /**
- * Tell GOV.UK Delegate how agent-submitted claims ended (issue #12's outcome
+ * Tell Delegate how agent-submitted claims ended (issue #12's outcome
  * log: ACCEPTED was reported at receipt, COMPLETED or FAILED is reported here).
  * Best effort and repeatable: a report that could not be delivered is tried
  * again on the next sweep, and Delegate ignores a repeat of one it has.

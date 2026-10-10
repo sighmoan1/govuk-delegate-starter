@@ -1,6 +1,6 @@
 import { config } from "./config";
 
-/** HMRC raises a request with GOV.UK Delegate for an agent that has arrived in a browser. */
+/** HMRC raises a request with Delegate for an agent that has arrived in a browser. */
 export async function raiseAgentRequest(agent: { web_bot_auth_agent: string } | { name: string; provider: string }, capabilities: string[]) {
   const res = await fetch(`${config.delegateInternalUrl}/api/agent-requests`, {
     method: "POST",

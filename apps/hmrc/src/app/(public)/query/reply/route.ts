@@ -17,7 +17,7 @@ const CAPABILITY = "respond_to_query";
 /**
  * Answering HMRC's question from the website: the same business function and
  * rules as the agent API. A signed-in person sending the form is agreeing to
- * the wording. An approved agent is not blocked: GOV.UK Delegate is asked first,
+ * the wording. An approved agent is not blocked: Delegate is asked first,
  * and the person sees what it sent on GOV.UK, and can say they did not agree.
  */
 export async function POST(req: Request) {

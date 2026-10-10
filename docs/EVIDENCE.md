@@ -6,7 +6,7 @@
 
 ## Evidence hierarchy
 
-| Label | What it means | May we claim it proves GOV.UK Delegate's overall value? |
+| Label | What it means | May we claim it proves Delegate's overall value? |
 |---|---|---|
 | **P — Proposed** | A hypothesis, planned experiment or unmeasured metric | **No** |
 | **O — Exploratory** | Actual uncontrolled observations; method/sample limited | **No** |

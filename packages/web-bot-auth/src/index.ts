@@ -1,7 +1,7 @@
 // Web Bot Auth: verify that an HTTP request was signed by an AI agent's
 // operator (RFC 9421 HTTP Message Signatures, as used by ChatGPT agent and
 // Google-Agent). This proves WHICH OPERATOR's agent sent the request. It says
-// nothing about whose authority the agent is using: that is GOV.UK Delegate.
+// nothing about whose authority the agent is using: that is Delegate.
 //
 // Verification requires the signature to cover @authority, signature-agent, @method and the
 // request target (@target-uri, or @path plus @query when the request has a query), a bounded

@@ -22,7 +22,7 @@ export function StartFrom({ back, recommended, done }: { back: string; recommend
           Reset. {done === "with-access" ? HINT["with-access"] : HINT.clean}
         </p>
       )}
-      <p>This resets GOV.UK Delegate and HMRC. You’ll need to sign in again.</p>
+      <p>This resets Delegate and HMRC. You’ll need to sign in again.</p>
       <div className="start-from__options">
         {order.map((mode, i) => (
           <form action={resetDemo} key={mode}>

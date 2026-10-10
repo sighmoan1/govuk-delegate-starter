@@ -1,4 +1,4 @@
-# Public Digital briefing pack
+# Delegate briefing pack
 
 Use the concept briefing for people meeting delegation and observability for the first time. The design briefing supports discussion of safeguards, service design and production choices. Both have editable PowerPoint files and complete speaker notes.
 

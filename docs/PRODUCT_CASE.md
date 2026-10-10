@@ -32,7 +32,7 @@ This does not eliminate hostile automation. It **shrinks the ambiguous middle**.
 
 ## Product proposition
 
-### GOV.UK Delegate
+### Delegate
 
 A common service that lets a person authenticated through GOV.UK One Login give another actor scoped, revocable authority to act on their behalf.
 
@@ -143,7 +143,7 @@ It builds on:
 
 ## What this does not solve
 
-GOV.UK Delegate does not prove that every undeclared transaction is human.
+Delegate does not prove that every undeclared transaction is human.
 
 It cannot reliably tell whether a human used ChatGPT to draft some text before submitting it themselves.
 
@@ -155,7 +155,7 @@ It does something narrower and more immediately useful: **it gives legitimate de
 
 ## How this proposition will be tested
 
-The claim that authorised access helps with increased automated demand remains a **hypothesis**. [VALIDATION.md](VALIDATION.md) defines seven falsifiable experiments and a key controlled comparison: a high-quality departmental agent API with service-local delegation **versus the same API with GOV.UK Delegate**. [EVIDENCE.md](EVIDENCE.md) records existing observations and future results, explicitly separating controlled evidence from source code and exploratory anecdotes. [DEMO_GUIDE.md](DEMO_GUIDE.md) sets out what we can responsibly claim to external audiences.
+The claim that authorised access helps with increased automated demand remains a **hypothesis**. [VALIDATION.md](VALIDATION.md) defines seven falsifiable experiments and a key controlled comparison: a high-quality departmental agent API with service-local delegation **versus the same API with Delegate**. [EVIDENCE.md](EVIDENCE.md) records existing observations and future results, explicitly separating controlled evidence from source code and exploratory anecdotes. [DEMO_GUIDE.md](DEMO_GUIDE.md) sets out what we can responsibly claim to external audiences.
 
 Do not attribute benefits from idempotency, fair queueing or better API design to Delegate unless the comparison isolates Delegate's contribution. Increased *legitimate* claims are not inherently harmful agentic flooding.
 

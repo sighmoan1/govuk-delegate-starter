@@ -1,7 +1,7 @@
 // Instrumentation for the about site's swarm experiments (issue #22). Demo tooling, not part of the service:
 // it reads HMRC's own log and queue and reports them in the groups the experiments compare, and decides nothing.
 //
-//   technical load    what reached HMRC and what it cost: HTTP requests, GOV.UK Delegate authority checks, 429 and 503
+//   technical load    what reached HMRC and what it cost: HTTP requests, Delegate authority checks, 429 and 503
 //                     answers, and the back-end work that passed admission (by cost class)
 //   service outcomes  what happened to the underlying claims: how many HMRC received, how many are still waiting,
 //                     how many it recorded, how long they waited and how long the worker took
