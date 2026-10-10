@@ -17,7 +17,7 @@ export default function BriefingIndex() {
     <p><a href="/briefings/detailed.pptx" download>Download the editable design deck</a></p>
     <h2>Presenter material</h2>
     <p><Link href="/briefing/demo">Open the demonstration guide</Link></p>
-    <p><a href="https://github.com/sighmoan1/govuk-delegate-starter/blob/codex/issue-111-public-digital-briefings/docs/briefings/DEMO_RUNBOOK.md">Full runbook and feature coverage</a></p>
-    <p><a href="https://github.com/sighmoan1/govuk-delegate-starter/blob/codex/issue-111-public-digital-briefings/docs/briefings/SOURCES_AND_EVIDENCE.md">Precedents, evidence and the adoption hypothesis</a></p>
+    <p><a href="https://github.com/sighmoan1/govuk-delegate-starter/blob/main/docs/briefings/DEMO_RUNBOOK.md">Full runbook and feature coverage</a></p>
+    <p><a href="https://github.com/sighmoan1/govuk-delegate-starter/blob/main/docs/briefings/SOURCES_AND_EVIDENCE.md">Precedents, evidence and the adoption hypothesis</a></p>
   </div>;
 }

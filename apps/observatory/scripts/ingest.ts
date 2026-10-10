@@ -5,10 +5,11 @@ import { prisma } from "../src/lib/db";
 async function main() {
   if (process.env.PUBLIC_MODE === "true" || process.env.RESEARCH_INGEST_ENABLED !== "true") throw new Error("RESEARCH_INGEST_DISABLED");
   let failed = false;
-  for (const source of ["hmrc", "delegate"] as const) {
+  for (const source of ["hmrc", "delegate", "whenisbins_connector"] as const) {
     const prefix = source.toUpperCase();
     const url = process.env[`${prefix}_RESEARCH_FEED_URL`];
     const key = process.env[`${prefix}_RESEARCH_FEED_KEY`];
+    if (source === "whenisbins_connector" && !url && !key) continue;
     if (!url || !key) { console.error(`${source}: research feed not configured`); failed = true; continue; }
     try { console.log(source, await pullSource({ source, url, key, store: ingestStore })); }
     catch { console.error(`${source}: ingestion unavailable; cursor unchanged for failed page`); failed = true; }

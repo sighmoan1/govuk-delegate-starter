@@ -1,4 +1,3 @@
-```
 @font-face {
   font-family: "Lexend Deca";
   font-style: normal;
@@ -565,4 +564,3 @@ main, .service-footer { overflow-wrap: anywhere; }
 /* The line for AI agents above a postcode box: present, and out of a person's way. */
 .agent-pointer { max-width: none; margin: 0 0 1.25rem; color: var(--muted); font-size: .8125rem; line-height: 1.4; }
 .agent-pointer a { color: inherit; }
-```

@@ -1,0 +1,107 @@
+import {describe,it,expect,vi} from 'vitest';
+import catalogue from '../service-catalogue.json';
+import {connectorHandler,catalogueDigest} from '../src/service';
+import {MemoryStore,FileStore} from '../src/store';
+import {FixtureProvider,LiveProvider,ProviderFailure} from '../src/provider';
+import {mkdtemp,stat,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';import {join} from 'node:path';
+const subject='sam';const props=[{id:'home-sam',subject,label:'Sam synthetic',postcode:'ZZ1 1ZZ',address:'1 Synthetic Street'},{id:'home-other',subject:'other',label:'Other synthetic',postcode:'ZZ1 2ZZ',address:'2 Synthetic Street'}];
+const allow={authorised:true,subject,check_id:'check',authorisation_id:'grant',delegate:{id:'agent'},chain:{delegation_id:'chain'},constraints:{read_collection_dates:{property_id:['home-sam']}},constraint_provenance:{mandate_id:'grant',delegation_id:'chain',catalogue:{version:catalogue.version,digest:catalogueDigest}}};
+function setup(answer:any=allow){const store=new MemoryStore(),provider=new FixtureProvider();const transport=vi.fn<typeof fetch>(async(url,init)=>String(url).endsWith('/check')?Response.json(answer):Response.json({}));const handler=connectorHandler({delegateUrl:'http://delegate',serviceKey:'own-key',properties:props,store,provider,opsKey:'ops'},transport);return {handler,store,provider,transport};}
+const req=(body:any={property_id:'home-sam'},key='occurrence-0001',headers:Record<string,string>={})=>new Request('http://connector/api/collections',{method:'POST',headers:{authorization:'Bearer token','x-principal-id':'principal','idempotency-key':key,...headers},body:JSON.stringify(body)});
+describe('Delegate connector authority and durable provider work',()=>{
+ it('pins service/catalogue, enforces scope and records qualified completed result',async()=>{const x=setup();const r=await x.handler(req());expect(r.status).toBe(200);expect(await r.json()).toMatchObject({mode:'fixture',result:{status:'done',result:{date_confidence:'synthetic_fixture'}}});const b=JSON.parse(String(x.transport.mock.calls[0][1]?.body));expect(b).toEqual({service:'whenisbins-connector',catalogue_version:catalogue.version,capability:'read_collection_dates',principal_id:'principal',agent_token:'token'});expect(x.provider.calls).toBe(1);expect((await x.store.snapshot()).events).toHaveLength(2);});
+ for(const reason of ['NO_AUTHORISATION','AUTHORISATION_REVOKED','AUTHORISATION_EXPIRED','UNKNOWN_DELEGATE','PERMISSION_MISSING','NO_RELATIONSHIP'])it('refuses '+reason+' with an activity event and no outbound work',async()=>{const x=setup({authorised:false,reason,check_id:'denied'});expect((await x.handler(req())).status).toBe(403);expect(x.provider.calls).toBe(0);expect((await x.store.snapshot()).events[0]).toMatchObject({stage:'refused',delegateCheckId:'denied'});});
+ it('records missing identity without looking up property data',async()=>{const x=setup();expect((await x.handler(req(undefined,undefined,{authorization:''}))).status).toBe(401);expect(x.transport).not.toHaveBeenCalled();expect((await x.store.snapshot()).events).toHaveLength(1);});
+ for(const change of [{constraints:{}},{subject:'other'},{constraint_provenance:{...allow.constraint_provenance,catalogue:{version:1,digest:'tampered'}}},{constraints:{read_collection_dates:{property_id:['home-other']}}},{constraints:{read_collection_dates:{property_id:['home-sam'],extra:['wide']}}}])it('rejects incompatible subject, resource, binding or catalogue',async()=>{const x=setup({...allow,...change});expect((await x.handler(req())).status).toBe(403);expect(x.provider.calls).toBe(0);});
+ it('rejects another property and unknown submitted fields',async()=>{const x=setup();expect((await x.handler(req({property_id:'home-other'}))).status).toBe(403);expect((await x.handler(req({property_id:'home-sam',address:'fake'}))).status).toBe(400);expect(x.provider.calls).toBe(0);});
+ it('rechecks live authority on replay and does not repeat provider work',async()=>{const x=setup();expect((await x.handler(req())).status).toBe(200);const repeated=await x.handler(req());expect(await repeated.json()).toMatchObject({replayed:true});expect(x.provider.calls).toBe(1);x.transport.mockImplementation(async()=>Response.json({authorised:false,check_id:'revoked',reason:'AUTHORISATION_REVOKED'}));expect((await x.handler(req())).status).toBe(403);expect(x.provider.calls).toBe(1);});
+ it('continues an existing queued lookup rather than submitting new work',async()=>{const x=setup();x.provider.scenario='queued';expect((await x.handler(req())).status).toBe(202);expect((await x.handler(req())).status).toBe(202);await x.store.transaction(s=>{for(const op of Object.values(s.operations))op.nextPollAt=0;});expect((await x.handler(req())).status).toBe(200);expect(x.provider.byKey.size).toBe(1);expect(x.provider.calls).toBe(2);});
+ it('provider failure and authority outage cannot become a fabricated success',async()=>{const x=setup();x.provider.scenario='unavailable';expect((await x.handler(req())).status).toBe(503);expect((await x.store.snapshot()).events.at(-1)?.stage).toBe('provider_unavailable');x.transport.mockRejectedValue(Error('down'));expect((await x.handler(req())).status).toBe(503);expect(x.provider.calls).toBe(1);});
+ it('an outcome-report outage leaves a durable result and allows safe replay',async()=>{const x=setup();x.transport.mockImplementation(async url=>String(url).endsWith('/check')?Response.json(allow):new Response('',{status:503}));const r=await x.handler(req());expect(r.status).toBe(200);expect(await r.json()).toMatchObject({outcome_reported:false});expect((await x.handler(req())).status).toBe(200);expect(x.provider.calls).toBe(1);});
+ it('ops access is separate, private and disabled in public mode',async()=>{const x=setup();expect((await x.handler(new Request('http://c/ops/events'))).status).toBe(403);expect((await x.handler(new Request('http://c/ops/events',{headers:{'x-ops-key':'ops'}}))).status).toBe(200);const publicHandler=connectorHandler({delegateUrl:'x',serviceKey:'k',properties:props,store:x.store,provider:x.provider,opsKey:'ops',publicMode:true});expect((await publicHandler(new Request('http://c/ops/events',{headers:{'x-ops-key':'ops'}}))).status).toBe(403);});
+ it('private file state and replay survive a new store instance',async()=>{const dir=await mkdtemp(join(tmpdir(),'wb-store-'));try{const path=join(dir,'state.json'),s=new FileStore(path);await s.transaction(x=>{x.events.push({sourceEventId:'e',occurredAt:new Date().toISOString(),action:'lookup',stage:'refused',decision:'REFUSED',requestId:'r'});});expect((await new FileStore(path).snapshot()).events).toHaveLength(1);expect((await stat(path)).mode&0o077).toBe(0);}finally{await rm(dir,{recursive:true,force:true});}});
+ it('live mode is never silently enabled and credential rejection never falls back',async()=>{expect(()=>new LiveProvider(false)).toThrow('LIVE_MODE_NOT_ENABLED');const calls=vi.fn<typeof fetch>(async()=>new Response('',{status:401}));const live=new LiveProvider(true,'private',calls);await expect(live.submit(props[0],'stable-key')).rejects.toThrow('PROVIDER_UNAVAILABLE');expect(calls).toHaveBeenCalledTimes(1);expect(calls.mock.calls[0][0]).toBe('https://whenisbins.com/v1/addresses?postcode=ZZ1%201ZZ');});
+});
+
+describe('real provider contract and scheduled binding',()=>{
+ it('accepts the runner occurrence key while refusing a replacement grant before outbound work',async()=>{const x=setup();expect((await x.handler(req({property_id:'home-sam',grant_reference:'replacement-grant'},'job-id:2026-10-10'))).status).toBe(403);expect(x.provider.calls).toBe(0);expect((await x.handler(req({property_id:'home-sam',grant_reference:'grant'},'job-id:2026-10-10'))).status).toBe(200);});
+ it('uses the documented property request and normalises the documented lookup id',async()=>{const calls=vi.fn<typeof fetch>(async(url,init)=>String(url).includes('/addresses?')?Response.json({required_input:'property',candidates:[]}):Response.json({id:'upstream-lookup',status:'queued'},{headers:{'retry-after':'12'}}));const provider=new LiveProvider(true,'private-token',calls);expect(await provider.submit(props[0],'stable-key')).toEqual({lookup_id:'upstream-lookup',status:'queued',retry_after_seconds:12});expect(JSON.parse(String(calls.mock.calls[1][1]?.body))).toEqual({postcode:props[0].postcode,property:props[0].address});expect(calls.mock.calls[1][1]?.headers).toMatchObject({'Idempotency-Key':'stable-key','X-Agent':'Delegate-WhenIsBins-connector',Authorization:'Bearer private-token'});});
+ it('uses the actual candidate id unchanged and refuses a different selected property',async()=>{const property={...props[0],propertyId:'p:opaque-council-property'};const calls=vi.fn<typeof fetch>(async url=>String(url).includes('/addresses?')?Response.json({required_input:'property_id',candidates:[{id:property.propertyId,label:'Exact council address'}]}):Response.json({id:'actual-shaped-lookup',status:'done',result:{property_id:property.propertyId,collections:[]}}));const provider=new LiveProvider(true,undefined,calls);expect((await provider.submit(property,'one-logical-lookup')).lookup_id).toBe('actual-shaped-lookup');expect(JSON.parse(String(calls.mock.calls[1][1]?.body))).toEqual({postcode:property.postcode,property_id:property.propertyId});calls.mockClear();await expect(provider.submit({...property,propertyId:'p:other-property'},'different-lookup')).rejects.toThrow('EXACT_ADDRESS_SELECTION_REQUIRED');expect(calls).toHaveBeenCalledTimes(1);});
+ it('does not submit an unrelated property field for a postcode-only council',async()=>{const calls=vi.fn<typeof fetch>(async url=>String(url).includes('/addresses?')?Response.json({required_input:'none'}):Response.json({id:'postcode-lookup',status:'queued'}));await new LiveProvider(true,undefined,calls).submit(props[0],'postcode-key');expect(JSON.parse(String(calls.mock.calls[1][1]?.body))).toEqual({postcode:props[0].postcode});});
+ it('refuses unsupported council inputs without guessing a lookup payload',async()=>{const calls=vi.fn<typeof fetch>(async()=>Response.json({required_input:'road_and_locality',candidates:[]}));await expect(new LiveProvider(true,undefined,calls).submit(props[0],'stable-key')).rejects.toThrow('UNSUPPORTED_COUNCIL_INPUT');expect(calls).toHaveBeenCalledTimes(1);});
+ it('an in-flight provider lease prevents concurrent duplicate submissions',async()=>{const x=setup();let release!:()=>void;let entered!:()=>void;const ready=new Promise<void>(resolve=>entered=resolve),gate=new Promise<void>(resolve=>release=resolve);const original=x.provider.submit.bind(x.provider);x.provider.submit=async(p,key)=>{entered();await gate;return original(p,key);};const first=x.handler(req());await ready;expect((await x.handler(req())).status).toBe(202);release();expect((await first).status).toBe(200);expect(x.provider.calls).toBe(1);});
+});
+
+it('persists a long provider cooldown and sends the Retry-After consumed by the runner',async()=>{const x=setup();x.provider.submit=async()=>{x.provider.calls++;throw new ProviderFailure(429,1200);};const first=await x.handler(req());expect(first.status).toBe(429);expect(first.headers.get('retry-after')).toBe('1200');const second=await x.handler(req());expect(second.status).toBe(202);expect(Number(second.headers.get('retry-after'))).toBeGreaterThanOrEqual(1199);expect(x.provider.calls).toBe(1);});
+
+
+describe('ambiguous discovery and completion evidence',()=>{
+ it('refuses duplicate exact labels unless a unique explicit property ID is confirmed',async()=>{
+  const calls=vi.fn<typeof fetch>(async url=>String(url).includes('/addresses?')?Response.json({required_input:'property_id',candidates:[{id:'p:first',label:props[0].address},{id:'p:second',label:props[0].address}]}):Response.json({id:'chosen',status:'done',result:{property_id:'p:second',collections:[]}}));
+  const provider=new LiveProvider(true,undefined,calls);
+  await expect(provider.submit(props[0],'ambiguous-key')).rejects.toThrow('EXACT_ADDRESS_SELECTION_REQUIRED');expect(calls).toHaveBeenCalledTimes(1);
+  expect(await provider.submit({...props[0],propertyId:'p:second'},'confirmed-key')).toMatchObject({status:'done',result:{property_id:'p:second'}});
+  expect(JSON.parse(String(calls.mock.calls[2][1]?.body))).toMatchObject({property_id:'p:second'});
+ });
+ for(const result of [undefined,null,[],{}, {collections:'unknown'}, {collections:[],property_id:123}])it('rejects missing or malformed done evidence in submit and poll: '+JSON.stringify(result),async()=>{
+  const calls=vi.fn<typeof fetch>(async url=>String(url).includes('/addresses?')?Response.json({required_input:'none'}):Response.json({id:'job',status:'done',result}));
+  const provider=new LiveProvider(true,undefined,calls);
+  await expect(provider.submit(props[0],'invalid-key')).rejects.toThrow('INVALID_PROVIDER_RESPONSE');
+  await expect(provider.poll('job')).rejects.toThrow('INVALID_PROVIDER_RESPONSE');
+ });
+ it('rejects completed evidence for a different confirmed property in submit, poll and stored reads',async()=>{
+  const calls=vi.fn<typeof fetch>(async url=>String(url).includes('/addresses?')?Response.json({required_input:'property_id',candidates:[{id:'p:approved'}]}):String(url).includes('/schedules/')?Response.json({property_id:'p:other',collections:[]}):Response.json({id:'job',status:'done',result:{property_id:'p:other',collections:[]}}));
+  const provider=new LiveProvider(true,undefined,calls),property={...props[0],propertyId:'p:approved'};
+  await expect(provider.submit(property,'wrong-result')).rejects.toThrow('INVALID_PROVIDER_RESPONSE');
+  await expect(provider.poll('job',property)).rejects.toThrow('INVALID_PROVIDER_RESPONSE');
+  await expect(provider.stored('p:approved')).rejects.toThrow('INVALID_PROVIDER_RESPONSE');
+ });
+ it('rejects malformed stored evidence and an unsolicited304 without a prior ETag',async()=>{
+  const provider=new LiveProvider(true,undefined,async()=>Response.json({property_id:'p:approved'}));
+  await expect(provider.stored('p:approved')).rejects.toThrow('INVALID_PROVIDER_RESPONSE');
+  const unchanged=new LiveProvider(true,undefined,async()=>new Response(null,{status:304}));
+  await expect(unchanged.stored('p:approved')).rejects.toThrow('INVALID_PROVIDER_RESPONSE');
+ });
+ it('does not report completion or save an effect when a provider omits the schedule',async()=>{
+  const x=setup();x.provider.submit=async()=>({lookup_id:'empty-done',status:'done'});
+  const response=await x.handler(req());expect(response.status).toBe(503);expect(await response.json()).toMatchObject({reason:'INVALID_PROVIDER_RESPONSE'});
+  expect(x.transport.mock.calls.filter(([url])=>String(url).endsWith('/outcomes'))).toHaveLength(0);
+  const state=await x.store.snapshot();expect(Object.values(state.operations)[0]).toMatchObject({state:'pending'});expect(Object.values(state.operations)[0].effectId).toBeUndefined();
+  expect(state.events.at(-1)).toMatchObject({stage:'provider_unavailable',outcomeClass:'UNAVAILABLE'});
+ });
+ it('does not turn invalid stored evidence into completion or a fresh submission',async()=>{
+  const x=setup();await x.handler(req());const stored=vi.fn(async()=>({result:{property_id:'p:home-sam'}}));
+  const handler=connectorHandler({delegateUrl:'http://delegate',serviceKey:'k',properties:props,store:x.store,provider:{mode:'fixture',declaresAgent:false,submit:x.provider.submit.bind(x.provider),poll:x.provider.poll.bind(x.provider),stored},opsKey:'ops'},x.transport);
+  expect((await handler(req(undefined,'new-occurrence'))).status).toBe(503);expect(x.provider.calls).toBe(1);expect(stored).toHaveBeenCalledTimes(1);
+  expect((await x.store.snapshot()).events.at(-1)?.stage).toBe('provider_unavailable');
+ });
+ it('distinguishes an observed conditional304 from durable replay and preserves source evidence',async()=>{
+  const x=setup();let reads=0;
+  const stored=vi.fn(async(_id:string,etag?:string)=>{reads++;if(reads===1)return {result:{property_id:'p:home-sam',collections:[],retrieved_at:'2026-09-01T00:00:00Z',date_confidence:'published_calendar'},etag:'version-one'};expect(etag).toBe('version-one');return {unchanged:true,etag};});
+  const handler=connectorHandler({delegateUrl:'http://delegate',serviceKey:'k',properties:props,store:x.store,provider:{mode:'fixture',declaresAgent:false,submit:x.provider.submit.bind(x.provider),poll:x.provider.poll.bind(x.provider),stored},opsKey:'ops'},x.transport);
+  expect(await (await handler(req(undefined,'occurrence-first'))).json()).toMatchObject({unchanged:false,replayed:false});
+  const firstEffect=Object.values((await x.store.snapshot()).operations)[0].effectId;
+  expect(await (await handler(req(undefined,'occurrence-second'))).json()).toMatchObject({unchanged:false,replayed:false});
+  const changedEffect=Object.values((await x.store.snapshot()).operations)[1].effectId;expect(changedEffect).toBeTruthy();expect(changedEffect).not.toBe(firstEffect);
+  const unchanged=await (await handler(req(undefined,'occurrence-third'))).json();expect(unchanged).toMatchObject({unchanged:true,replayed:false,result:{unchanged:true,result:{retrieved_at:'2026-09-01T00:00:00Z',date_confidence:'published_calendar'}}});
+  expect(Object.values((await x.store.snapshot()).operations)[2].effectId).toBe(changedEffect);
+  expect((await x.store.snapshot()).events.at(-1)).toMatchObject({stage:'lookup_completed'});expect((await x.store.snapshot()).events.at(-1)?.outcomeClass).toBeUndefined();
+  expect(await (await handler(req(undefined,'occurrence-third'))).json()).toMatchObject({unchanged:false,replayed:true,result:{unchanged:true}});
+  expect(stored).toHaveBeenCalledTimes(2);expect(x.provider.calls).toBe(1);expect((await x.store.snapshot()).events.at(-1)).toMatchObject({stage:'replay',outcomeClass:'REPLAY'});
+ });
+});
+
+
+it('keeps a queued lookup recoverable when polling returns done without evidence',async()=>{
+ const x=setup();x.provider.scenario='queued';expect((await x.handler(req())).status).toBe(202);
+ await x.store.transaction(s=>{for(const op of Object.values(s.operations))op.nextPollAt=0;});
+ x.provider.poll=async id=>({lookup_id:id,status:'done'});
+ expect((await x.handler(req())).status).toBe(503);
+ const op=Object.values((await x.store.snapshot()).operations)[0];expect(op.state).toBe('pending');expect(op.lookupId).toBeTruthy();expect(op.effectId).toBeUndefined();
+ expect(x.transport.mock.calls.filter(([url,init])=>String(url).endsWith('/outcomes')&&JSON.parse(String(init?.body)).status==='COMPLETED')).toHaveLength(0);
+});
+it('refuses a done result for another configured property at the service boundary',async()=>{
+ const x=setup();const handler=connectorHandler({delegateUrl:'http://delegate',serviceKey:'k',properties:[{...props[0],propertyId:'p:approved'}],store:x.store,provider:x.provider,opsKey:'ops'},x.transport);
+ expect((await handler(req())).status).toBe(503);expect(Object.values((await x.store.snapshot()).operations)[0].effectId).toBeUndefined();
+});

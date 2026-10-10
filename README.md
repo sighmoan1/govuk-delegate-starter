@@ -38,7 +38,7 @@ Start with **DB-01 (legal authority)** and **DB-02 (when the person must approve
 
 ## Six apps
 
-The three systems in the scenario are mock-ups of real services. They carry no explanation of the demo, only a "Prototype · About this prototype" line. Everything explanatory lives on the about site.
+The core includes One Login, Delegate, HMRC, About, Observatory and an independent synthetic council service. Citizen-facing service screens link to About; the separate research workbench explains its own evidence limits.
 
 | App | Port | What it is |
 |---|---|---|
@@ -50,11 +50,14 @@ The three systems in the scenario are mock-ups of real services. They carry no e
 |---|---|---|---|
 | GOV.UK One Login (`apps/onelogin` in front of the official simulator) | 3301 | Signs people in, for Delegate and for HMRC: "Enter your email address", "Enter your password". The official simulator (internal, :3399) does the OIDC work | Prototype sign-in screens and simulator proxy; no delegation logic in authentication |
 | **GOV.UK Delegate** (`apps/delegate`) | 3300 | Part of the GOV.UK account: consent screen, "Who can act for you", agent and service registry, one check API. Internal view at `/ops` | New |
+| **Example council** (`apps/council`) | 3305 | A separate synthetic service with local case records and a read-only agent API | Its own catalogue, credential, case-ownership rule and Delegate checks |
 | **HMRC: Claim tax relief for your job expenses** (`apps/hmrc`) | 3302 | A One Login relying party with a human journey and an API for agents. Three lanes: signed-in person, authorised agent, not identified. Internal view at `/ops` | Authority checks; request creation/polling; agent sessions and browser guards; discovery; domain/traffic controls; receipts, disputes and outcome reporting |
 
-Observatory (`apps/observatory`, port **3303**) is a separate, local-only read-only research workbench. It has its own database/login and generated Prisma client. Synthetic research feeds are available behind explicit opt-in; collection is disabled by default and no classifier is implemented. It cannot change authority or service outcomes. See [Observatory setup](docs/observatory/SETUP.md) and [research protocol](docs/observatory/RESEARCH_PROTOCOL.md). The historical Example AI brief mentioned 3303; that app is not implemented and the port is now assigned to Observatory.
+Observatory (`apps/observatory`, port **3303**) is a separate, local-only read-only research workbench. It has its own database/login and generated Prisma client. Synthetic research feeds are available behind explicit opt-in; collection is disabled by default. A protected dashboard, versioned blind classification contract and deterministic signature-evidence test stub are implemented; there is no trained detector or validated accuracy result. It cannot change authority or service outcomes. See [Observatory setup](docs/observatory/SETUP.md) and [research protocol](docs/observatory/RESEARCH_PROTOCOL.md). The historical Example AI brief mentioned 3303; that app is not implemented and the port is now assigned to Observatory.
 
-Delegate and HMRC each have their own database in one Postgres container; One Login and About have no application database and they talk only over HTTP. The join key between HMRC and Delegate is the person's One Login subject.
+The optional **WhenIsBins connector** (`apps/whenisbins`, default port 3310) is a separate service integration beyond these six core apps. It checks scoped Delegate authority before a bin-collection lookup and owns its provider validation and local operation records. The separate [agent-owned recurring lookup runner](docs/whenisbins/SCHEDULER.md) supplies agreed jobs and a deliberately started foreground worker; Delegate remains the authority service. Email/cancellation and combined live acceptance remain draft work pending actual cancellation. See [connector setup and limits](docs/whenisbins/CONNECTOR.md) and the [dated delivery snapshot](docs/REPOSITORY_STATUS.md).
+
+Delegate, HMRC and Observatory have separate databases/logins in one Postgres container. The synthetic council uses its own local fixture records; One Login and About have no application database. Services integrate over HTTP. The join key between HMRC and Delegate is the person's One Login subject.
 
 ## Run it
 
@@ -81,6 +84,8 @@ docker compose ps
 For existing database volumes, first provision the new Observatory database/login using [the upgrade steps](docs/observatory/SETUP.md#existing-database-volumes); Postgres init scripts run only on a new volume.
 
 Startup applies migrations and seeds only empty databases. Rebuilding retains the existing database volume; `db:reset` deliberately replaces citizen demo fixtures. The HMRC queue worker is a separate compose service and must be running for asynchronous claims. See [current behaviour](docs/CURRENT_BEHAVIOUR.md) before resetting or testing.
+
+Read-only public briefings and non-resetting updates are documented in [the public briefing deployment guide](docs/briefings/PUBLIC_DEPLOYMENT.md).
 
 ### On public URLs, for agents that browse from the cloud
 

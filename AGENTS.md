@@ -11,7 +11,7 @@ Read these files before writing code:
 
 ## Your task
 
-Maintain and extend the current four-app synthetic HMRC prototype. Read `docs/CURRENT_BEHAVIOUR.md`, `docs/ARCHITECTURE.md`, `docs/VALIDATION.md` and `docs/DECISION_BACKLOG.md` alongside the code. BUILD_SPEC and PROTOTYPE_CONTENT are preserved original briefs, not an instruction to rebuild DWP or Example AI. Keep each requested engineering issue in a focused PR against the resulting main.
+Maintain and extend the synthetic HMRC prototype and its six core apps: One Login, Delegate, HMRC, About, Observatory and the independent council service. Read `docs/CURRENT_BEHAVIOUR.md`, `docs/ARCHITECTURE.md`, `docs/VALIDATION.md` and `docs/DECISION_BACKLOG.md` alongside the code. BUILD_SPEC and PROTOTYPE_CONTENT are preserved original briefs, not an instruction to rebuild DWP or Example AI. Keep each requested engineering issue in a focused PR against the resulting main.
 
 Verify request → consent → scoped authority → service action → outcome → revocation → refusal, preserving both API and browser-agent journeys. The service owns domain validation, idempotency, technical throughput and durable queue processing; Delegate owns consent and authority.
 

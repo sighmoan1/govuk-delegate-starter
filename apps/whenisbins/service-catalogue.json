@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "service": "whenisbins-connector",
+  "version": 1,
+  "capabilities": [
+    {
+      "code": "read_collection_dates",
+      "name": "Read your bin collection dates",
+      "description": "Read collection dates for the synthetic home you choose. This connector checks Delegate; WhenIsBins itself has not installed Delegate.",
+      "risk": "LOW",
+      "requires_step_up": false,
+      "minimum_assurance": "REGISTERED",
+      "operation": {
+        "method": "POST",
+        "path": "/api/collections"
+      },
+      "supported_constraints": {
+        "property_id": {
+          "type": "enum",
+          "values": [
+            "home-sam",
+            "home-other"
+          ],
+          "label": "Synthetic home"
+        }
+      }
+    }
+  ]
+}

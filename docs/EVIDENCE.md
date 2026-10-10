@@ -1,6 +1,6 @@
 # Evidence register — what we know, what we have tested, and what remains unproven
 
-> **Status at 9 October 2026:** This is the **evidence ledger**, not a marketing scorecard. One bounded technical E2 comparison is recorded below; no citizen-effort, financial or real-world benefit has been established. Protocols and possible thresholds live in [VALIDATION.md](VALIDATION.md).
+> **Status at 10 October 2026:** This is the **evidence ledger**, not a marketing scorecard. One bounded technical E2 comparison is recorded below; no citizen-effort, financial or real-world benefit has been established. Protocols and possible thresholds live in [VALIDATION.md](VALIDATION.md).
 >
 > **Rule:** Every result must link to a repeatable run, date, commit SHA, protocol, exact workload, raw artefacts and independent outcome verification. Record negative, null and failed runs.
 
@@ -25,7 +25,7 @@ A repository test that *exists* is not automatically a verified passing test run
 | **SRC-IDEMP-001** | E4 | **Not yet a recorded T run** | Source present | [HTTP idempotency tests](../tests/idempotency.test.ts) specify retry and concurrent-agent invariants | Source code, not a linked run log; idempotency is mainly a receiving-service mechanism, not incremental Delegate value |
 | **RUN-20261009-E2-01** | E2 | **T** | Narrow technical comparison completed | [Pinned B,C,C,B run with permanent raw records](evidence/RUN-20261009-E2-01.md) | Both paths completed the fixed tasks; no incremental outcome advantage observed. Direct fixture consent, different authority runtimes, no human effort/cost evidence |
 | **PLAN-E5-001** | E5 | **P** | Not run | [Citizen-control research protocol](VALIDATION.md#e5--citizen-comprehension-burden-and-redress) | No real participant evidence |
-| **PLAN-E6-001** | E6 | **P** | Not run | [Service integration protocol](VALIDATION.md#e6--integration-effort-and-portability) | Second service not yet implemented |
+| **PLAN-E6-001** | E6 | **P** | Not run | [Service integration protocol](VALIDATION.md#e6--integration-effort-and-portability) | Independent synthetic council service is implemented ([integration guide](SECOND_SERVICE.md), [merged PR #97](https://github.com/sighmoan1/govuk-delegate-starter/pull/97)); measured integration effort and production portability remain untested |
 | **PLAN-E7-001** | E7 | **P** | Not run | [Outage protocol](VALIDATION.md#e7--availability-and-failure-semantics) | No comparative outage run recorded |
 
 ### Findings we should and should not report today
