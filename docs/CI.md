@@ -4,7 +4,7 @@ Agents run focused local checks as they work. GitHub provides one independent ch
 
 ## Automatic check
 
-`fast.yml` runs **Fast code checks / code** when a code PR is opened ready for review, reopened, updated or marked ready. Draft PR jobs are skipped. Documentation-only changes are excluded (including Markdown within apps, packages and scripts). Application, package, style, script, test, workflow, dependency, root configuration and container changes qualify. Copy in application source qualifies because it can affect compilation. A newer run cancels an obsolete check for the same PR. There is no duplicate push-to-main run.
+`fast.yml` runs **Fast code checks / code** when a code PR is opened ready for review, reopened, updated or marked ready. Draft PR jobs are skipped. Documentation-only changes are excluded (including Markdown within apps, packages and scripts). Application, package, style, script, test, workflow, dependency, root configuration and container/database-init changes qualify. Copy in application source qualifies because it can affect compilation. A newer run cancels an obsolete check for the same PR. There is no duplicate push-to-main run.
 
 The check installs locked dependencies, generates Prisma clients, typechecks and builds every workspace, then tests the database-free research-feed schema, council authority handling, E2 comparator and Observatory import validation. It has a 15-minute timeout. It does not start Docker, migrate/reset fixtures, run browser journeys or call a vendor. It is a cheaper independent check, not the complete authorisation/regression assurance suite.
 
@@ -41,6 +41,8 @@ gh workflow run whenisbins-integration.yml --ref codex/issue-123-example
 No custom `ref` input overrides checkout: `workflow_dispatch` uses the selected branch/tag, and `actions/checkout` checks out that revision. The workflow must exist on the default branch for manual dispatch to be available. Confirm the displayed run branch and commit before treating it as PR evidence. Record run URLs and actual results in the issue/PR.
 
 Manual fixture workflows cancel older runs for the same workflow/ref; different workflows can still run concurrently, so avoid launching overlapping suites for identical evidence. The vendor workflow retains non-cancelling concurrency to preserve deliberate vendor evidence and avoid accidental repeated external calls. Full regression already covers much of the component coverage; do not run every workflow for every PR.
+
+Full synthetic regression retains redacted logs, JUnit and Playwright reports and failure traces for seven days; environment files and database dumps are not uploaded. Its cleanup removes only the isolated Actions stack/fixture volumes. For local reproduction follow the workflow commands in order with a unique `COMPOSE_PROJECT_NAME`, all required ports available and no shared demo database.
 
 Before a significant release, run full synthetic regression and manually verify the three-minute clean-start demo. Authority/service changes need success, missing permission, revocation, expiry, unknown delegate, missing relationship and activity-event evidence. Observatory or WhenIsBins changes additionally need their relevant manual suite. Documentation-only changes need content/link checks; workflow changes need syntax and trigger review.
 

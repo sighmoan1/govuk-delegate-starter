@@ -6,12 +6,10 @@ on:
     types: [opened, reopened, synchronize, ready_for_review]
     paths:
       - 'apps/**'
-      - '!apps/**/*.md'
       - 'packages/**'
-      - '!packages/**/*.md'
       - 'styles/**'
+      - 'dev/**'
       - 'scripts/**'
-      - '!scripts/**/*.md'
       - 'tests/**'
       - 'e2e/**'
       - 'research-tests/**'
@@ -20,6 +18,7 @@ on:
       - '*config*'
       - 'Dockerfile*'
       - '*compose*.yml'
+      - '!**/*.md'
   workflow_dispatch:
 
 permissions:
