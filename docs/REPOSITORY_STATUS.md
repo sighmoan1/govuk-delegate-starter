@@ -2,6 +2,12 @@
 
 The audit sections below preserve their original dates and revisions. The latest delivery snapshot appears first; the 9 October records remain below for provenance.
 
+## Current presentation refresh — 10 October 2026
+
+The [current demo guide](DEMO_GUIDE.md) is the starting point for public URLs, private presenter tools and temporary protected research instances. The current website/decks now describe Observatory PRs #109–110 as merged. The original briefing source baseline `6b4f3895f246cfe9e274059c57e4dc1ea7989650` and dated rehearsal/screenshots remain preserved provenance; they do not establish a new vendor, participant or research result.
+
+Product rename/removal of Public Digital attribution was delivered in [PR #138](https://github.com/sighmoan1/govuk-delegate-starter/pull/138). Deployment checkpoints remain distinct from source merge and this presentation refresh. Public addresses depend on the presenter Mac/Docker/tunnel; [LOCAL_RUNTIME.md](LOCAL_RUNTIME.md) owns the runtime inventory rather than treating 5303/5703 as permanent endpoints.
+
 ## Delivery snapshot — 10 October 2026
 
 Confirmed merged code baseline: `fd2bb5f778a440af7485a97a82ee47005aaf8cfc`, containing PRs #108, #109, #110, #124, #125 and #126. This is a source/delivery reconciliation, not a claim that the shared or public runtime has been rebuilt.

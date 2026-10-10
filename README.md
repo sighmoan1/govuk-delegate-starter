@@ -36,6 +36,12 @@ Start with **DB-01 (legal authority)** and **DB-02 (when the person must approve
 
 [Documentation index](docs/README.md) links the current behaviour, target architecture, decision history, evidence and setup guidance. [Repository status](docs/REPOSITORY_STATUS.md) records the 9 October branch audit. The About site serves the plain-language current-state summary at `/project-status`.
 
+## Where to start
+
+Open the [public briefing](https://about-demo.bathos.org/briefing) for an explanation and decks, then follow the [current demo guide](docs/DEMO_GUIDE.md) for the available URLs and three-minute consent → action → revocation journey. The [browser demo guide](https://about-demo.bathos.org/briefing/demo) presents the same core journey.
+
+The private presenter dashboard is [localhost:3304](http://localhost:3304). Observatory review instances on 5303 and 5703 are temporary protected research environments, not visitor destinations. Public tunnels depend on the presenter computer staying running; see [local runtime inventory](docs/LOCAL_RUNTIME.md) before starting or retiring a stack.
+
 ## Six apps
 
 The core includes One Login, Delegate, HMRC, About, Observatory and an independent synthetic council service. Citizen-facing service screens link to About; the separate research workbench explains its own evidence limits.
@@ -119,7 +125,7 @@ The core idea, in one line: **identify the agent, authorise the mandate, limit t
 
 - [Experimental protocol](docs/VALIDATION.md) — hypotheses, seven experiments (E1–E7), fair API-only comparator, metrics, controls and falsification criteria.
 - [Evidence register](docs/EVIDENCE.md) — what is exploratory, what exists only as technical test source, and links to independently recorded experimental runs when available.
-- [Demo and claims guide](docs/DEMO_GUIDE.md) — a seven-minute walkthrough and defensible language for stakeholders.
+- [Current demo and claims guide](docs/DEMO_GUIDE.md) — public/private URLs, the three-minute core journey and a seven-minute stakeholder discussion.
 - [About-site evidence page](apps/about/src/app/evidence/page.tsx) — readable explanation at `/evidence` when deployed.
 
 **A [bounded technical B/C comparison](docs/evidence/RUN-20261009-E2-01.md) is recorded; no citizen-effort, economic or real-world product-benefit result has been established.** Existing route-choice observations and synthetic swarm tests are useful starting points, not proof of national-scale benefit. Keep further architecture debates in the relevant ADRs, not in experiment results.
