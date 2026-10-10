@@ -79,7 +79,7 @@ export function createEmailHandler(config:EmailHandlerConfig,transport:typeof fe
      let stop:string|undefined;
      if(operation==="cancel")try{stop=config.live?await config.live.cancellationPath({...action,operation:"signup"}):config.fixture!.mailbox.stopPath({...action,operation:"signup"});if(!stop)throw Error("Mailbox evidence required");}catch{return await finish({reason:"INBOX_CONFIRMATION_REQUIRED",status:"confirmation_required"},202);}
      const observed=metadata.receipt?await reconcile(action,operationKey):"absent";
-     const confirmationPath=operation==="signup"&&metadata.receipt&&["submitted","confirmation_required"].includes(metadata.receipt.status)&&["NATIVE_FORM_SUBMITTED_AWAITING_INDEPENDENT_EVIDENCE","INBOX_CONFIRMATION_REQUIRED","REAL_VERIFICATION_MAIL_DELIVERY_OBSERVED"].includes(metadata.receipt.reason)?await config.live?.confirmationPath?.(action,operationKey):undefined;
+     const confirmationPath=operation==="signup"&&metadata.receipt&&["submitted","confirmation_required"].includes(metadata.receipt.status)&&["NATIVE_FORM_SUBMITTED_AWAITING_INDEPENDENT_EVIDENCE","INBOX_CONFIRMATION_REQUIRED","REAL_VERIFICATION_MAIL_DELIVERY_OBSERVED","NATIVE_CONFIRMATION_FORM_REQUIRED"].includes(metadata.receipt.reason)?await config.live?.confirmationPath?.(action,operationKey):undefined;
      const needsSubmission=!metadata.receipt||observed==="absent",needsBrowser=needsSubmission||Boolean(confirmationPath);
      // A received verification link continues this exact owned signup. It never resubmits the form or opens a new proposal.
      if(needsSubmission&&check.step_up.state==="REDEEMED")return await finish({reason:"STEP_UP_ALREADY_USED"},409);
