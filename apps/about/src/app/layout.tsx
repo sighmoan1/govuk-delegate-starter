@@ -2,11 +2,22 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import "./about.css";
 import { Nav } from "./nav";
+import { publicBriefingMode } from "@/lib/public-briefing";
+
+// Resolve the instance mode and service URLs at request time, not Docker build time.
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: { default: "About the GOV.UK Delegate prototype", template: "%s – GOV.UK Delegate prototype" },
   description: "An independent prototype: delegating authority to agents through GOV.UK, and what that lets government do about automated traffic.",
 };
+
+const PUBLIC_LINKS = [
+  { href: "/briefing", label: "Briefings" },
+  { href: "/briefing/high-level", label: "Concept" },
+  { href: "/briefing/detailed", label: "Design review" },
+  { href: "/briefing/demo", label: "Demonstration guide" },
+];
 
 const LINKS = [
   { href: "/", label: "Overview" },
@@ -42,7 +53,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
         <div className="width-container">
-          <Nav links={LINKS} />
+          <Nav links={publicBriefingMode() ? PUBLIC_LINKS : LINKS} />
         </div>
         <div className="width-container">
           <main id="main-content" className="main-wrapper">{children}</main>
