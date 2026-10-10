@@ -184,6 +184,60 @@ services:
       HMRC_URL: ${HMRC_PUBLIC_URL:-http://localhost:3302}
       ONE_LOGIN_URL: ${ONELOGIN_PUBLIC_URL:-http://localhost:3301}
 
+
+  # Explicit real-provider delivery. No synthetic or development credential fallback.
+  # Public ingress uses 3310 only; 3311 is the secret-protected private research reader.
+  whenisbins-public:
+    profiles: ["whenisbins-public"]
+    build:
+      context: .
+      dockerfile: apps/whenisbins/Dockerfile
+    depends_on:
+      delegate:
+        condition: service_started
+    ports:
+      - "127.0.0.1:3310:3310"
+      - "127.0.0.1:3311:3311"
+    volumes:
+      - ${WHENISBINS_PRIVATE_CONFIG_DIR:-./.public/whenisbins}:/run/whenisbins:ro
+      - whenisbins-public-state:/state
+    environment:
+      PORT: "3310"
+      WHENISBINS_LISTEN_HOST: "0.0.0.0"
+      WHENISBINS_RESEARCH_PORT: "3311"
+      PUBLIC_MODE: "true"
+      WHENISBINS_MODE: ${WHENISBINS_MODE:-disabled}
+      WHENISBINS_LIVE_ENABLED: ${WHENISBINS_LIVE_ENABLED:-false}
+      WHENISBINS_URL: ${WHENISBINS_PUBLIC_URL:-}
+      DELEGATE_INTERNAL_URL: http://delegate:3300
+      DELEGATE_PUBLIC_URL: ${DELEGATE_PUBLIC_URL:-}
+      ONELOGIN_INTERNAL_URL: http://onelogin:3301
+      DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:-}
+      WHENISBINS_EVIDENCE_STATUS: ${WHENISBINS_EVIDENCE_STATUS:-Live verification is in progress.}
+      WHENISBINS_EVIDENCE_URL: ${WHENISBINS_EVIDENCE_URL:-}
+      WHENISBINS_VERIFIED_EVIDENCE_PUBLISHED: ${WHENISBINS_VERIFIED_EVIDENCE_PUBLISHED:-false}
+      WHENISBINS_PROPERTIES_FILE: /run/whenisbins/properties.json
+      WHENISBINS_CATALOGUE_FILE: /run/whenisbins/catalogue.json
+      WHENISBINS_MAILBOXES_FILE: /run/whenisbins/mailboxes.json
+      WHENISBINS_STATE_FILE: /state/connector.json
+      WHENISBINS_MAILBOX_EVIDENCE_FILE: /state/mailbox-evidence.json
+      WHENISBINS_SERVICE_KEY: ${WHENISBINS_SERVICE_KEY:-}
+      WHENISBINS_AGENT_CLIENT_ID: ${WHENISBINS_AGENT_CLIENT_ID:-}
+      WHENISBINS_AGENT_CLIENT_SECRET: ${WHENISBINS_AGENT_CLIENT_SECRET:-}
+      WHENISBINS_PRESENTER_CODE_HASH: ${WHENISBINS_PRESENTER_CODE_HASH:-}
+      WHENISBINS_API_TOKEN: ${WHENISBINS_API_TOKEN:-}
+      WHENISBINS_WORKER_ENABLED: ${WHENISBINS_WORKER_ENABLED:-false}
+      WHENISBINS_CAPTURE_PRIVATE_EVIDENCE: ${WHENISBINS_CAPTURE_PRIVATE_EVIDENCE:-false}
+      RESEARCH_FEED_ENABLED: ${WHENISBINS_RESEARCH_FEED_ENABLED:-false}
+      RESEARCH_FEED_KEY: ${WHENISBINS_RESEARCH_FEED_KEY:-}
+      RESEARCH_PSEUDONYM_KEY: ${WHENISBINS_RESEARCH_PSEUDONYM_KEY:-}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3310/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   # Local research only: no inbound dependency from existing applications.
   observatory:
     build:
@@ -243,3 +297,4 @@ services:
 
 volumes:
   dbdata:
+  whenisbins-public-state:

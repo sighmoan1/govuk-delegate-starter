@@ -10,7 +10,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "tsx": "^4.19.0"
+    "tsx": "^4.19.0",
+    "@prototype/research-feed": "*",
+    "@prototype/whenisbins-email": "*",
+    "@prototype/whenisbins-runner": "*",
+    "playwright": "^1.50.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

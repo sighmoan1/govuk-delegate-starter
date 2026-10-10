@@ -14,12 +14,12 @@ export function connectorHandler(config:Config,transport:typeof fetch=fetch){
  const permittedIds=supported.capabilities.find(c=>c.code===CAPABILITY)?.supported_constraints?.property_id?.values??[];
  const post=async(path:string,body:unknown)=>{const r=await transport(config.delegateUrl+path,{method:'POST',headers:{'content-type':'application/json','x-service-key':config.serviceKey},body:JSON.stringify({service,...body as object}),signal:AbortSignal.timeout(5000),redirect:'error'});if(!r.ok)throw Error('DELEGATE_UNAVAILABLE');return r.json();};
  const log=async(event:Event)=>{await config.store.transaction(s=>{s.events.push(event);});};
- return async(req:Request):Promise<Response>=>{
+ return async(req:Request,context?:{taskId:string;occurrenceId:string}):Promise<Response>=>{
   const url=new URL(req.url);
   if(url.pathname==='/health'&&req.method==='GET')return json({service:SERVICE,mode:config.provider.mode,delegate_enforced_by:'our_connector',native_whenisbins_integration:false});
   if(url.pathname==='/ops/events'&&req.method==='GET'){if(config.publicMode||!secret(req.headers.get('x-ops-key')??'',config.opsKey))return json({error:'FORBIDDEN'},403);return json({events:(await config.store.snapshot()).events});}
   if(url.pathname!=='/api/collections')return json({error:'NOT_FOUND'},404);
-  const now=config.now??Date.now;const started=now(),requestId=randomUUID(),event:Event={sourceEventId:randomUUID(),occurredAt:new Date().toISOString(),requestId,action:'lookup',stage:'refused',decision:'REFUSED',costClass:'read'};
+  const now=config.now??Date.now;const started=now(),requestId=randomUUID(),event:Event={sourceEventId:randomUUID(),occurredAt:new Date().toISOString(),requestId,action:'lookup',stage:'refused',decision:'REFUSED',costClass:'read',taskId:context?.taskId,occurrenceId:context?.occurrenceId};
   let check:any;let operationKey:string|undefined;
   const finish=async(b:unknown,status:number)=>{event.latencyMs=Date.now()-started;await log(event);const delay=(b as any)?.retry_after_seconds??(b as any)?.result?.retry_after_seconds;return json(b,status,[202,429,503].includes(status)&&typeof delay==='number'&&Number.isFinite(delay)?{'Retry-After':String(Math.max(5,Math.ceil(delay)))}:{});};
   try{
@@ -39,12 +39,13 @@ export function connectorHandler(config:Config,transport:typeof fetch=fetch){
    const restrictions=check.constraints?.[CAPABILITY],provenance=check.constraint_provenance;
    const keys=restrictions?Object.keys(restrictions):[];
    if(!resource||keys.length!==1||keys[0]!=='property_id'||!Array.isArray(restrictions.property_id)||!restrictions.property_id.includes(resource.id)||restrictions.property_id.some((v:unknown)=>!permittedIds.includes(String(v)))||provenance?.catalogue?.digest!==supportedDigest||provenance?.catalogue?.version!==supported.version||provenance?.mandate_id!==check.authorisation_id||provenance?.delegation_id!==check.chain?.delegation_id)return finish({decision:'DENY',reason:'PROPERTY_SCOPE_REFUSED',delegate_check_id:check.check_id},403);
+   event.authorityVerified=true;
    const key=req.headers.get('idempotency-key');if(!key||!/^[A-Za-z0-9_:-]{8,128}$/.test(key))return finish({reason:'IDEMPOTENCY_KEY_REQUIRED'},400);
    operationKey=createHash('sha256').update(principal+':'+check.delegate.id+':'+key).digest('hex');
    const digest=createHash('sha256').update(canonical({property_id:body.property_id})).digest('hex');
    let replay=false,busy=false;
    let op=await config.store.transaction(s=>{const prior=s.operations[operationKey!];if(prior){if(prior.digest!==digest)throw Error('IDEMPOTENCY_CONFLICT');replay=prior.state==='done';busy=prior.state!=='done'&&((prior.leaseUntil??0)>now()||(prior.nextPollAt??0)>now());if(!busy&&!replay)prior.leaseUntil=now()+60000;return structuredClone(prior);}const fresh:Operation={owner:principal,property:resource.id,digest,key:operationKey!,state:'pending',leaseUntil:now()+60000};s.operations[operationKey!]=fresh;return fresh;});
-   event.taskId=operationKey; // internal only; research projection pseudonymises this identifier.
+   event.taskId=context?.taskId??operationKey;event.occurrenceId=context?.occurrenceId; // internal only; research projection pseudonymises this identifier.
    if(busy){event.stage='admitted';event.decision='ALLOWED';return finish({decision:'ALLOW',result:op.result??{status:'queued'},retry_after_seconds:Math.max(5,Math.ceil(((op.nextPollAt??op.leaseUntil??now())-now())/1000)),delegate_check_id:check.check_id,mode:config.provider.mode},202);}
    if(op.state!=='done'){
     event.outboundCallId=randomUUID();event.upstreamAgentDeclared=config.provider.declaresAgent;

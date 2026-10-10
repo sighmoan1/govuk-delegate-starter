@@ -6,3 +6,14 @@ node_modules
 .git
 test-results
 playwright-report
+
+# Retained credentials, live personal inputs and private evidence never enter images.
+.public
+.env.public
+public.config.json
+.whenisbins-demo
+**/.whenisbins-demo
+**/private-config
+**/private-config/**
+**/.env.*
+!**/.env.example

@@ -1,0 +1,38 @@
+name: WhenIsBins isolated integration
+on:
+  pull_request:
+    paths: ['apps/whenisbins/**', 'packages/whenisbins-*/**', 'packages/research-feed/**', 'apps/observatory/**', 'e2e/whenisbins*', 'scripts/whenisbins/**', '.github/workflows/whenisbins-integration.yml', 'package-lock.json']
+  push:
+    branches: [main]
+    paths: ['apps/whenisbins/**', 'packages/whenisbins-*/**', 'packages/research-feed/**', 'apps/observatory/**', 'scripts/whenisbins/**']
+permissions:
+  contents: read
+jobs:
+  journeys:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: bash scripts/ci-images.sh postgres:16-alpine
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run whenisbins:demo
+      - run: npm run typecheck -w apps/whenisbins
+      - run: npm test -w apps/whenisbins
+      - run: npm test -w packages/whenisbins-email && npm test -w packages/whenisbins-runner
+      - run: bash scripts/whenisbins/verify.sh
+      - name: HMRC durable queue regression
+        run: DATABASE_URL=postgresql://delegate:delegate@localhost:55435/hmrc npm test -w apps/hmrc
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: whenisbins-journey-evidence
+          path: |
+            test-results/
+            .whenisbins-demo/*.log
+      - if: always()
+        run: npm run whenisbins:stop && node scripts/whenisbins/verify-stopped.mjs
