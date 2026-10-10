@@ -35,6 +35,23 @@ npm run cli --prefix packages/whenisbins-runner -- tick /private/tmp/bins-jobs.j
 npm run cli --prefix packages/whenisbins-runner -- stop /private/tmp/bins-jobs.json JOB_ID
 ```
 
-The CLI defaults to a loopback connector; it requires a token in the environment variable named by the agreement for a tick. `WHENISBINS_CONNECTOR_URL` can select an explicitly configured HTTPS connector. The CLI does not refresh tokens itself: long-lived agent integrations inject token acquisition/refresh into `connectorLookup`. Secrets and provider signup data must not appear in receipt JSON. The CLI prints private job references, so do not stream it into a public console.
+The CLI defaults to a loopback connector; the environment variable named by the agreement contains the agent client secret, never a bearer token. `WHENISBINS_CONNECTOR_URL` can select an explicitly configured HTTPS connector. The CLI obtains a fresh token from Delegate on every lookup attempt and verifies that its returned registered agent ID matches the saved agreement. Library integrations can inject equivalent token acquisition into `connectorLookup`. Secrets and provider signup data must not appear in receipt JSON. The CLI prints private job references, so do not stream it into a public console.
 
 Tests inject a synthetic connector and accelerated clock. They create no external traffic, reminder subscriptions, live recurring jobs or Tom-repository changes. To end a separately authorised live trial, stop its jobs and process; revocation is an additional independent authority control. Live WhenIsBins usage stays subject to its usage guidance and the separate connector opt-in.
+
+## Foreground worker
+
+`run-worker` is an actual agent-owned runtime entrypoint. It uses the ordinary clock, reads durable jobs and executes due work repeatedly. It is separate from the browser demonstration's accelerated ticks. Nothing installs or starts it automatically.
+
+```sh
+WHENISBINS_CONNECTOR_URL=http://127.0.0.1:3310 \
+WHENISBINS_DELEGATE_URL=http://localhost:3300 \
+WHENISBINS_AGENT_CLIENT_ID=demo-personal-agent \
+npm run worker --prefix packages/whenisbins-runner -- /private/tmp/bins-jobs.json 10080 60000
+```
+
+Set the private client-secret environment variable referenced by each agreement before running; never put its value in a command example, job JSON or receipt. The saved `agentId` must be the actual registered Delegate ID, not the client-ID label. A mismatch refuses the job. The connector URL must pass a `/health` check: fixture mode is allowed by default; live mode additionally requires `WHENISBINS_RUNNER_ALLOW_LIVE=true`. Unknown or unavailable modes fail closed. Configure both services using HTTPS or loopback URLs.
+
+The worker runs in the foreground, caps itself at 1–10080 ticks and stops when no active jobs remain. The optional interval must be 1000–3600000 milliseconds; defaults are 10080 ticks at 60000 milliseconds (at most seven days). An owning agent/platform may deliberately restart it using the retained store. SIGINT/SIGTERM stops after any already-started execution settles and retains the job state and receipts. No OAuth reapproval, new grant, cron job, Codex automation or unattended process is created. The grant's expiry/refusal and the agreed end date remain independent controls.
+
+Smoke tests inject only a synthetic connector/token endpoint and clock. They prove repeated execution and fresh token acquisition, original-grant transport, finite-loop bounds, stop-signal retention and live-mode gating without launching a real recurring process or making an upstream request.
