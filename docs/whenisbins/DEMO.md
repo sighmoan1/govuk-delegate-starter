@@ -87,3 +87,16 @@ The check requires one actual registered job, three distinct occurrence IDs, two
 The final scheduler-specific rerun passed after trusted IDs were retained on early refusals. The read-only scheduled-evidence verifier passed: one actual registered job, three distinct persisted occurrences, two completed lookups and the third revoked occurrence's correlated refusal with zero provider-call events. The full four-browser suite had also passed again in 7.4 seconds, and the seven authority cases passed with exact refusal-reason assertions.
 
 The simulated inbox confirmation is bound to the portal session's approved principal, original grant, actual registered agent ID and signup operation key. Having a portal cookie or a different approved journey does not identify another session's pending subscription. Before citizen approval, the confirmation callback is not invoked. The portal never sends a raw email address or agent token to the browser; the exact-action approval screen remains responsible for showing the citizen what they are authorising.
+
+The clean-launcher acceptance also exercised the actual CLI entrypoint over HTTP using the ordinary wall clock, with no injected clock or transport. `verify-worker.ts` registered a fresh synthetic agent, approved its own property-scoped grant, created a due job and completed a real connector-fixture lookup. It then revoked only that grant, created a second due job and observed exact `AUTHORISATION_REVOKED` refusal, persisted `authority-refused` job state and zero provider calls for that agent's refused attempt. Its ephemeral client secret and bearer token were absent from both persisted job JSON and connector activity. Private temporary job files were removed; unrelated grants were retained. No daemon or live recurring task was started.
+
+```sh
+WHENISBINS_TEST_ISOLATED=true DATABASE_URL=postgresql://delegate:delegate@localhost:55435/delegate \
+DELEGATE_URL=http://localhost:5700 WHENISBINS_URL=http://127.0.0.1:5710 \
+TSX_TSCONFIG_PATH=apps/delegate/tsconfig.json \
+node --env-file=apps/delegate/.env --import tsx scripts/whenisbins/verify-worker.ts
+```
+
+`scripts/whenisbins/verify.sh` sequences the authority cases, browser journeys, trusted schedule evidence, actual CLI-worker HTTP acceptance and Observatory verification against the isolated stack. It does not call the repository's destructive global setup.
+
+Final acceptance on the isolated launcher: 7 real HTTP authority cases with exact refusal reasons; 4 browser journeys; trusted schedule correlation; a real-time CLI worker completion and subsequent revocation refusal; actual PostgreSQL ingestion, zero-insert replay, connection restart retention, private monitoring and execution-truth isolation. Component suites passed 57 connector/integration tests, 18 standalone browser-adapter tests and 25 runner tests. HMRC's database/queue regression passed 131 tests; 74 HTTP relationship, step-up, scope and independent-service regression tests passed. The manual lookup consent → outcome → removed authority → refusal journey was also checked through the browser after a clean local launch. These are synthetic test results; they are not a measurement of real AI participation or live email delivery.

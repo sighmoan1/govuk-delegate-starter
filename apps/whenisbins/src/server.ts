@@ -43,6 +43,6 @@ const server=createServer(async(req,res)=>{
  const body=Buffer.concat(chunks);const answer=await handler(new Request('http://localhost:'+port+req.url,{method:req.method,headers,...(!['GET','HEAD'].includes(req.method??'GET')?{body}: {})}));res.writeHead(answer.status,Object.fromEntries(answer.headers));res.end(await answer.text());}catch{res.writeHead(503);res.end('Service unavailable');}
 }).listen(port,'127.0.0.1',()=>console.log('WhenIsBins connector: '+mode+' on loopback '+port));
 
-const shutdown=async()=>{server.close();await browser?.close();await fixture?.close();};
+const shutdown=async()=>{setTimeout(()=>process.exit(0),5000).unref();server.close();await browser?.close();await fixture?.close();};
 process.once('SIGTERM',()=>{void shutdown().finally(()=>process.exit(0));});
 process.once('SIGINT',()=>{void shutdown().finally(()=>process.exit(0));});

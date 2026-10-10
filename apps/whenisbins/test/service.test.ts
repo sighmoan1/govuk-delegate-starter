@@ -2,7 +2,7 @@ import {describe,it,expect,vi} from 'vitest';
 import catalogue from '../service-catalogue.json';
 import {connectorHandler,catalogueDigest} from '../src/service';
 import {MemoryStore,FileStore} from '../src/store';
-import {FixtureProvider,LiveProvider} from '../src/provider';
+import {FixtureProvider,LiveProvider,ProviderFailure} from '../src/provider';
 import {mkdtemp,stat,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';import {join} from 'node:path';
 const subject='sam';const props=[{id:'home-sam',subject,label:'Sam synthetic',postcode:'ZZ1 1ZZ',address:'1 Synthetic Street'},{id:'home-other',subject:'other',label:'Other synthetic',postcode:'ZZ1 2ZZ',address:'2 Synthetic Street'}];
@@ -30,3 +30,5 @@ describe('real provider contract and scheduled binding',()=>{
  it('refuses unsupported council inputs without guessing a lookup payload',async()=>{const calls=vi.fn<typeof fetch>(async()=>Response.json({required_input:'road_and_locality',candidates:[]}));await expect(new LiveProvider(true,undefined,calls).submit(props[0],'stable-key')).rejects.toThrow('UNSUPPORTED_COUNCIL_INPUT');expect(calls).toHaveBeenCalledTimes(1);});
  it('an in-flight provider lease prevents concurrent duplicate submissions',async()=>{const x=setup();let release!:()=>void;let entered!:()=>void;const ready=new Promise<void>(resolve=>entered=resolve),gate=new Promise<void>(resolve=>release=resolve);const original=x.provider.submit.bind(x.provider);x.provider.submit=async(p,key)=>{entered();await gate;return original(p,key);};const first=x.handler(req());await ready;expect((await x.handler(req())).status).toBe(202);release();expect((await first).status).toBe(200);expect(x.provider.calls).toBe(1);});
 });
+
+it('persists a long provider cooldown and sends the Retry-After consumed by the runner',async()=>{const x=setup();x.provider.submit=async()=>{x.provider.calls++;throw new ProviderFailure(429,1200);};const first=await x.handler(req());expect(first.status).toBe(429);expect(first.headers.get('retry-after')).toBe('1200');const second=await x.handler(req());expect(second.status).toBe(202);expect(Number(second.headers.get('retry-after'))).toBeGreaterThanOrEqual(1199);expect(x.provider.calls).toBe(1);});

@@ -17,6 +17,8 @@ async function ready(url){for(let i=0;i<100;i++){try{if((await fetch(url,{signal
 let pids=[];try{pids=JSON.parse(await readFile(resolve(state,'pids.json'),'utf8'));}catch{}
 if(process.argv[2]==='stop'){
  for(const record of pids)if(owned(record))try{process.kill(-record.pid,'SIGTERM');}catch{}
+ for(let i=0;i<24;i++){const groups=pids.filter(record=>{try{process.kill(-record.pid,0);return true;}catch{return false;}});if(!groups.length)break;await delay(250);}
+ const remaining=pids.filter(record=>{try{process.kill(-record.pid,0);return true;}catch{return false;}});if(remaining.length)throw Error('A managed process group is still stopping; private ownership records retained.');
  await rm(resolve(state,'pids.json'),{force:true});let managed=false;try{managed=(await readFile(resolve(state,'project'),'utf8'))===project;}catch{}if(managed)await run('docker',[...compose,'stop']);console.log('Stopped this demo; synthetic data retained.');
 }else{
  for(const record of pids)if(owned(record))throw Error('This demo is already running.');pids=[];

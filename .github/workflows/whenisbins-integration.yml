@@ -35,4 +35,4 @@ jobs:
             test-results/
             .whenisbins-demo/*.log
       - if: always()
-        run: npm run whenisbins:stop
+        run: npm run whenisbins:stop && node scripts/whenisbins/verify-stopped.mjs
