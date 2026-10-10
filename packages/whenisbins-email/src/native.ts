@@ -13,7 +13,7 @@ export async function executeWhenIsBinsEmailWorkflow(input:NativeEmailInput):Pro
  if(prior){if(['confirmed','refused'].includes(prior.status))return prior;const observed=await input.reconcile?.(action).catch(()=>'unknown' as const)??'unknown';if(observed==='confirmed')return save('confirmed','INDEPENDENT_SERVICE_OR_MAILBOX_EVIDENCE');if(input.confirmationPath){
   if(action.operation!=='signup'||!['submitted','confirmation_required'].includes(prior.status)||prior.reason==='CONFIRMATION_VISIT_AWAITING_INDEPENDENT_EVIDENCE')return prior;
   let verification:URL;try{verification=new URL(input.confirmationPath);}catch{return {...prior,status:'refused',reason:'INVALID_CONFIRMATION_FLOW'};}
-  if(verification.origin!==origin||verification.username||verification.password||verification.search||verification.hash||!/^\/verify\/[^/]+$/.test(verification.pathname))return {...prior,status:'refused',reason:'INVALID_CONFIRMATION_FLOW'};
+  if(verification.origin!==origin||verification.username||verification.password||verification.search||verification.hash||!/^\/verify\/[A-Za-z0-9_-]+$/.test(verification.pathname))return {...prior,status:'refused',reason:'INVALID_CONFIRMATION_FLOW'};
   await save('unknown','CONFIRMATION_VISIT_IN_PROGRESS');
   try{page.setDefaultNavigationTimeout(20000);const response=await page.goto(verification.href);if(!response||response.status()>=400||new URL(page.url()).origin!==origin)return save('unknown','CONFIRMATION_RESPONSE_UNCERTAIN');
    return save('submitted','CONFIRMATION_VISIT_AWAITING_INDEPENDENT_EVIDENCE');
