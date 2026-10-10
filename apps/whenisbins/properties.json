@@ -1,0 +1,16 @@
+[
+  {
+    "id": "home-sam",
+    "subject": "urn:fdc:gov.uk:2022:56P4CMsGh_02YOlWpd8PAOI-2sVlB2nsNU7mcLZYhYw=",
+    "label": "Sam's synthetic home",
+    "postcode": "ZZ1 1ZZ",
+    "address": "1 Synthetic Street"
+  },
+  {
+    "id": "home-other",
+    "subject": "urn:synthetic:another-resident",
+    "label": "Another synthetic home",
+    "postcode": "ZZ1 2ZZ",
+    "address": "2 Synthetic Street"
+  }
+]
