@@ -21,3 +21,11 @@ test("strict v2 rejects identifiers, arbitrary nested fields, labels and upstrea
  expect(() => WhenIsBinsEvent.parse({ ...e, browser_sensor: { status: "blocked", provenance: "unverified_client_claim" } })).toThrow();
  expect(() => Page.parse({ schema_version: 1, source_service: "whenisbins_connector", events: [e], next_cursor: null })).toThrow();
 });
+
+test("authority lane requires an explicit recorded check, independent of signature or upstream declaration", () => {
+ const noSignature = { ...input, signatureVerified: undefined, upstreamAgentDeclared: true };
+ expect(whenisbinsObservation(noSignature, "key").observed.lane).toBe("UNKNOWN");
+ const checked = whenisbinsObservation({ ...noSignature, authorityVerified: true }, "key");
+ expect(checked.observed.lane).toBe("AUTHORISED_AGENT"); expect(checked.observed.signature_verified).toEqual(missing());
+ expect(checked.whenisbins.upstream_agent_declared.value).toBe(true);
+});
