@@ -55,6 +55,8 @@ The core includes One Login, Delegate, HMRC, About, Observatory and an independe
 
 Observatory (`apps/observatory`, port **3303**) is a separate, local-only read-only research workbench. It has its own database/login and generated Prisma client. Synthetic research feeds are available behind explicit opt-in; collection is disabled by default and no classifier is implemented. It cannot change authority or service outcomes. See [Observatory setup](docs/observatory/SETUP.md) and [research protocol](docs/observatory/RESEARCH_PROTOCOL.md). The historical Example AI brief mentioned 3303; that app is not implemented and the port is now assigned to Observatory.
 
+The optional **WhenIsBins connector** (`apps/whenisbins`, default port 3310) is a separate service integration beyond these six core apps. It checks scoped Delegate authority before a bin-collection lookup and owns its provider validation and local operation records. See [connector setup and limits](docs/whenisbins/CONNECTOR.md).
+
 Delegate, HMRC and Observatory have separate databases/logins in one Postgres container. The synthetic council uses its own local fixture records; One Login and About have no application database. Services integrate over HTTP. The join key between HMRC and Delegate is the person's One Login subject.
 
 ## Run it

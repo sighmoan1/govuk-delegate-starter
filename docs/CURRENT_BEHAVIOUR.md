@@ -1,10 +1,10 @@
 # Current synthetic prototype behaviour
 
-This is the implemented-state entry point. `BUILD_SPEC.md` and `PROTOTYPE_CONTENT.md` preserve the original brief; numbered decisions preserve history. `ARCHITECTURE.md` describes the target boundary, including features still awaiting engineering. No real citizen, bank, address or departmental records are used.
+This is the implemented-state entry point. `BUILD_SPEC.md` and `PROTOTYPE_CONTENT.md` preserve the original brief; numbered decisions preserve history. `ARCHITECTURE.md` describes the target boundary, including features still awaiting engineering. The core GOV.UK/HMRC/council journeys use synthetic identities and records; optional controlled external WhenIsBins acceptance is described separately below.
 
 ## Applications and integration
 
-One Login authenticates people using the official simulator behind lookalike screens. Delegate manages requested and approved permissions, representative identity, scoped subdelegations, expiry and revocation. Mock HMRC owns transactions, domain rules, idempotency, technical throughput and its durable queue. About explains and runs synthetic scenarios.
+One Login authenticates people using the official simulator behind lookalike screens. Delegate manages requested and approved permissions, representative identity, scoped subdelegations, expiry and revocation. Mock HMRC owns transactions, domain rules, idempotency, technical throughput and its durable queue. About explains and runs synthetic scenarios. The separate Observatory researches observations and the independent council service demonstrates reuse of the same consent/authority contract. These are the six core apps.
 
 HMRC's full integration includes authority checks; agent-request creation/polling; agent sessions; browser permission guards; discovery documents; domain and traffic controls; receipts, dispute reconciliation and outcome reporting. `delegated-authority.ts` is the core API wrapper within that wider work. Pages, business handlers and state storage also support the integration.
 
@@ -65,3 +65,7 @@ The independent `apps/observatory` workbench serves a synthetic-research disclai
 Separate evaluator and collection credentials protect research labels. One-use enrollment binds opaque sessions; sensors receive no actor class. Archived scripted runs require original trace/digest checks and independently audited effects. Unlabelled monitoring counts observed requests without inventing execution truth or durable effects. The audited archive reports zero human participant runs; actual participant collection remains #71.
 
 The optional Fingerprint adapter runs only after explicit study opt-in and protected enrollment. It records coverage states and pseudonymised identifiers separately from service events. Missing configuration and vendor/Observatory failures do not alter authority or business decisions. Real vendor execution remains unvalidated in this delivery environment; returned client identifiers require separate server verification before being labelled vendor-verified. A device signal never supplies an execution label. See [FINGERPRINT_SENSOR.md](observatory/FINGERPRINT_SENSOR.md).
+
+## Optional WhenIsBins connector
+
+The separately configured `apps/whenisbins` connector (default port 3310) is additional to the six core apps. Its scoped one-off lookup checks current Delegate authority before upstream work, validates provider results and records the connector outcome. It is our integration around WhenIsBins, not native Delegate recognition by the upstream service. The GOV.UK identity and HMRC/council records remain synthetic; controlled external acceptance is separately recorded in [repository status](REPOSITORY_STATUS.md). See [connector setup](whenisbins/CONNECTOR.md).

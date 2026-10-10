@@ -6,6 +6,8 @@ The audit sections below preserve their original dates and revisions. The latest
 
 The core comprises six apps: One Login, Delegate, HMRC, About, Observatory and an independent synthetic council service. The council proof, catalogue-driven consent, immutable original approval evidence and service-owned restrictions are implemented. The earlier branch inventories below describe their original audit revision rather than the current backlog.
 
+The protected Observatory dashboard/event explorer ([PR #110](https://github.com/sighmoan1/govuk-delegate-starter/pull/110)) and optional one-off WhenIsBins connector ([PR #126](https://github.com/sighmoan1/govuk-delegate-starter/pull/126)) are merged. The connector is additional to the six core apps and checks Delegate authority locally; it does not imply native upstream Delegate checks.
+
 The genuine-participant pilot document ([PR #108](https://github.com/sighmoan1/govuk-delegate-starter/pull/108)) is merged as a proposal and handoff. It does not launch a study or approve participant recruitment. Genuine participant research, model training/evaluation and real Fingerprint vendor validation remain outstanding. The bounded B/C comparison remains technical evidence with no measured citizen-effort, financial or field benefit.
 
 ### Separate live deployment
