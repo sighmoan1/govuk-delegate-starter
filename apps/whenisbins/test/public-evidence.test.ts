@@ -9,7 +9,7 @@ describe('reviewed public live evidence',()=>{
  it('serves the bounded reviewed record without publishing a source feed',async()=>{
   const response=(await publicEvidenceHandler(new Request(origin+'/evidence'),true))!;
   expect(response.status).toBe(200);expect(response.headers.get('content-type')).toContain('text/html');
-  const text=await response.text();expect(text).toContain('10 October 2026');expect(text).toContain('Cancellation is pending');
+  const text=await response.text();expect(text).toContain('10 October 2026');expect(text).toContain('Cancellation is unverified');expect(text).toContain('control stays disabled');expect(text).toContain('test subscription remains active');
   expect(text).toContain('Twenty events are not twenty independent actions');expect(text).toContain('Sam’s identity');
  });
  it('allows local design-system fonts while retaining strict resource and embedding restrictions',async()=>{
