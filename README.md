@@ -34,6 +34,8 @@ Start with **DB-01 (legal authority)** and **DB-02 (when the person must approve
 
 ## Documentation
 
+[Agent work guide](docs/AGENT_WORK.md) covers issue claims and isolated branches, [local runtime inventory](docs/LOCAL_RUNTIME.md) covers stack ownership, and [CI policy](docs/CI.md) covers verification and the included-only spending preference.
+
 [Documentation index](docs/README.md) links the current behaviour, target architecture, decision history, evidence and setup guidance. [Repository status](docs/REPOSITORY_STATUS.md) records the 9 October branch audit. The About site serves the plain-language current-state summary at `/project-status`.
 
 ## Where to start
@@ -126,7 +128,7 @@ The core idea, in one line: **identify the agent, authorise the mandate, limit t
 - [Experimental protocol](docs/VALIDATION.md) — hypotheses, seven experiments (E1–E7), fair API-only comparator, metrics, controls and falsification criteria.
 - [Evidence register](docs/EVIDENCE.md) — what is exploratory, what exists only as technical test source, and links to independently recorded experimental runs when available.
 - [Current demo and claims guide](docs/DEMO_GUIDE.md) — public/private URLs, the three-minute core journey and a seven-minute stakeholder discussion.
-- [About-site evidence page](apps/about/src/app/evidence/page.tsx) — readable explanation at `/evidence` when deployed.
+- [About-site evidence page](apps/about/src/app/evidence/page.tsx) — readable explanation at `/evidence` on the private About dashboard; outside the public briefing allowlist.
 
 **A [bounded technical B/C comparison](docs/evidence/RUN-20261009-E2-01.md) is recorded; no citizen-effort, economic or real-world product-benefit result has been established.** Existing route-choice observations and synthetic swarm tests are useful starting points, not proof of national-scale benefit. Keep further architecture debates in the relevant ADRs, not in experiment results.
 

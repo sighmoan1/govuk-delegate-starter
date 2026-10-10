@@ -4,6 +4,9 @@ The current prototype uses synthetic One Login, Delegate and mock HMRC, with an 
 
 | Document | Purpose |
 |---|---|
+| [Agent work guide](AGENT_WORK.md) | Coordinated issue claims, isolated branches and review handoff |
+| [Local runtime inventory](LOCAL_RUNTIME.md) | Stack ownership, safe retirement and retained data |
+| [CI policy](CI.md) | Local/automatic verification and included-only spending preference |
 | [Current behaviour](CURRENT_BEHAVIOUR.md) | Implemented journeys, integration contract and limitations |
 | [Repository status](REPOSITORY_STATUS.md) | Dated local/remote and branch audit, validation and runtime status |
 | [Architecture](ARCHITECTURE.md) | Responsibility boundaries and current versus target features |
