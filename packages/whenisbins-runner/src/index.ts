@@ -63,7 +63,7 @@ export class FileJobStore {
 
 export class Runner {
   constructor(readonly store: FileJobStore, readonly lookup: Lookup, readonly clock: () => number = Date.now) {}
-  create(agreement: Agreement) { validAgreement(agreement); return this.store.transaction(s => { const job: Job = { id: randomUUID(), agreement: structuredClone(agreement), state: "active", createdAt: iso(this.clock()), executions: [] }; s.jobs.push(job); return job; }); }
+  create(agreement: Agreement) { validAgreement(agreement); return this.store.transaction(s => { const job: Job = { id: randomUUID(), agreement: { principalId: agreement.principalId, agentId: agreement.agentId, propertyId: agreement.propertyId, grantReference: agreement.grantReference, credentialEnv: agreement.credentialEnv, frequency: agreement.frequency, weekday: agreement.frequency === "weekly" ? agreement.weekday : undefined, hour: agreement.hour, minute: agreement.minute, timezone: agreement.timezone, startsAt: iso(Date.parse(agreement.startsAt)), endsAt: iso(Date.parse(agreement.endsAt)), agreed: true }, state: "active", createdAt: iso(this.clock()), executions: [] }; s.jobs.push(job); return job; }); }
   control(id: string, action: "pause" | "resume" | "stop") { return this.store.transaction(s => { const j = s.jobs.find(j => j.id === id); if (!j) throw new Error("Unknown job"); if (action === "stop") j.state = "stopped"; else if (action === "pause" && j.state === "active") j.state = "paused"; else if (action === "resume" && j.state === "paused") j.state = "active"; else throw new Error("Invalid state transition; create a newly agreed job to change scope"); return j; }); }
   async tick(): Promise<Execution[]> {
     const now = this.clock();
@@ -98,7 +98,7 @@ export class Runner {
         const j = s.jobs.find(j => j.id === claim.job.id)!;
         const e = j.executions.find(e => e.id === claim.execution.id)!;
         if (e.attempt !== claim.execution.attempt || e.state !== "running") return e;
-        e.state = "finished"; e.outcome = { ...outcome, code: outcome.code?.replace(/[^A-Z0-9_]/g, "").slice(0, 80) };
+        e.state = "finished"; e.outcome = { kind: outcome.kind, providerCalls: outcome.providerCalls, retryAfterSeconds: Number.isFinite(outcome.retryAfterSeconds) ? outcome.retryAfterSeconds : undefined, code: outcome.code?.replace(/[^A-Z0-9_]/g, "").slice(0, 80) };
         (e.receipts ||= []).push({ attempt: e.attempt, at: iso(this.clock()), outcome: e.outcome });
         if (outcome.kind === "refused" && j.state === "active") j.state = "authority-refused";
         if (["unavailable", "pending"].includes(outcome.kind) && e.attempt < MAX_ATTEMPTS) e.retryAt = iso(this.clock() + Math.min(3600, Math.max(60, outcome.retryAfterSeconds || 60 * e.attempt)) * 1000);
