@@ -26,7 +26,7 @@ The final live-only scan at 09:39:33 UTC contained 5 admitted, 2 completed looku
 
 The completed scheduled lookup correlates with its registration, occurrence and admitted/completed request, check and outbound identifiers. The refused scheduled lookup correlates with its registration and occurrence and has no outbound/effect identifier. The redacted refusal record omits its reason: independent controlled journey evidence establishes the preceding revocation. Observatory must not infer that cause from the event alone.
 
-The protected truth ledger remains `UNLABELLED` and `REQUEST_ONLY`; it rejects promotion to `UNIQUE_OPERATION`. No browser fingerprint, independent upstream effect, council-cost saving or classifier accuracy is asserted. The full monitoring interface remains private. [Detailed live-source checkpoint](https://github.com/sighmoan1/govuk-delegate-starter/issues/119#issuecomment-6096212186).
+The protected monitoring attempt used for this acceptance remains `UNLABELLED`, and its exact WhenIsBins event binding is `REQUEST_ONLY`. WhenIsBins bindings reject promotion to `UNIQUE_OPERATION`. No browser fingerprint, independent upstream effect, council-cost saving or classifier accuracy is asserted. The full monitoring interface remains private. [Detailed live-source checkpoint](https://github.com/sighmoan1/govuk-delegate-starter/issues/119#issuecomment-6096212186).
 
 ## Controls and verification
 
