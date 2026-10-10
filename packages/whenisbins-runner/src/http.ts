@@ -4,7 +4,7 @@ export function connectorLookup(baseUrl: string, getToken: (reference: string) =
   const base = new URL(baseUrl);
   if (base.protocol !== "https:" && !(base.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(base.hostname))) throw new Error("Use HTTPS or a loopback connector");
   return async request => {
-    const response = await fetcher(new URL("/api/collections", base), { method: "POST", redirect: "error", signal: AbortSignal.timeout(30000), headers: { Authorization: `Bearer ${await getToken(request.credentialEnv)}`, "x-principal-id": request.principalId, "Idempotency-Key": request.idempotencyKey, "Content-Type": "application/json" }, body: JSON.stringify({ property_id: request.propertyId }) });
+    const response = await fetcher(new URL("/api/collections", base), { method: "POST", redirect: "error", signal: AbortSignal.timeout(30000), headers: { Authorization: `Bearer ${await getToken(request.credentialEnv)}`, "x-principal-id": request.principalId, "Idempotency-Key": request.idempotencyKey, "Content-Type": "application/json" }, body: JSON.stringify({ property_id: request.propertyId, grant_reference: request.grantReference }) });
     const data = await response.json().catch(() => ({})) as { reason?: string; code?: string; result?: { status?: string }; replayed?: boolean; provider_calls?: number };
     const retry = Number(response.headers.get("Retry-After"));
     const common = { providerCalls: Number.isInteger(data.provider_calls) && data.provider_calls! >= 0 ? data.provider_calls! : null, retryAfterSeconds: Number.isFinite(retry) && retry > 0 ? retry : undefined };
