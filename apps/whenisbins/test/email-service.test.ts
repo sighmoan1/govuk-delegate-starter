@@ -102,6 +102,7 @@ it("continues an owned real verification link under fresh authority without resu
  });
  const handler=createEmailHandler({delegateUrl:"http://delegate",serviceKey:"own",store,properties:[{id:"home-sam",subject:"sam",label:"Designated",postcode:"AA1 1AA",address:"Designated private address"}],mailboxes:[{id:"mailbox-sam",subject:"sam",label:"Designated inbox",email:"designated@example.invalid"}],live:{mode:"live",execute,reconcile:async()=>"unknown",confirmationPath:async()=>ownedMail?confirmationPath:undefined,cancellationPath:async()=>undefined},pageFactory:async()=>{const context=await browser.newContext();return {page:await context.newPage(),close:()=>context.close()};}},x.transport);
  expect((await handler(req())).status).toBe(202);expect(execute).toHaveBeenCalledTimes(1);expect(execute.mock.calls[0][0].confirmationPath).toBeUndefined();
+ await store.transaction(s=>{const receipt=Object.values(s.operations)[0].result!.receipt as {reason:string};receipt.reason="REAL_VERIFICATION_MAIL_DELIVERY_OBSERVED";});
  ownedMail=true;x.setDenied("AUTHORISATION_REVOKED");expect((await handler(req())).status).toBe(403);expect(execute).toHaveBeenCalledTimes(1);
  x.setDenied();expect((await handler(req())).status).toBe(200);expect(execute).toHaveBeenCalledTimes(2);expect(execute.mock.calls[1][0].confirmationPath).toBe(confirmationPath);expect(execute.mock.calls[1][0].operationId).toBe(execute.mock.calls[0][0].operationId);
  expect(x.bodies.filter(b=>b.path.endsWith("/reserve"))).toHaveLength(1);
