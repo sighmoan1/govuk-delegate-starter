@@ -23,7 +23,10 @@ const signal = (value: boolean | number | null, missingness: Signal["missingness
 export const mockSensor: SensorAdapter = {
   identifier: "source-observation", version: "1.0.0", schema: EVIDENCE_SCHEMA, config: { mapping: "allowlisted-source-fields/1" },
   async collect(input) {
-    const e = Event.parse(input); const b = e.browser_sensor;
+    const e = Event.parse(input);
+    // New feed sources do not implicitly opt into the frozen classifier contract.
+    if (e.source_service !== "hmrc" && e.source_service !== "delegate") throw new Error("UNSUPPORTED_CLASSIFICATION_SOURCE");
+    const b = e.browser_sensor;
     const missingness = b.status === "error" ? "error" : "not_observed";
     const record: EvidenceRecord = { schema: EVIDENCE_SCHEMA, source: e.source_service, source_event_id: e.source_event_id, collection_method: "immutable_source_feed", observed_at: e.occurred_at.value,
       sensor: { identifier: this.identifier, version: this.version, config: { ...this.config } },

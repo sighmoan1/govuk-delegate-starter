@@ -9,6 +9,13 @@ describe("blind versioned classification", () => {
     expect(result.config_digest).toBe(digest(config)); expect(result.input_digest).toBe(digest(evidence)); expect(result.latency_ms).toBeGreaterThanOrEqual(0);
     expect(JSON.stringify(evidence)).not.toContain("HUMAN_OPERATED"); expect(JSON.stringify(evidence)).not.toContain("outcome"); expect(JSON.stringify(evidence)).not.toContain("lane");
   });
+  it("does not silently enroll connector feed evidence into the existing classifier scope", async () => {
+    const opaque = { value: "a".repeat(64), status: "inferred", provenance: "pseudonymised" };
+    const connector = { ...event(null), schema_version: 2, source_service: "whenisbins_connector", source_event_id: "a".repeat(64), run_id: missing(),
+      correlation: { request_id: opaque, transaction_id: missing(), session_id: missing(), delegate_check_id: opaque },
+      whenisbins: { action: "lookup", stage: "lookup_completed", task_id: opaque, occurrence_id: missing(), outbound_call_id: opaque, effect_id: opaque, upstream_agent_declared: missing() } };
+    await expect(mockSensor.collect(connector as never)).rejects.toThrow();
+  });
   it("API-only absence never means human and unavailable paid detectors abstain honestly", async () => {
     const evidence = await mockSensor.collect(event(null));
     expect(evidence.signals.browser_present).toMatchObject({ value: null, missingness: "not_observed" });
