@@ -12,6 +12,11 @@ describe('reviewed public live evidence',()=>{
   const text=await response.text();expect(text).toContain('10 October 2026');expect(text).toContain('Cancellation is pending');
   expect(text).toContain('Twenty events are not twenty independent actions');expect(text).toContain('Sam’s identity');
  });
+ it('allows local design-system fonts while retaining strict resource and embedding restrictions',async()=>{
+  const response=(await publicEvidenceHandler(new Request(origin+'/evidence'),true))!;
+  const directives=Object.fromEntries(response.headers.get('content-security-policy')!.split(';').map(value=>{const [name,...sources]=value.trim().split(/\s+/);return [name,sources];}));
+  expect(directives).toEqual({'default-src':["'none'"],'style-src':["'self'"],'font-src':["'self'"],'base-uri':["'none'"],'frame-ancestors':["'none'"]});
+ });
  it('refuses writes to the public evidence page',async()=>{
   const response=(await publicEvidenceHandler(new Request(origin+'/evidence',{method:'POST'}),true))!;
   expect(response.status).toBe(405);expect(response.headers.get('allow')).toBe('GET');

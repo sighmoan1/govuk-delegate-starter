@@ -7,6 +7,6 @@ export async function publicEvidenceHandler(request:Request,published:boolean):P
  return new Response(await readFile(new URL('../evidence.html',import.meta.url),'utf8'),{headers:{
   'content-type':'text/html; charset=utf-8',
   'cache-control':'no-store, no-transform',
-  'content-security-policy':"default-src 'none'; style-src 'self'; base-uri 'none'; frame-ancestors 'none'",
+  'content-security-policy':"default-src 'none'; style-src 'self'; font-src 'self'; base-uri 'none'; frame-ancestors 'none'",
  }});
 }
