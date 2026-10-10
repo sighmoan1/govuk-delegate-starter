@@ -81,8 +81,11 @@ describe('ambiguous discovery and completion evidence',()=>{
   const stored=vi.fn(async(_id:string,etag?:string)=>{reads++;if(reads===1)return {result:{property_id:'p:home-sam',collections:[],retrieved_at:'2026-09-01T00:00:00Z',date_confidence:'published_calendar'},etag:'version-one'};expect(etag).toBe('version-one');return {unchanged:true,etag};});
   const handler=connectorHandler({delegateUrl:'http://delegate',serviceKey:'k',properties:props,store:x.store,provider:{mode:'fixture',declaresAgent:false,submit:x.provider.submit.bind(x.provider),poll:x.provider.poll.bind(x.provider),stored},opsKey:'ops'},x.transport);
   expect(await (await handler(req(undefined,'occurrence-first'))).json()).toMatchObject({unchanged:false,replayed:false});
+  const firstEffect=Object.values((await x.store.snapshot()).operations)[0].effectId;
   expect(await (await handler(req(undefined,'occurrence-second'))).json()).toMatchObject({unchanged:false,replayed:false});
+  const changedEffect=Object.values((await x.store.snapshot()).operations)[1].effectId;expect(changedEffect).toBeTruthy();expect(changedEffect).not.toBe(firstEffect);
   const unchanged=await (await handler(req(undefined,'occurrence-third'))).json();expect(unchanged).toMatchObject({unchanged:true,replayed:false,result:{unchanged:true,result:{retrieved_at:'2026-09-01T00:00:00Z',date_confidence:'published_calendar'}}});
+  expect(Object.values((await x.store.snapshot()).operations)[2].effectId).toBe(changedEffect);
   expect((await x.store.snapshot()).events.at(-1)).toMatchObject({stage:'lookup_completed'});expect((await x.store.snapshot()).events.at(-1)?.outcomeClass).toBeUndefined();
   expect(await (await handler(req(undefined,'occurrence-third'))).json()).toMatchObject({unchanged:false,replayed:true,result:{unchanged:true}});
   expect(stored).toHaveBeenCalledTimes(2);expect(x.provider.calls).toBe(1);expect((await x.store.snapshot()).events.at(-1)).toMatchObject({stage:'replay',outcomeClass:'REPLAY'});
