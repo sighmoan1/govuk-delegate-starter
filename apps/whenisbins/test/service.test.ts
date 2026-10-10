@@ -27,10 +27,78 @@ describe('Delegate connector authority and durable provider work',()=>{
 describe('real provider contract and scheduled binding',()=>{
  it('accepts the runner occurrence key while refusing a replacement grant before outbound work',async()=>{const x=setup();expect((await x.handler(req({property_id:'home-sam',grant_reference:'replacement-grant'},'job-id:2026-10-10'))).status).toBe(403);expect(x.provider.calls).toBe(0);expect((await x.handler(req({property_id:'home-sam',grant_reference:'grant'},'job-id:2026-10-10'))).status).toBe(200);});
  it('uses the documented property request and normalises the documented lookup id',async()=>{const calls=vi.fn<typeof fetch>(async(url,init)=>String(url).includes('/addresses?')?Response.json({required_input:'property',candidates:[]}):Response.json({id:'upstream-lookup',status:'queued'},{headers:{'retry-after':'12'}}));const provider=new LiveProvider(true,'private-token',calls);expect(await provider.submit(props[0],'stable-key')).toEqual({lookup_id:'upstream-lookup',status:'queued',retry_after_seconds:12});expect(JSON.parse(String(calls.mock.calls[1][1]?.body))).toEqual({postcode:props[0].postcode,property:props[0].address});expect(calls.mock.calls[1][1]?.headers).toMatchObject({'Idempotency-Key':'stable-key','X-Agent':'Delegate-WhenIsBins-connector',Authorization:'Bearer private-token'});});
- it('uses the actual candidate id unchanged and refuses a different selected property',async()=>{const property={...props[0],propertyId:'p:opaque-council-property'};const calls=vi.fn<typeof fetch>(async url=>String(url).includes('/addresses?')?Response.json({required_input:'property_id',candidates:[{id:property.propertyId,label:'Exact council address'}]}):Response.json({id:'actual-shaped-lookup',status:'done',result:{property_id:property.propertyId}}));const provider=new LiveProvider(true,undefined,calls);expect((await provider.submit(property,'one-logical-lookup')).lookup_id).toBe('actual-shaped-lookup');expect(JSON.parse(String(calls.mock.calls[1][1]?.body))).toEqual({postcode:property.postcode,property_id:property.propertyId});calls.mockClear();await expect(provider.submit({...property,propertyId:'p:other-property'},'different-lookup')).rejects.toThrow('EXACT_ADDRESS_SELECTION_REQUIRED');expect(calls).toHaveBeenCalledTimes(1);});
+ it('uses the actual candidate id unchanged and refuses a different selected property',async()=>{const property={...props[0],propertyId:'p:opaque-council-property'};const calls=vi.fn<typeof fetch>(async url=>String(url).includes('/addresses?')?Response.json({required_input:'property_id',candidates:[{id:property.propertyId,label:'Exact council address'}]}):Response.json({id:'actual-shaped-lookup',status:'done',result:{property_id:property.propertyId,collections:[]}}));const provider=new LiveProvider(true,undefined,calls);expect((await provider.submit(property,'one-logical-lookup')).lookup_id).toBe('actual-shaped-lookup');expect(JSON.parse(String(calls.mock.calls[1][1]?.body))).toEqual({postcode:property.postcode,property_id:property.propertyId});calls.mockClear();await expect(provider.submit({...property,propertyId:'p:other-property'},'different-lookup')).rejects.toThrow('EXACT_ADDRESS_SELECTION_REQUIRED');expect(calls).toHaveBeenCalledTimes(1);});
  it('does not submit an unrelated property field for a postcode-only council',async()=>{const calls=vi.fn<typeof fetch>(async url=>String(url).includes('/addresses?')?Response.json({required_input:'none'}):Response.json({id:'postcode-lookup',status:'queued'}));await new LiveProvider(true,undefined,calls).submit(props[0],'postcode-key');expect(JSON.parse(String(calls.mock.calls[1][1]?.body))).toEqual({postcode:props[0].postcode});});
  it('refuses unsupported council inputs without guessing a lookup payload',async()=>{const calls=vi.fn<typeof fetch>(async()=>Response.json({required_input:'road_and_locality',candidates:[]}));await expect(new LiveProvider(true,undefined,calls).submit(props[0],'stable-key')).rejects.toThrow('UNSUPPORTED_COUNCIL_INPUT');expect(calls).toHaveBeenCalledTimes(1);});
  it('an in-flight provider lease prevents concurrent duplicate submissions',async()=>{const x=setup();let release!:()=>void;let entered!:()=>void;const ready=new Promise<void>(resolve=>entered=resolve),gate=new Promise<void>(resolve=>release=resolve);const original=x.provider.submit.bind(x.provider);x.provider.submit=async(p,key)=>{entered();await gate;return original(p,key);};const first=x.handler(req());await ready;expect((await x.handler(req())).status).toBe(202);release();expect((await first).status).toBe(200);expect(x.provider.calls).toBe(1);});
 });
 
 it('persists a long provider cooldown and sends the Retry-After consumed by the runner',async()=>{const x=setup();x.provider.submit=async()=>{x.provider.calls++;throw new ProviderFailure(429,1200);};const first=await x.handler(req());expect(first.status).toBe(429);expect(first.headers.get('retry-after')).toBe('1200');const second=await x.handler(req());expect(second.status).toBe(202);expect(Number(second.headers.get('retry-after'))).toBeGreaterThanOrEqual(1199);expect(x.provider.calls).toBe(1);});
+
+
+describe('ambiguous discovery and completion evidence',()=>{
+ it('refuses duplicate exact labels unless a unique explicit property ID is confirmed',async()=>{
+  const calls=vi.fn<typeof fetch>(async url=>String(url).includes('/addresses?')?Response.json({required_input:'property_id',candidates:[{id:'p:first',label:props[0].address},{id:'p:second',label:props[0].address}]}):Response.json({id:'chosen',status:'done',result:{property_id:'p:second',collections:[]}}));
+  const provider=new LiveProvider(true,undefined,calls);
+  await expect(provider.submit(props[0],'ambiguous-key')).rejects.toThrow('EXACT_ADDRESS_SELECTION_REQUIRED');expect(calls).toHaveBeenCalledTimes(1);
+  expect(await provider.submit({...props[0],propertyId:'p:second'},'confirmed-key')).toMatchObject({status:'done',result:{property_id:'p:second'}});
+  expect(JSON.parse(String(calls.mock.calls[2][1]?.body))).toMatchObject({property_id:'p:second'});
+ });
+ for(const result of [undefined,null,[],{}, {collections:'unknown'}, {collections:[],property_id:123}])it('rejects missing or malformed done evidence in submit and poll: '+JSON.stringify(result),async()=>{
+  const calls=vi.fn<typeof fetch>(async url=>String(url).includes('/addresses?')?Response.json({required_input:'none'}):Response.json({id:'job',status:'done',result}));
+  const provider=new LiveProvider(true,undefined,calls);
+  await expect(provider.submit(props[0],'invalid-key')).rejects.toThrow('INVALID_PROVIDER_RESPONSE');
+  await expect(provider.poll('job')).rejects.toThrow('INVALID_PROVIDER_RESPONSE');
+ });
+ it('rejects completed evidence for a different confirmed property in submit, poll and stored reads',async()=>{
+  const calls=vi.fn<typeof fetch>(async url=>String(url).includes('/addresses?')?Response.json({required_input:'property_id',candidates:[{id:'p:approved'}]}):String(url).includes('/schedules/')?Response.json({property_id:'p:other',collections:[]}):Response.json({id:'job',status:'done',result:{property_id:'p:other',collections:[]}}));
+  const provider=new LiveProvider(true,undefined,calls),property={...props[0],propertyId:'p:approved'};
+  await expect(provider.submit(property,'wrong-result')).rejects.toThrow('INVALID_PROVIDER_RESPONSE');
+  await expect(provider.poll('job',property)).rejects.toThrow('INVALID_PROVIDER_RESPONSE');
+  await expect(provider.stored('p:approved')).rejects.toThrow('INVALID_PROVIDER_RESPONSE');
+ });
+ it('rejects malformed stored evidence and an unsolicited304 without a prior ETag',async()=>{
+  const provider=new LiveProvider(true,undefined,async()=>Response.json({property_id:'p:approved'}));
+  await expect(provider.stored('p:approved')).rejects.toThrow('INVALID_PROVIDER_RESPONSE');
+  const unchanged=new LiveProvider(true,undefined,async()=>new Response(null,{status:304}));
+  await expect(unchanged.stored('p:approved')).rejects.toThrow('INVALID_PROVIDER_RESPONSE');
+ });
+ it('does not report completion or save an effect when a provider omits the schedule',async()=>{
+  const x=setup();x.provider.submit=async()=>({lookup_id:'empty-done',status:'done'});
+  const response=await x.handler(req());expect(response.status).toBe(503);expect(await response.json()).toMatchObject({reason:'INVALID_PROVIDER_RESPONSE'});
+  expect(x.transport.mock.calls.filter(([url])=>String(url).endsWith('/outcomes'))).toHaveLength(0);
+  const state=await x.store.snapshot();expect(Object.values(state.operations)[0]).toMatchObject({state:'pending'});expect(Object.values(state.operations)[0].effectId).toBeUndefined();
+  expect(state.events.at(-1)).toMatchObject({stage:'provider_unavailable',outcomeClass:'UNAVAILABLE'});
+ });
+ it('does not turn invalid stored evidence into completion or a fresh submission',async()=>{
+  const x=setup();await x.handler(req());const stored=vi.fn(async()=>({result:{property_id:'p:home-sam'}}));
+  const handler=connectorHandler({delegateUrl:'http://delegate',serviceKey:'k',properties:props,store:x.store,provider:{mode:'fixture',declaresAgent:false,submit:x.provider.submit.bind(x.provider),poll:x.provider.poll.bind(x.provider),stored},opsKey:'ops'},x.transport);
+  expect((await handler(req(undefined,'new-occurrence'))).status).toBe(503);expect(x.provider.calls).toBe(1);expect(stored).toHaveBeenCalledTimes(1);
+  expect((await x.store.snapshot()).events.at(-1)?.stage).toBe('provider_unavailable');
+ });
+ it('distinguishes an observed conditional304 from durable replay and preserves source evidence',async()=>{
+  const x=setup();let reads=0;
+  const stored=vi.fn(async(_id:string,etag?:string)=>{reads++;if(reads===1)return {result:{property_id:'p:home-sam',collections:[],retrieved_at:'2026-09-01T00:00:00Z',date_confidence:'published_calendar'},etag:'version-one'};expect(etag).toBe('version-one');return {unchanged:true,etag};});
+  const handler=connectorHandler({delegateUrl:'http://delegate',serviceKey:'k',properties:props,store:x.store,provider:{mode:'fixture',declaresAgent:false,submit:x.provider.submit.bind(x.provider),poll:x.provider.poll.bind(x.provider),stored},opsKey:'ops'},x.transport);
+  expect(await (await handler(req(undefined,'occurrence-first'))).json()).toMatchObject({unchanged:false,replayed:false});
+  expect(await (await handler(req(undefined,'occurrence-second'))).json()).toMatchObject({unchanged:false,replayed:false});
+  const unchanged=await (await handler(req(undefined,'occurrence-third'))).json();expect(unchanged).toMatchObject({unchanged:true,replayed:false,result:{unchanged:true,result:{retrieved_at:'2026-09-01T00:00:00Z',date_confidence:'published_calendar'}}});
+  expect((await x.store.snapshot()).events.at(-1)).toMatchObject({stage:'lookup_completed'});expect((await x.store.snapshot()).events.at(-1)?.outcomeClass).toBeUndefined();
+  expect(await (await handler(req(undefined,'occurrence-third'))).json()).toMatchObject({unchanged:false,replayed:true,result:{unchanged:true}});
+  expect(stored).toHaveBeenCalledTimes(2);expect(x.provider.calls).toBe(1);expect((await x.store.snapshot()).events.at(-1)).toMatchObject({stage:'replay',outcomeClass:'REPLAY'});
+ });
+});
+
+
+it('keeps a queued lookup recoverable when polling returns done without evidence',async()=>{
+ const x=setup();x.provider.scenario='queued';expect((await x.handler(req())).status).toBe(202);
+ await x.store.transaction(s=>{for(const op of Object.values(s.operations))op.nextPollAt=0;});
+ x.provider.poll=async id=>({lookup_id:id,status:'done'});
+ expect((await x.handler(req())).status).toBe(503);
+ const op=Object.values((await x.store.snapshot()).operations)[0];expect(op.state).toBe('pending');expect(op.lookupId).toBeTruthy();expect(op.effectId).toBeUndefined();
+ expect(x.transport.mock.calls.filter(([url,init])=>String(url).endsWith('/outcomes')&&JSON.parse(String(init?.body)).status==='COMPLETED')).toHaveLength(0);
+});
+it('refuses a done result for another configured property at the service boundary',async()=>{
+ const x=setup();const handler=connectorHandler({delegateUrl:'http://delegate',serviceKey:'k',properties:[{...props[0],propertyId:'p:approved'}],store:x.store,provider:x.provider,opsKey:'ops'},x.transport);
+ expect((await handler(req())).status).toBe(503);expect(Object.values((await x.store.snapshot()).operations)[0].effectId).toBeUndefined();
+});

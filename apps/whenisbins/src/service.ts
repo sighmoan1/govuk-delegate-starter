@@ -1,7 +1,7 @@
 import {createHash,randomUUID,timingSafeEqual} from 'node:crypto';
 import catalogue from '../service-catalogue.json';
 import {type Store,type Event,type Operation} from './store';
-import {type Provider,type Property,ProviderFailure} from './provider';
+import {type Provider,type Property,ProviderFailure,validateSchedule} from './provider';
 export const SERVICE='whenisbins-connector';
 export const CAPABILITY='read_collection_dates';
 const canonical=(v:unknown):string=>Array.isArray(v)?'['+v.map(canonical).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical((v as Record<string,unknown>)[k])).join(',')+'}':JSON.stringify(v);
@@ -53,25 +53,32 @@ export function connectorHandler(config:Config,transport:typeof fetch=fetch){
     const prior=(await config.store.snapshot()).operations;
     const saved=Object.values(prior).reverse().find(x=>x!==op&&x.owner===principal&&x.property===resource.id&&x.state==='done'&&x.result?.status==='done'&&(x.result.result as any)?.property_id);
     if(!op.lookupId&&saved&&config.provider.stored){
-     try{const stored=await config.provider.stored(String((saved.result!.result as any).property_id),saved.etag);lookup={status:'done' as const,lookup_id:saved.lookupId!,result:stored.unchanged?saved.result!.result as Record<string,unknown>:stored.result};op.etag=stored.etag;op.effectId=saved.effectId;}catch(e){if(!(e instanceof ProviderFailure)||e.status!==404)throw e;}
+     try{const stored=await config.provider.stored(String((saved.result!.result as any).property_id),saved.etag);lookup={status:'done' as const,lookup_id:saved.lookupId!,result:stored.unchanged?saved.result!.result as Record<string,unknown>:stored.result,unchanged:stored.unchanged===true};
+      validateSchedule(lookup.result,String((saved.result!.result as any).property_id));
+      if(stored.unchanged&&!saved.etag)throw Error('INVALID_PROVIDER_RESPONSE');
+      op.etag=stored.etag;op.effectId=saved.effectId;}catch(e){if(!(e instanceof ProviderFailure)||e.status!==404)throw e;}
     }
-    lookup??=op.lookupId?await config.provider.poll(op.lookupId):await config.provider.submit(resource,op.key);
+    lookup??=op.lookupId?await config.provider.poll(op.lookupId,resource):await config.provider.submit(resource,op.key);
+    if(lookup.status==='done')validateSchedule(lookup.result,resource.propertyId??(op.result?.result as any)?.property_id);
     op.leaseUntil=undefined;op.nextPollAt=now()+Math.max(5,lookup.retry_after_seconds??5)*1000;op.lookupId=lookup.lookup_id;op.result={...lookup};op.state=['done','failed'].includes(lookup.status)?'done':'pending';if(lookup.status==='done')op.effectId??=randomUUID();
     await config.store.transaction(s=>{s.operations[operationKey!]=op;});
    }
    const state=String(op.result?.status??'queued');
-   event.effectId=op.effectId;event.decision=state==='failed'?'REFUSED':'ALLOWED';event.stage=replay?'replay':state==='done'?'lookup_completed':state==='failed'?'refused':'admitted';event.outcomeClass=replay?'REPLAY':state==='done'?'UNIQUE_OPERATION':state==='failed'?'BUSINESS_REFUSAL':undefined;
+   if(state==='done')validateSchedule(op.result?.result,resource.propertyId);
+   // A current conditional read is distinct from replaying its durable receipt.
+   const unchanged=!replay&&op.result?.unchanged===true;
+   event.effectId=op.effectId;event.decision=state==='failed'?'REFUSED':'ALLOWED';event.stage=replay?'replay':state==='done'?'lookup_completed':state==='failed'?'refused':'admitted';event.outcomeClass=replay?'REPLAY':state==='done'?(unchanged?undefined:'UNIQUE_OPERATION'):state==='failed'?'BUSINESS_REFUSAL':undefined;
    // Local durable result is authoritative even if Delegate outcome reporting is temporarily unavailable.
    let reported=false;try{await post('/api/outcomes',{check_id:check.check_id,status:state==='done'?'COMPLETED':state==='failed'?'FAILED':'SUBMITTED',reference:op.effectId,idempotency_key:operationKey+':'+state});reported=true;}catch{}
    const status=state==='done'?200:state==='failed'?422:202;
-   return finish({decision:state==='failed'?'DENY':'ALLOW',delegate_check_id:check.check_id,result:op.result,replayed:replay,outcome_reported:reported,mode:config.provider.mode},status);
+   return finish({decision:state==='failed'?'DENY':'ALLOW',delegate_check_id:check.check_id,result:op.result,replayed:replay,unchanged,outcome_reported:reported,mode:config.provider.mode},status);
   }catch(e){
    const message=e instanceof Error?e.message:'UNAVAILABLE';
    if(operationKey)await config.store.transaction(s=>{if(s.operations[operationKey!]){s.operations[operationKey!].leaseUntil=undefined;if(e instanceof ProviderFailure)s.operations[operationKey!].nextPollAt=now()+Math.max(5,Number.isFinite(e.retryAfter)?e.retryAfter:30)*1000;}}).catch(()=>{});
    if(message==='IDEMPOTENCY_CONFLICT')return finish({reason:message},409);
    event.stage=message==='DELEGATE_UNAVAILABLE'?'refused':'provider_unavailable';event.outcomeClass='UNAVAILABLE';
    if(e instanceof ProviderFailure)return finish({decision:'DENY',reason:'PROVIDER_UNAVAILABLE',retry_after_seconds:e.retryAfter,provider_status:e.status},e.status===429?429:503);
-   return finish({decision:'DENY',reason:['DELEGATE_UNAVAILABLE','STORE_BUSY','EXACT_ADDRESS_SELECTION_REQUIRED','UNSUPPORTED_COUNCIL_INPUT'].includes(message)?message:'SERVICE_UNAVAILABLE'},503);
+   return finish({decision:'DENY',reason:['DELEGATE_UNAVAILABLE','STORE_BUSY','EXACT_ADDRESS_SELECTION_REQUIRED','UNSUPPORTED_COUNCIL_INPUT','INVALID_PROVIDER_RESPONSE'].includes(message)?message:'SERVICE_UNAVAILABLE'},503);
   }
  };
 }

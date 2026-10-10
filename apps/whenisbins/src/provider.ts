@@ -1,7 +1,14 @@
 import {randomUUID} from 'node:crypto';
 export type Property={id:string;subject:string;label:string;postcode:string;address:string;propertyId?:string};
-export type Lookup={status:'queued'|'running'|'partial'|'done'|'failed';lookup_id:string;result?:Record<string,unknown>;retry_after_seconds?:number};
-export interface Provider {mode:'fixture'|'live';declaresAgent:boolean; submit(property:Property,key:string):Promise<Lookup>;poll(id:string):Promise<Lookup>;stored?(id:string,etag?:string):Promise<{result?:Record<string,unknown>;etag?:string;unchanged?:boolean}>}
+export type Lookup={status:'queued'|'running'|'partial'|'done'|'failed';lookup_id:string;result?:Record<string,unknown>;retry_after_seconds?:number;unchanged?:boolean};
+export interface Provider {mode:'fixture'|'live';declaresAgent:boolean; submit(property:Property,key:string):Promise<Lookup>;poll(id:string,property?:Property):Promise<Lookup>;stored?(id:string,etag?:string):Promise<{result?:Record<string,unknown>;etag?:string;unchanged?:boolean}>}
+// Empty collections are valid evidence of no published dates; an absent schedule is unknown.
+export function validateSchedule(value:unknown,expectedPropertyId?:string):asserts value is Record<string,unknown>{
+ if(!value||typeof value!=='object'||Array.isArray(value))throw Error('INVALID_PROVIDER_RESPONSE');
+ const result=value as Record<string,unknown>;
+ if(!Array.isArray(result.collections)&&!Array.isArray(result.by_date))throw Error('INVALID_PROVIDER_RESPONSE');
+ if(result.property_id!==undefined&&(typeof result.property_id!=='string'||!result.property_id||expectedPropertyId!==undefined&&result.property_id!==expectedPropertyId))throw Error('INVALID_PROVIDER_RESPONSE');
+}
 export class ProviderFailure extends Error {constructor(readonly status:number,readonly retryAfter:number=30){super('PROVIDER_UNAVAILABLE');}}
 export class FixtureProvider implements Provider {
  mode='fixture' as const;declaresAgent=false;calls=0;jobs=new Map<string,Lookup>();byKey=new Map<string,string>();scenario:'done'|'queued'|'partial'|'failed'|'unavailable'='done';
@@ -20,13 +27,14 @@ export class LiveProvider implements Provider {
  async submit(p:Property,key:string):Promise<Lookup>{
   const discovery=await (await this.call('/addresses?postcode='+encodeURIComponent(p.postcode))).json();
   if(!['none','property','property_id'].includes(discovery.required_input))throw Error('UNSUPPORTED_COUNCIL_INPUT');
-  const candidate=Array.isArray(discovery.candidates)?discovery.candidates.find((c:Record<string,unknown>)=>p.propertyId?c.id===p.propertyId:c.label===p.address):null;
+  const matches=Array.isArray(discovery.candidates)?discovery.candidates.filter((c:Record<string,unknown>)=>c&&typeof c==='object'&&(p.propertyId?c.id===p.propertyId:c.label===p.address)):[];
+  const candidate=matches.length===1?matches[0]:null;
   if(discovery.required_input==='property_id'&&(!candidate||typeof candidate.id!=='string'||!candidate.id))throw Error('EXACT_ADDRESS_SELECTION_REQUIRED');
   const required=discovery.required_input;
   const payload=required==='none'?{postcode:p.postcode}:required==='property_id'?{postcode:p.postcode,property_id:candidate.id}:{postcode:p.postcode,property:p.address};
-  return this.parse(await this.call('/lookups',{method:'POST',headers:{'Idempotency-Key':key},body:JSON.stringify(payload)}));
+  return this.parse(await this.call('/lookups',{method:'POST',headers:{'Idempotency-Key':key},body:JSON.stringify(payload)}),required==='property_id'?candidate.id:p.propertyId);
  }
- private async parse(r:Response):Promise<Lookup>{const b=await r.json();if(typeof b.id!=='string'||!['queued','running','partial','done','failed'].includes(b.status))throw Error('INVALID_PROVIDER_RESPONSE');return {status:b.status,lookup_id:b.id,...(b.result?{result:b.result}:{}),retry_after_seconds:Math.max(5,Number(r.headers.get('retry-after'))||5)};}
- async poll(id:string){return this.parse(await this.call('/lookups/'+encodeURIComponent(id)));}
- async stored(id:string,etag?:string){const r=await this.call('/schedules/'+encodeURIComponent(id.replace(/^p:/,'')),{headers:etag?{'If-None-Match':etag}:{}});if(r.status===304)return {unchanged:true,etag};return {result:await r.json(),etag:r.headers.get('etag')??undefined};}
+ private async parse(r:Response,expectedPropertyId?:string):Promise<Lookup>{const b=await r.json();if(!b||typeof b.id!=='string'||!b.id||!['queued','running','partial','done','failed'].includes(b.status))throw Error('INVALID_PROVIDER_RESPONSE');if(b.status==='done')validateSchedule(b.result,expectedPropertyId);return {status:b.status,lookup_id:b.id,...(b.result?{result:b.result}:{}),retry_after_seconds:Math.max(5,Number(r.headers.get('retry-after'))||5)};}
+ async poll(id:string,property?:Property){return this.parse(await this.call('/lookups/'+encodeURIComponent(id)),property?.propertyId);}
+ async stored(id:string,etag?:string){const r=await this.call('/schedules/'+encodeURIComponent(id.replace(/^p:/,'')),{headers:etag?{'If-None-Match':etag}:{}});if(r.status===304){if(!etag)throw Error('INVALID_PROVIDER_RESPONSE');return {unchanged:true,etag};}const result=await r.json();validateSchedule(result,id);return {result,etag:r.headers.get('etag')??undefined};}
 }
