@@ -8,7 +8,7 @@ const observed = <T extends z.ZodType>(value: T) => z.object({
   value: value.nullable(), status: z.enum(["known", "inferred", "missing"]),
   provenance: z.enum(["source_record", "source_clock", "client_claim", "pseudonymised", "not_recorded"]),
 }).strict().refine(v => { const field = v as unknown as { value: unknown; status: string }; return field.status === "missing" ? field.value === null : field.value !== null; }, "Missingness and value must agree");
-const LegacyEvent = z.object({
+export const LegacyEvent = z.object({
   schema_version: z.literal(1), source_service: z.enum(["hmrc", "delegate"]), source_event_id: text.min(1),
   event_kind: z.enum(["service_request", "authority_check", "browser_sensor"]).default("service_request"),
   occurred_at: z.object({ value: z.iso.datetime(), status: z.literal("known"), provenance: z.literal("source_clock") }).strict(), run_id: observed(text),

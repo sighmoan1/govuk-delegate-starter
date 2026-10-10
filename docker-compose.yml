@@ -253,6 +253,7 @@ services:
       PUBLIC_MODE: ${PUBLIC_MODE:-false}
       RESEARCH_INGEST_ENABLED: ${RESEARCH_INGEST_ENABLED:-false}
       OBSERVATORY_COLLECTION_KEY: ${OBSERVATORY_COLLECTION_KEY:-dev-observatory-collection-key}
+      OBSERVATORY_EVALUATION_KEY: ${OBSERVATORY_EVALUATION_KEY:-}
       HMRC_RESEARCH_FEED_URL: http://hmrc:3302/api/research/events
       HMRC_RESEARCH_FEED_KEY: ${RESEARCH_FEED_KEY:-dev-research-feed-key}
       DELEGATE_RESEARCH_FEED_URL: http://delegate:3300/api/research/events

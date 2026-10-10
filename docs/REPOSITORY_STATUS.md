@@ -1,6 +1,32 @@
-# Repository and delivery status — 9 October 2026
+# Repository and delivery status
 
-## Audit baseline
+The audit sections below preserve their original dates and revisions. The latest delivery snapshot appears first; the 9 October records remain below for provenance.
+
+## Delivery snapshot — 10 October 2026
+
+Confirmed merged code baseline: `fd2bb5f778a440af7485a97a82ee47005aaf8cfc`, containing PRs #108, #109, #110, #124, #125 and #126. This is a source/delivery reconciliation, not a claim that the shared or public runtime has been rebuilt.
+
+The core comprises six apps: One Login, Delegate, HMRC, About, Observatory and an independent synthetic council service. The council proof, catalogue-driven consent, immutable original approval evidence and service-owned restrictions are implemented. The earlier branch inventories below describe their original audit revision rather than the current backlog.
+
+The protected Observatory dashboard/event explorer ([PR #110](https://github.com/sighmoan1/govuk-delegate-starter/pull/110)) and optional one-off WhenIsBins connector ([PR #126](https://github.com/sighmoan1/govuk-delegate-starter/pull/126)) are merged. The connector is additional to the six core apps and checks Delegate authority locally; it does not imply native upstream Delegate checks.
+
+The blind classification contract ([PR #109](https://github.com/sighmoan1/govuk-delegate-starter/pull/109)) is also merged. Its deterministic integration stub describes recorded signature evidence; it is not a trained statistical detector or proof of AI execution.
+
+The agent-owned durable recurring lookup runner ([PR #124](https://github.com/sighmoan1/govuk-delegate-starter/pull/124)) is merged. Its agreements, occurrence receipts and deliberately started worker are external to Delegate; every connector execution rechecks authority. No unattended job is installed by merging it.
+
+The minimised connector research source and private evidence view ([PR #125](https://github.com/sighmoan1/govuk-delegate-starter/pull/125)) are merged. They preserve HMRC/Delegate version-one feeds and report connector stages/correlation counts without exporting evaluator truth or claiming independently verified effects. Connector ledger bindings remain REQUEST_ONLY; existing classifier adapters do not accept this source.
+
+The genuine-participant pilot document ([PR #108](https://github.com/sighmoan1/govuk-delegate-starter/pull/108)) is merged as a proposal and handoff. It does not launch a study or approve participant recruitment. Genuine participant research, model training/evaluation and real Fingerprint vendor validation remain outstanding. The bounded B/C comparison remains technical evidence with no measured citizen-effort, financial or field benefit.
+
+### Separate live deployment
+
+The public WhenIsBins demo was last recorded at revision `3744c0b60a7eb34371f4a1e43d78366b37f2845d`. Its [acceptance checkpoint](https://github.com/sighmoan1/govuk-delegate-starter/issues/119#issuecomment-6096489006) records real lookup, scoped consent, revocation/refusal, reminder signup/verification-mail activation and recurring lookup after restart. The pinned deployment is separate from the current main source and subsequent integration fixes; merging source does not update a running image.
+
+Actual cancellation remains unverified: the owned stop link has not arrived in a subsequent reminder. The test subscription remains active; both test schedules are stopped. [PR #123](https://github.com/sighmoan1/govuk-delegate-starter/pull/123) and [PR #127](https://github.com/sighmoan1/govuk-delegate-starter/pull/127) remain draft. Fixture cancellation coverage does not satisfy live acceptance. The identity simulator remains synthetic, the source calendar retains its retrieval/coverage limitations, and hosting depends on the presenter Mac and Docker. No fresh live provider action, signup, cancellation or deployment was performed for this documentation refresh.
+
+Tom-dependent issues #120–122 remain ON HOLD. Our observations describe our connector, not Tom's other visitors, council processing costs or independently verified AI execution. National decisions remain deferred with responsible owner roles and reopening triggers.
+
+## Audit baseline — 9 October 2026
 
 Remote `main` was fetched at `2882efc955403d5b84fc3a97b8a9ce516b629ef9` (catalogue publication, PR #85). The local imported snapshot `74bbdbd` had no shared Git ancestor with remote main. It was preserved as `backup/local-import-2026-10-09`; its only working-tree change, Finder metadata, was stashed. Local `main` was recreated tracking `origin/main` and verified zero commits ahead/behind with a clean tree. Documentation work continues on issue #87's focused branch.
 

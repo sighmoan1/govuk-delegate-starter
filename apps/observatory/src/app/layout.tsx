@@ -18,7 +18,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <Link className="brand-link" href="/"><span className="brand-name">Observatory<span className="brand-dot">.</span></span></Link>
         </div>
       </header>
-      <div className="width-container"><main id="main-content" className="main-wrapper">{children}</main></div>
+      <div className="width-container"><p className="phase-banner">Independent research prototype — not an official GOV.UK service.</p><main id="main-content" className="main-wrapper">{children}</main></div>
       <footer className="service-footer"><div className="width-container">
         <p className="small">Independent research prototype. Not an official GOV.UK service. Synthetic data only at this stage.</p>
       </div></footer>
