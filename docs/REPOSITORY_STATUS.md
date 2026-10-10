@@ -1,8 +1,22 @@
 # Repository and delivery status
 
-The audit sections below preserve their original dates and revisions. The latest delivery snapshot will follow those historical records.
+The audit sections below preserve their original dates and revisions. The latest delivery snapshot appears first; the 9 October records remain below for provenance.
 
-## Audit baseline
+## Delivery snapshot — 10 October 2026
+
+The core comprises six apps: One Login, Delegate, HMRC, About, Observatory and an independent synthetic council service. The council proof, catalogue-driven consent, immutable original approval evidence and service-owned restrictions are implemented. The earlier branch inventories below describe their original audit revision rather than the current backlog.
+
+The genuine-participant pilot document ([PR #108](https://github.com/sighmoan1/govuk-delegate-starter/pull/108)) is merged as a proposal and handoff. It does not launch a study or approve participant recruitment. Genuine participant research, model training/evaluation and real Fingerprint vendor validation remain outstanding. The bounded B/C comparison remains technical evidence with no measured citizen-effort, financial or field benefit.
+
+### Separate live deployment
+
+The public WhenIsBins demo was last recorded at revision `3744c0b60a7eb34371f4a1e43d78366b37f2845d`. Its [acceptance checkpoint](https://github.com/sighmoan1/govuk-delegate-starter/issues/119#issuecomment-6096489006) records real lookup, scoped consent, revocation/refusal, reminder signup/verification-mail activation and recurring lookup after restart. The pinned deployment is separate from the current main source and subsequent integration fixes; merging source does not update a running image.
+
+Actual cancellation remains unverified: the owned stop link has not arrived in a subsequent reminder. The test subscription remains active; both test schedules are stopped. [PR #123](https://github.com/sighmoan1/govuk-delegate-starter/pull/123) and [PR #127](https://github.com/sighmoan1/govuk-delegate-starter/pull/127) remain draft. Fixture cancellation coverage does not satisfy live acceptance. The identity simulator remains synthetic, the source calendar retains its retrieval/coverage limitations, and hosting depends on the presenter Mac and Docker. No fresh live provider action, signup, cancellation or deployment was performed for this documentation refresh.
+
+Tom-dependent issues #120–122 remain ON HOLD. Our observations describe our connector, not Tom's other visitors, council processing costs or independently verified AI execution. National decisions remain deferred with responsible owner roles and reopening triggers.
+
+## Audit baseline — 9 October 2026
 
 Remote `main` was fetched at `2882efc955403d5b84fc3a97b8a9ce516b629ef9` (catalogue publication, PR #85). The local imported snapshot `74bbdbd` had no shared Git ancestor with remote main. It was preserved as `backup/local-import-2026-10-09`; its only working-tree change, Finder metadata, was stashed. Local `main` was recreated tracking `origin/main` and verified zero commits ahead/behind with a clean tree. Documentation work continues on issue #87's focused branch.
 
