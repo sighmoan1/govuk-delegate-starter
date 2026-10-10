@@ -11,12 +11,19 @@ export async function executeWhenIsBinsEmailWorkflow(input:NativeEmailInput):Pro
  if(prior&&prior.actionHash!==hash)return {...prior,status:'refused',reason:'OPERATION_CONFLICT'};
  if(hash!==actionHash(approvedAction)||property.address!==action.property||designated.address!==property.address||designated.postcode!==property.postcode||designated.propertyId!==property.propertyId||designated.email!==action.email||action.reminderChoice!=='evening_before'||!['signup','cancel'].includes(action.operation)||!operationId)return save('refused','EXACT_APPROVAL_MISMATCH');
  if(prior){if(['confirmed','refused'].includes(prior.status))return prior;const observed=await input.reconcile?.(action).catch(()=>'unknown' as const)??'unknown';if(observed==='confirmed')return save('confirmed','INDEPENDENT_SERVICE_OR_MAILBOX_EVIDENCE');if(input.confirmationPath){
-  if(action.operation!=='signup'||!['submitted','confirmation_required'].includes(prior.status)||prior.reason==='CONFIRMATION_VISIT_AWAITING_INDEPENDENT_EVIDENCE')return prior;
+  if(action.operation!=='signup'||!['submitted','confirmation_required'].includes(prior.status)||['CONFIRMATION_VISIT_AWAITING_INDEPENDENT_EVIDENCE','CONFIRMATION_POST_AWAITING_INDEPENDENT_EVIDENCE'].includes(prior.reason))return prior;
   let verification:URL;try{verification=new URL(input.confirmationPath);}catch{return {...prior,status:'refused',reason:'INVALID_CONFIRMATION_FLOW'};}
   if(verification.origin!==origin||verification.username||verification.password||verification.search||verification.hash||!/^\/verify\/[A-Za-z0-9_-]+$/.test(verification.pathname))return {...prior,status:'refused',reason:'INVALID_CONFIRMATION_FLOW'};
   await save('unknown','CONFIRMATION_VISIT_IN_PROGRESS');
   try{page.setDefaultNavigationTimeout(20000);const response=await page.goto(verification.href);if(!response||response.status()>=400||new URL(page.url()).origin!==origin)return save('unknown','CONFIRMATION_RESPONSE_UNCERTAIN');
-   return save('submitted','CONFIRMATION_VISIT_AWAITING_INDEPENDENT_EVIDENCE');
+   const activation=page.locator('form[method="post"]');
+   if(await page.getByRole('heading',{name:'Turn on bin reminders?',exact:true}).count()!==1||await activation.count()!==1)return save('submitted','CONFIRMATION_VISIT_AWAITING_INDEPENDENT_EVIDENCE');
+   if(new URL(await activation.getAttribute('action')??'',origin).href!==verification.href||!await activation.locator('input[name="_csrf"]').inputValue())return save('refused','INVALID_CONFIRMATION_FORM');
+   await save('unknown','CONFIRMATION_POST_IN_PROGRESS');
+   const [activated]=await Promise.all([page.waitForResponse(r=>r.request().method()==='POST'&&r.url()===verification.href),activation.getByRole('button',{name:'Turn on reminders',exact:true}).click()]);
+   if(activated.status()>=500)return save('unknown','CONFIRMATION_RESPONSE_UNCERTAIN');
+   if(activated.status()>=400)return save('refused','NATIVE_CONFIRMATION_REFUSAL');
+   return save('submitted','CONFIRMATION_POST_AWAITING_INDEPENDENT_EVIDENCE');
   }catch{return save('unknown','CONFIRMATION_RESPONSE_UNCERTAIN');}
  }if(observed!=='absent')return prior;}
  if(input.confirmationPath)return save('refused','OWNED_PENDING_SIGNUP_REQUIRED');
@@ -37,6 +44,7 @@ export async function executeWhenIsBinsEmailWorkflow(input:NativeEmailInput):Pro
    if(!await form.locator('input[name="_csrf"]').inputValue())return save('refused','SITE_PROTECTION_MISSING');
    await form.locator('input[type="email"][name="email"]').fill(action.email);
    const [submitted]=await Promise.all([page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).origin===origin&&new URL(r.url()).pathname==='/remind'),form.getByRole('button',{name:'Email me reminders',exact:true}).click()]);
+   if(submitted.status()>=500)return save('unknown','BROWSER_OR_RESPONSE_UNCERTAIN');
    if(submitted.status()>=400)return save('refused','NATIVE_SERVICE_REFUSAL');
   }else{
    if(!input.cancellationPath)return save('refused','OWNED_STOP_LINK_REQUIRED');
