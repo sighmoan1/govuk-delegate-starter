@@ -12,7 +12,8 @@
 //     Create public.config.json (gitignored):
 //       { "tunnel": "govuk-delegate", "tunnelId": "<uuid>", "hosts": { "onelogin": "login-demo.example.org",
 //         "delegate": "delegate-demo.example.org", "hmrc": "hmrc-demo.example.org" } }
-//     Optionally add hosts.about for the read-only briefing instance on :3306.
+//     Optionally add hosts.about for read-only briefings on :3306.
+//     Verified live delivery may add hosts.whenisbins on :3310 through update only.
 //     with `cloudflared tunnel create` and `cloudflared tunnel route dns --overwrite-dns <uuid> <host>`.
 //
 // Public mode:
@@ -21,12 +22,13 @@
 //   - demo endpoints (reset, swarm set-up) refuse anything that came through the tunnel.
 // The presenter About console stays local. A separate read-only briefing surface may be public.
 // `node scripts/public.mjs update` preserves data and credentials on an existing named stack.
-// All data is synthetic.
+// GOV.UK identity/service data is synthetic. Optional WhenIsBins delivery uses a real external service.
 import { spawn, execFileSync } from "node:child_process";
 import { homedir } from "node:os";
 import { randomBytes } from "node:crypto";
 import { mkdirSync, openSync, readFileSync, writeFileSync, existsSync, rmSync, chmodSync } from "node:fs";
 import { setTimeout as sleep } from "node:timers/promises";
+import { whenisbinsPublicPlan, updatePublicAddresses, publicEnvValues } from "./public-whenisbins.mjs";
 
 const STATE = ".public";
 const ENV_FILE = ".env.public";
@@ -37,12 +39,13 @@ const TUNNELS = [
   { name: "hmrc", port: 3302, env: "HMRC_PUBLIC_URL" },
 ];
 const briefingTunnel = { name: "about", port: 3306, env: "ABOUT_PUBLIC_URL" };
-const tunnelsFor = (named) => named && !named.hosts.about ? TUNNELS : [...TUNNELS, briefingTunnel];
+const whenisbinsTunnel = { name: "whenisbins", port: 3310, env: "WHENISBINS_PUBLIC_URL" };
+const tunnelsFor = (named, live = false) => [...(named && !named.hosts.about ? TUNNELS : [...TUNNELS, briefingTunnel]), ...(live ? [whenisbinsTunnel] : [])];
 const writeNamedIngress = (named, tunnels) => {
   const ingress = tunnels.map(t => `  - hostname: ${named.hosts[t.name]}\n    service: http://localhost:${t.port}`).join("\n");
   writeFileSync(`${STATE}/cloudflared.yml`, `tunnel: ${named.tunnelId}\ncredentials-file: ${homedir()}/.cloudflared/${named.tunnelId}.json\ningress:\n${ingress}\n  - service: http_status:404\n`);
 };
-const APPS = ["onelogin", "delegate", "hmrc", "about", "about-public"];
+const APPS = ["onelogin", "delegate", "hmrc", "hmrc-worker", "about", "about-public", "whenisbins-public"];
 
 const sh = (cmd, args, opts = {}) => execFileSync(cmd, args, { stdio: "inherit", ...opts });
 const secret = () => randomBytes(32).toString("base64url");
@@ -54,6 +57,7 @@ async function start() {
 
   mkdirSync(STATE, { recursive: true });
   const named = existsSync(NAMED_CONFIG) ? JSON.parse(readFileSync(NAMED_CONFIG, "utf8")) : null;
+  if (named?.hosts?.whenisbins) fail("Use the non-resetting update command with verified private inputs to add live WhenIsBins.");
   const tunnels = tunnelsFor(named);
   const pids = {};
   const urls = {};
@@ -151,17 +155,19 @@ async function update() {
   const pids = JSON.parse(readFileSync(`${STATE}/pids.json`,"utf8"));
   const oldEnv = readFileSync(ENV_FILE,"utf8");
   if (!/^PUBLIC_MODE=true$/m.test(oldEnv)) fail("Existing environment is not in public mode.");
-  // Preserve every existing credential. Only add/replace the public explanation address.
+  const whenisbins = whenisbinsPublicPlan(named, oldEnv);
+  // Preserve every existing credential. Only update non-secret public addresses.
   const aboutUrl = `https://${named.hosts.about}`;
-  const nextEnv = oldEnv.split("\n").filter(l => !l.startsWith("ABOUT_PUBLIC_URL=")).join("\n").trimEnd()+`\nABOUT_PUBLIC_URL=${aboutUrl}\n`;
+  const nextEnv = updatePublicAddresses(oldEnv, aboutUrl, whenisbins);
   writeFileSync(ENV_FILE,nextEnv,{mode:0o600});chmodSync(ENV_FILE,0o600);
   console.log("Building the public update; existing database volumes and credentials are retained…");
-  sh("docker",["compose","--profile","public-briefing","--env-file",ENV_FILE,"up","--build","-d","onelogin","delegate","hmrc","hmrc-worker","about","about-public"]);
+  sh("docker",["compose","--profile","public-briefing",...(whenisbins.enabled ? ["--profile","whenisbins-public"] : []),"--env-file",ENV_FILE,"up","--build","-d","onelogin","delegate","hmrc","hmrc-worker","about","about-public",...(whenisbins.enabled ? ["whenisbins-public"] : [])]);
   // Check the public instance locally before switching ingress; its root redirects
   // to the public address, which is not routed to this instance yet.
   for (const port of [3300,3301,3302,3304,3306]) await waitFor(`http://localhost:${port}${port === 3306 ? "/briefing" : "/"}`);
-  // Switch the named ingress only after the read-only surface is ready.
-  writeNamedIngress(named,tunnelsFor(named));
+  if (whenisbins.enabled) await waitFor("http://localhost:3310/health");
+  // Switch ingress only after every requested surface is ready.
+  writeNamedIngress(named,tunnelsFor(named, whenisbins.enabled));
   if (pids.tunnel) {
     try {
       const command=execFileSync("ps",["-p",String(pids.tunnel),"-o","command="],{encoding:"utf8"});
@@ -173,17 +179,26 @@ async function update() {
   const child=spawn("cloudflared",["--config",`${STATE}/cloudflared.yml`,"tunnel","--no-autoupdate","run"],{detached:true,stdio:["ignore",openSync(log,"a"),openSync(log,"a")]});
   child.unref();pids.tunnel=child.pid;writeFileSync(`${STATE}/pids.json`,JSON.stringify(pids,null,2));
   await waitFor(`${aboutUrl}/briefing`,120);
-  console.log(`Public briefings: ${aboutUrl}/briefing\nUpdate complete; no demo reset or credential rotation performed.`);
+  if (whenisbins.enabled) await waitFor(`${whenisbins.url}/health`,120);
+  console.log(`Public briefings: ${aboutUrl}/briefing${whenisbins.enabled ? `\nLive WhenIsBins presenter: ${whenisbins.url}` : ""}\nUpdate complete; no demo reset or credential rotation performed.`);
 }
 
 async function stop() {
+  const savedEnv = existsSync(ENV_FILE) ? publicEnvValues(readFileSync(ENV_FILE, "utf8")) : {};
+  const named = existsSync(NAMED_CONFIG) ? JSON.parse(readFileSync(NAMED_CONFIG, "utf8")) : null;
+  const retainLiveInputs = !!named?.hosts?.whenisbins || !!savedEnv.WHENISBINS_PRIVATE_CONFIG_DIR;
   if (existsSync(`${STATE}/pids.json`)) {
     for (const pid of Object.values(JSON.parse(readFileSync(`${STATE}/pids.json`, "utf8")))) {
       try { process.kill(pid); } catch { /* already gone */ }
     }
   }
   console.log("Stopping the public stack…");
-  sh("docker", ["compose", "--profile", "public-briefing", "stop", ...APPS]);
+  sh("docker", ["compose", "--profile", "public-briefing", "--profile", "whenisbins-public", ...(existsSync(ENV_FILE) ? ["--env-file", ENV_FILE] : []), "stop", ...APPS]);
+  if (retainLiveInputs) {
+    writeFileSync(`${STATE}/pids.json`, "{}\n", { mode: 0o600 });
+    console.log("Live public stack stopped. Private configuration, credentials, government data and external state retained; restart with the non-resetting update command.");
+    return;
+  }
   // Recreate the simulator with its local configuration (issuer and return URLs on localhost).
   sh("docker", ["compose", "up", "-d", "db", "simulator"]);
   rmSync(STATE, { recursive: true, force: true });
