@@ -49,3 +49,16 @@ it('rejects external, credential-bearing and malformed private links and require
  for(const stopURL of ['https://other.example/stop/private-token','https://user:pass@whenisbins.com/stop/private-token','https://whenisbins.com/verify/private-token']){await write([{...proof,stopURL}]);await expect(evidence.cancellationPath(action)).rejects.toThrow('INVALID_NATIVE_STOP_LINK');}
  const cancel={...action,operation:'cancel' as const};await write([{...proof,stopURL:'https://whenisbins.com/stop/private-token',cancelledAt:new Date().toISOString()}]);expect(await evidence.cancellationPath(action)).toBe('https://whenisbins.com/stop/private-token');expect(await evidence.reconcile(cancel)).toBe('unknown');await write([{...proof,cancelledAt:'bad-date',cancellationSource:'native_browser_confirmed'}]);expect(await evidence.reconcile(cancel)).toBe('unknown');await write([{...proof,cancelledAt:new Date().toISOString(),cancellationSource:'native_browser_confirmed'}]);expect(await evidence.reconcile(cancel)).toBe('confirmed');
 });
+
+it.each([
+ {status:'unknown' as const,reason:'CONFIRMATION_VISIT_IN_PROGRESS'},
+ {status:'unknown' as const,reason:'CONFIRMATION_RESPONSE_UNCERTAIN'},
+ {status:'submitted' as const,reason:'CONFIRMATION_VISIT_AWAITING_INDEPENDENT_EVIDENCE'}
+])('preserves $reason across repeated delivery checks without reopening activation',async activation=>{
+ await write([proof]);const activationReceipt={...receipt,...activation};
+ await store.transaction(s=>{s.operations[operationId].result={...s.operations[operationId].result,receipt:activationReceipt};});
+ expect(await confirm()).toMatchObject({real_mail_delivered:true,subscription_confirmed:false,duplicate:false});
+ expect(await confirm()).toMatchObject({real_mail_delivered:true,subscription_confirmed:false,duplicate:true});
+ const snapshot=await store.snapshot();expect(snapshot.operations[operationId].result?.receipt).toEqual(activationReceipt);expect(snapshot.events.map(e=>e.stage)).toEqual(['subscription_pending']);
+ expect(await evidence.reconcile(action,operationId)).toBe('unknown');
+});

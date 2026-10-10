@@ -48,7 +48,9 @@ export async function confirmVerifiedMailbox(config:{store:Store;evidence:FileMa
    return {status:'confirmed',evidence:'native_confirmation',real_mail_delivered:true,subscription_confirmed:true,duplicate:false};
   }
   const duplicate=metadata.mailDeliveryObserved===true;
-  metadata.receipt={...metadata.receipt,status:'confirmation_required',reason:'REAL_VERIFICATION_MAIL_DELIVERY_OBSERVED',updatedAt:new Date().toISOString()};metadata.mailDeliveryObserved=true;op.result={...op.result,...metadata};
+  // Mail receipt cannot make an uncertain native activation visit repeatable.
+  if(!metadata.receipt.reason.startsWith('CONFIRMATION_'))metadata.receipt={...metadata.receipt,status:'confirmation_required',reason:'REAL_VERIFICATION_MAIL_DELIVERY_OBSERVED',updatedAt:new Date().toISOString()};
+  metadata.mailDeliveryObserved=true;op.result={...op.result,...metadata};
   if(!duplicate)state.events.push({sourceEventId:randomUUID(),occurredAt:new Date().toISOString(),requestId:randomUUID(),action:'email_signup',stage:'subscription_pending',decision:'OBSERVED',taskId:operationId});
   return {status:'confirmation_required',evidence:'received_verification_email',real_mail_delivered:true,subscription_confirmed:false,duplicate};
  });
