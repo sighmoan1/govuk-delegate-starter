@@ -15,7 +15,7 @@ Suggested top-level links:
 
 ## Start page
 
-### GOV.UK Delegate
+### Delegate
 
 **Give someone or something permission to act for you across government.**
 
@@ -37,7 +37,7 @@ Secondary link:
 
 ## About this project
 
-### Why we are exploring GOV.UK Delegate
+### Why we are exploring Delegate
 
 Software agents will increasingly be able to fill in forms, submit evidence, report changes and carry out other government transactions for people.
 

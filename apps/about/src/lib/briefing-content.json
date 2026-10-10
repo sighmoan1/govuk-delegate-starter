@@ -1,5 +1,5 @@
 {
-  "title": "GOV.UK Delegate briefings",
+  "title": "Delegate briefings",
   "prepared": "10 October 2026",
   "baseline": "6b4f3895f246cfe9e274059c57e4dc1ea7989650",
   "sources": {
@@ -94,7 +94,7 @@
       "duration": "About 10 minutes with demonstration",
       "slides": [
         {
-          "title": "GOV.UK Delegate",
+          "title": "Delegate",
           "paragraphs": [
             "A person gives an assistant limited permission to deal with government.",
             "The service checks that permission. The person can inspect the activity and remove access."
@@ -270,7 +270,7 @@
           ]
         },
         {
-          "title": "Discussion with Public Digital",
+          "title": "Discussion",
           "paragraphs": [
             "Could you use this demonstration to explain delegated agent access to a service team?",
             "Which citizen task would make the next experiment useful, and which department could help test it?"
@@ -288,7 +288,7 @@
       "duration": "About 25–30 minutes with discussion",
       "slides": [
         {
-          "title": "GOV.UK Delegate: design review",
+          "title": "Delegate: design review",
           "paragraphs": [
             "Implemented safeguards, service boundaries and questions for a government trial.",
             "Synthetic prototype. Production ownership and recognition remain open."

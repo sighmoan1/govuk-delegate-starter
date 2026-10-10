@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = { title: "Public Digital briefings" };
+export const metadata: Metadata = { title: "Delegate briefings" };
 export default function BriefingIndex() {
   return <div className="two-thirds">
-    <h1>Public Digital briefings</h1>
+    <h1>Delegate briefings</h1>
     <p className="lead">A concept demonstration and a detailed discussion of the design.</p>
     <p>Independent synthetic prototype. Prepared 10 October 2026. The Observatory dashboard and classifier contract are ready for review in PRs 110 and 109 and remain unmerged at preparation.</p>
     <h2>Concept briefing</h2>

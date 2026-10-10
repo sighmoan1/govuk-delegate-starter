@@ -5,7 +5,7 @@ import { prisma, newPrincipal, authorise, demoAgent, revokeAuthorisation, signAg
 afterAll(() => prisma.$disconnect());
 
 // Scenarios A–F as a receiving service sees them: over HTTP, through the mock
-// HMRC service, which asks GOV.UK Delegate on every request.
+// HMRC service, which asks Delegate on every request.
 
 const ENDPOINT: Record<Cap, [string, string]> = {
   view_tax_code: ["GET", "/api/tax-code"],

@@ -33,7 +33,7 @@ export default async function Prioritise({ searchParams }: { searchParams: Promi
           <thead><tr><th scope="col">Lane</th><th scope="col">How HMRC knows</th><th scope="col">What it gets</th></tr></thead>
           <tbody>
             <tr><th scope="row">Signed-in person</th><td>GOV.UK One Login</td><td>The full service</td></tr>
-            <tr><th scope="row">Authorised agent</th><td>The agent’s own identity, plus a check with GOV.UK Delegate on every request</td><td>A structured API, clear errors, high limits, a full audit trail</td></tr>
+            <tr><th scope="row">Authorised agent</th><td>The agent’s own identity, plus a check with Delegate on every request</td><td>A structured API, clear errors, high limits, a full audit trail</td></tr>
             <tr><th scope="row">Not identified</th><td>Neither of the above</td><td>5 requests a minute, a 1.5 second delay, plain-text refusals, a check on the website</td></tr>
           </tbody>
         </table>
@@ -77,7 +77,7 @@ export default async function Prioritise({ searchParams }: { searchParams: Promi
       <h2>Also measured</h2>
       <p>
         Because authorised agents identify themselves, government can see which agents act for how many people, doing what, and how often
-        they’re refused. See <a href={`${urls.delegate}/ops`}>GOV.UK Delegate’s operations view</a>.
+        they’re refused. See <a href={`${urls.delegate}/ops`}>Delegate’s operations view</a>.
       </p>
     </div>
   );

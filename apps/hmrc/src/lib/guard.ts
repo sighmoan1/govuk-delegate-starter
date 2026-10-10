@@ -18,7 +18,7 @@ export const viewerCan = (v: Viewer, capability: string) => v.kind === "person" 
 
 /**
  * Pages for signed-in people, or for an agent the person has approved.
- *  - an approved agent is checked with GOV.UK Delegate (so removing access ends it);
+ *  - an approved agent is checked with Delegate (so removing access ends it);
  *  - a known agent without permission goes to "Act for someone", even if it
  *    holds the person's own session;
  *  - anyone else is sent to sign in; anonymous traffic that keeps hammering

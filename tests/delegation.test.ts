@@ -8,7 +8,7 @@ import { loadRequest, rejectRequest, returnTo } from "@/lib/requests";
 
 afterAll(() => prisma.$disconnect());
 
-// Scenarios A–F at the level of GOV.UK Delegate's check API: what any service
+// Scenarios A–F at the level of Delegate's check API: what any service
 // gets back when it asks. tests/hmrc.test.ts runs the same scenarios through
 // the HMRC service over HTTP.
 

@@ -12,7 +12,7 @@ import { fingerprint } from "@/lib/idempotency";
 import { POST as claimApi } from "@/app/api/job-expenses/route";
 import { GET as statusApi } from "@/app/api/transactions/[id]/route";
 
-// Issue #21: HMRC receives a claim durably and records it later. GOV.UK Delegate
+// Issue #21: HMRC receives a claim durably and records it later. Delegate
 // is replaced by a table (token -> who it is and who it acts for), as in
 // throughput.test.ts; everything else is HMRC's real code on a real database.
 const delegate = vi.hoisted(() => ({
@@ -264,7 +264,7 @@ describe("accepting: 202 only for work that is stored", () => {
     expect(await txOf(t)).toHaveLength(0);
   });
 
-  it("every attempt is in HMRC's log and GOV.UK Delegate is told ACCEPTED, with the receipt as the reference", async () => {
+  it("every attempt is in HMRC's log and Delegate is told ACCEPTED, with the receipt as the reference", async () => {
     const t = await person();
     const r = await submit(t, { key: "k-log", evidence: "a.pdf" });
     const retry = await submit(t, { key: "k-log", evidence: "a.pdf" });
@@ -443,7 +443,7 @@ describe("retry, backoff and giving up", () => {
     expect(JSON.stringify(status.body)).not.toMatch(/secret-internal-detail|approv|eligib/i);
     expect(status.body.result.claim_reference).toBeUndefined();
 
-    // GOV.UK Delegate is told, and the person's place is free again for a new request.
+    // Delegate is told, and the person's place is free again for a new request.
     expect(delegate.outcomes.filter((o) => o.status === "FAILED")).toEqual([expect.objectContaining({ reason: "PROCESSING_FAILED", idempotency_key: `tx:${id}:FAILED` })]);
     expect((await submit(t, { evidence: "e.pdf" })).status).toBe(202);
   });
@@ -671,7 +671,7 @@ describe("revocation after acceptance (chosen mock behaviour: received claims ar
   });
 });
 
-describe("outcome reporting to GOV.UK Delegate", () => {
+describe("outcome reporting to Delegate", () => {
   it("a report that could not be delivered is sent on a later sweep, once", async () => {
     const t = await person();
     await submit(t, { evidence: "e.pdf" });

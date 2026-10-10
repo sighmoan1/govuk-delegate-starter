@@ -54,7 +54,7 @@ test("operations view shows traffic by lane and the lane policy", async ({ page 
   await page.goto(`${HMRC}/ops`);
   await expect(page.getByRole("heading", { name: "Traffic by lane" })).toBeVisible();
   await expect(page.locator("table.lane-key")).toContainText("Not identified");
-  await expect(page.locator("table.lane-key")).toContainText("checked with GOV.UK Delegate per request");
+  await expect(page.locator("table.lane-key")).toContainText("checked with Delegate per request");
 });
 
 test("anonymous hammering of a signed-in page meets the challenge page; a person can pass it", async ({ page }) => {

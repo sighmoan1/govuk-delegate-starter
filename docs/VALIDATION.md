@@ -1,4 +1,4 @@
-# GOV.UK Delegate — validation and experimental programme
+# Delegate — validation and experimental programme
 
 > **Status: experimental protocol, v0.1, 9 October 2026. Not evidence of real-world effectiveness.**
 >
@@ -92,7 +92,7 @@ File links above are repository-relative source paths, not citations to a publis
 
 - **Arm A:** normal supported citizen/human web journey (context baseline, not necessarily a matched delegated-agent treatment).
 - **Arm B:** high-quality departmental API using service-local representative identity/consent (same capability scope, safeguards, idempotency, queue/fairness and documentation).
-- **Arm C:** **the same API** with GOV.UK Delegate-issued mandate, independent citizen approval, scope/revocation and activity attribution.
+- **Arm C:** **the same API** with Delegate-issued mandate, independent citizen approval, scope/revocation and activity attribution.
 - **Optional D:** Arm C with an improved one-step consent/handoff design (isolates Delegate usability from Delegate policy).
 - **Keep constant:** eligibility, workflow, data, infrastructure allocation, API features, error handling, rate limits, model and tool environment where technically possible. Count the Delegate overhead and consent time; no free infrastructure.
 - **Tasks:** routine read, permitted submission, delegated follow-up, prevented forbidden action, revocation during workflow and provider handoff.

@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: "Why we are exploring this" };
 export default function Why() {
   return (
     <div className="two-thirds">
-      <h1>Why we are exploring GOV.UK Delegate</h1>
+      <h1>Why we are exploring Delegate</h1>
       <p className="lead">Software agents will increasingly fill in forms, submit evidence and report changes for people.</p>
       <p>It is difficult to reliably tell whether something was written or submitted by AI after the fact.</p>
       <p>

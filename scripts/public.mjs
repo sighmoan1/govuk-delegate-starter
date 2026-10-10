@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Put One Login, GOV.UK Delegate and HMRC on temporary public URLs, so agents
+// Put One Login, Delegate and HMRC on temporary public URLs, so agents
 // that browse from the cloud (ChatGPT agent, Google's agent) can reach them.
 //
 //   npm run public        start the tunnels, then the compose stack in public mode
@@ -126,7 +126,7 @@ async function start() {
 Public URLs${named ? "" : " (temporary; they change every time)"}:
 
   HMRC               ${urls.HMRC_PUBLIC_URL}
-  GOV.UK Delegate    ${urls.DELEGATE_PUBLIC_URL}/account/delegates
+  Delegate           ${urls.DELEGATE_PUBLIC_URL}/account/delegates
   GOV.UK One Login   ${urls.ONELOGIN_PUBLIC_URL}
   Briefings          ${urls.ABOUT_PUBLIC_URL ?? "not configured for this named tunnel"}
 

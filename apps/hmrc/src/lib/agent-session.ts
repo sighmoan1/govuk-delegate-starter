@@ -1,6 +1,6 @@
 // An agent acting for someone in a browser, after the person approved it on
 // GOV.UK: a session bound to the agent (and to its signature, if it signs) and
-// to one delegation in GOV.UK Delegate. Every action still asks Delegate.
+// to one delegation in Delegate. Every action still asks Delegate.
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 import { config } from "./config";

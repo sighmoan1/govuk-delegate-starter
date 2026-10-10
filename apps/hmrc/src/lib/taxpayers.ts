@@ -109,7 +109,7 @@ async function loadClaimState(taxpayer: Taxpayer, db: Tx = prisma) {
 const statusBody = (taxpayer: Taxpayer, state: Awaited<ReturnType<typeof loadClaimState>>) => ({
   taxpayer: taxpayer.name, claims: state.claims.map(claimJson), synthetic: true,
   dispute_check: state.checked ? "OK" : "UNAVAILABLE",
-  ...(state.checked ? {} : { dispute_check_notice: "GOV.UK Delegate could not be asked whether the person disputes any answer sent for them. Answers shown as received may still be withdrawn. Check again shortly." }),
+  ...(state.checked ? {} : { dispute_check_notice: "Delegate could not be asked whether the person disputes any answer sent for them. Answers shown as received may still be withdrawn. Check again shortly." }),
 });
 
 /** The person's claims, each with its status and anything HMRC has asked. */

@@ -20,7 +20,7 @@ export default function HowItWorks() {
                     OIDC  │           │  OIDC
                           ▼           ▼
 ┌──────────────────────────────┐   ┌──────────────────────────────┐
-│ GOV.UK Delegate              │   │ HMRC                         │
+│ Delegate                     │   │ HMRC                         │
 │ consent screen               │◄──│ pages for people             │
 │ who can act for you          │   │ API for agents               │
 │ check API                    │   │ asks Delegate per request    │
@@ -42,7 +42,7 @@ export default function HowItWorks() {
 
         <h2>The relationship, not a token</h2>
         <p>
-          The agent does not carry a signed permission around. Each time it calls HMRC, HMRC asks GOV.UK Delegate whether this agent may do
+          The agent does not carry a signed permission around. Each time it calls HMRC, HMRC asks Delegate whether this agent may do
           this thing for this person right now. That is how HMRC’s own agent authorisation works. It also means that when Sam removes access,
           the very next request is refused.
         </p>
@@ -84,14 +84,14 @@ x-service-key: <HMRC's own key>
         <dl className="summary-list">
           <div><dt>Signed-in person</dt><dd>The normal service.</dd><dd /></div>
           <div><dt>Authorised agent</dt><dd>The same service through an API, with clear machine-readable refusals, a high rate limit and a full audit trail: which agent, for whom, under which permission.</dd><dd /></div>
-          <div><dt>Not identified</dt><dd>Slower, tightly limited, plain-text refusals that point to GOV.UK Delegate, and a challenge page on the website.</dd><dd /></div>
+          <div><dt>Not identified</dt><dd>Slower, tightly limited, plain-text refusals that point to Delegate, and a challenge page on the website.</dd><dd /></div>
         </dl>
         <p>“Not identified” is not “malicious”. It includes people who haven’t signed in, assistive technology and agents that haven’t integrated yet. The friction is an incentive to identify yourself, not a verdict.</p>
 
         <h2>Limits belong to the person</h2>
         <p>
           Three things are kept apart. <strong>Identity</strong> is who is asking, and it can be faked or hidden. <strong>Authority</strong> is
-          what the person allowed, checked with GOV.UK Delegate on every request. <strong>Business limits</strong> are how much everyone using that
+          what the person allowed, checked with Delegate on every request. <strong>Business limits</strong> are how much everyone using that
           person’s authority may do together, applied by HMRC when it does the work (asking Delegate whether an agent may act uses none of them): one claim per tax year unless there’s new evidence, a cap on open
           claims, and one change to the refund bank account a month.
         </p>
@@ -127,7 +127,7 @@ x-service-key: <HMRC's own key>
         <h2>What this prototype simplifies</h2>
         <ul>
           <li><strong>A stand-in for One Login.</strong> The sign-in screens are a lookalike. Behind them, the official GOV.UK One Login simulator does the real OpenID Connect work: codes, signed tokens, keys and userinfo. On public URLs it’s strict, with a real password and a code “sent to Sam’s phone”. Locally, any nonempty password is accepted.</li>
-          <li><strong>One sign-in client.</strong> The One Login simulator supports one client, so GOV.UK Delegate and HMRC share it. In production they would be separate.</li>
+          <li><strong>One sign-in client.</strong> The One Login simulator supports one client, so Delegate and HMRC share it. In production they would be separate.</li>
           <li><strong>The same person ID in both places.</strong> Separate relying parties may receive different identifiers for the same person. The shared identifier here is a synthetic shortcut; trusted service-scoped mapping and production integration policy remain unresolved (#35).</li>
           <li><strong>Friction stand-ins.</strong> The rate limit, delay and checkbox challenge only show the incentive. A real service would choose its own proportionate controls.</li>
           <li><strong>Synthetic data.</strong> Nothing connects to real One Login, HMRC or anyone’s records.</li>

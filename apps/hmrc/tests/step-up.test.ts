@@ -5,7 +5,7 @@ import { findOrCreateTaxpayer } from "@/lib/taxpayers";
 import { configureThroughput, resetThroughput } from "@/lib/throughput";
 
 // A change HMRC makes on the strength of the person's approval of THAT change
-// (issue #19). GOV.UK Delegate is replaced by a fake that records every call and
+// (issue #19). Delegate is replaced by a fake that records every call and
 // can be made to fail, so these tests can reach states a running Delegate never
 // produces: it is unreachable, it refuses, HMRC's own write fails after the
 // reservation, the report of completion is lost. Delegate's side of the protocol

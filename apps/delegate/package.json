@@ -2,7 +2,7 @@
   "name": "@prototype/delegate",
   "version": "0.2.0",
   "private": true,
-  "description": "GOV.UK Delegate (prototype): consent, relationship registry, check API, declared-agent activity.",
+  "description": "Delegate (prototype): consent, relationship registry, check API, declared-agent activity.",
   "scripts": {
     "sync-css": "node scripts/sync-css.mjs",
     "dev": "npm run sync-css && prisma generate && next dev -p 3300",

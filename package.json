@@ -2,7 +2,7 @@
   "name": "govuk-delegate-prototype",
   "version": "0.2.0",
   "private": true,
-  "description": "Independent prototype: GOV.UK Delegate, and a mock HMRC service, as separate services. Not an official GOV.UK service.",
+  "description": "Independent prototype: Delegate, and a mock HMRC service, as separate services. Not an official GOV.UK service.",
   "workspaces": [
     "apps/*",
     "packages/*"

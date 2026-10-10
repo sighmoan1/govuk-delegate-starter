@@ -4,7 +4,7 @@ About 25–30 minutes with discussion. Prepared 10 October 2026.
 
 Independent synthetic prototype. Baseline main `6b4f3895f246cfe9e274059c57e4dc1ea7989650`. Observatory PRs #109–110 remain unmerged at preparation.
 
-## 1. GOV.UK Delegate: design review
+## 1. Delegate: design review
 
 Implemented safeguards, service boundaries and questions for a government trial.
 Synthetic prototype. Production ownership and recognition remain open.

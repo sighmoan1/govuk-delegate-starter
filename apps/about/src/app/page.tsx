@@ -33,7 +33,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
   const { reset } = await searchParams;
   return (
     <div>
-      <h1>GOV.UK Delegate</h1>
+      <h1>Delegate</h1>
       <p className="claim">Make legitimate automation easier than illegitimate automation.</p>
 
       <div className="two-thirds">
@@ -59,7 +59,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
           <thead><tr><th scope="col"></th><th scope="col">The question</th><th scope="col">Decided by</th><th scope="col">Can it be faked or hidden?</th></tr></thead>
           <tbody>
             <tr><th scope="row">Identity</th><td>Who or what is making the request?</td><td>A signature, registered credentials, or self-declaration</td><td>Yes. An agent in Sam’s own browser looks like Sam.</td></tr>
-            <tr><th scope="row">Authority</th><td>What has the person allowed it to do?</td><td>GOV.UK Delegate, checked on every request</td><td>No</td></tr>
+            <tr><th scope="row">Authority</th><td>What has the person allowed it to do?</td><td>Delegate, checked on every request</td><td>No</td></tr>
             <tr><th scope="row">Business limits</th><td>How much may everyone using this person’s authority do, together?</td><td>Limits on the person, applied by the service doing the work</td><td>No. They follow the person, however many actors there are.</td></tr>
           </tbody>
         </table>
@@ -79,7 +79,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
         <p>
           This prototype demonstrates a possible authorised route. We have not yet demonstrated that it improves government
           outcomes or costs. The key experiment compares a <strong>good agent API using service-local delegation</strong>
-          with <strong>the same API plus GOV.UK Delegate</strong>, measuring the extra value of independent citizen control
+          with <strong>the same API plus Delegate</strong>, measuring the extra value of independent citizen control
           alongside additional effort and operating cost.
         </p>
         <p><Link href="/evidence">See our experiments, existing observations and evidence register</Link>.</p>
@@ -87,7 +87,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
 
       <p><Link href="/project-status">See what is implemented, what is in review and what remains unproven</Link>.</p>
 
-      <p><Link href="/briefing">Public Digital concept and design briefings, decks and demonstration guide</Link>.</p>
+      <p><Link href="/briefing">Concept and design briefings, decks and demonstration guide</Link>.</p>
 
       <h2>Four scenarios</h2>
       <p>The first two scenarios have starting-point buttons. Route findings show previous observations; the swarm runner creates fresh people.</p>
@@ -104,7 +104,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
       <h2>Delegate is not Orchestrate</h2>
       <div className="two-thirds">
         <p>
-          GOV.UK Delegate records who a person allows to act and within which limits; it does not tell the assistant
+          Delegate records who a person allows to act and within which limits; it does not tell the assistant
           what tasks to carry out. The person’s assistant plans the work. Government services decide what transactions
           are valid. A possible future Orchestrate could offer provider-neutral task tracking and handoffs, but is
           not part of this prototype.
@@ -120,7 +120,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
           <p className="added">Prototype sign-in screens and a proxy to the official simulator. Authentication is separate from delegation.</p>
         </li>
         <li>
-          <h3><a href={`${urls.delegate}/account/delegates`}>GOV.UK Delegate</a></h3>
+          <h3><a href={`${urls.delegate}/account/delegates`}>Delegate</a></h3>
           <p>Part of the GOV.UK account. Records who may act for whom, and answers services’ checks.</p>
           <p className="added">Added: the whole thing. It is the new service.</p>
         </li>
@@ -134,7 +134,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
       <section id="start" className="start-from" aria-labelledby="reset-h">
         <h2 id="reset-h">Reset the demo</h2>
         {reset && <p className="start-from__done" role="status">Reset. Everything is back to the start.</p>}
-        <p>Put GOV.UK Delegate and HMRC citizen fixtures back as they started. Scenarios 1 and 2 also have starting-point buttons; registered catalogue history is retained.</p>
+        <p>Put Delegate and HMRC citizen fixtures back as they started. Scenarios 1 and 2 also have starting-point buttons; registered catalogue history is retained.</p>
         <form action={resetDemo}>
           <input type="hidden" name="mode" value="clean" />
           <input type="hidden" name="back" value="/" />

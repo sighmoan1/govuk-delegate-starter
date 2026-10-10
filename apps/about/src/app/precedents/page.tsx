@@ -6,7 +6,7 @@ export default function Precedents() {
   return (
     <div className="two-thirds">
       <h1>Existing government patterns</h1>
-      <p className="lead">None of this is new machinery. GOV.UK Delegate generalises things government already does.</p>
+      <p className="lead">None of this is new machinery. Delegate generalises things government already does.</p>
 
       <h2>HMRC agent authorisation</h2>
       <p>HMRC already lets registered tax agents ask to act for clients. The client approves independently, and HMRC records a relationship that can later be checked or removed.</p>

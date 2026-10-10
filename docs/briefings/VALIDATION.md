@@ -1,6 +1,6 @@
 # Briefing pack validation, 10 October 2026
 
-Run: `briefing-20261010-01`. Branch: `codex/issue-111-public-digital-briefings`. Baseline: main `6b4f3895f246cfe9e274059c57e4dc1ea7989650`.
+Run: `briefing-20261010-01`. Original delivery: issue #111. Baseline: main `6b4f3895f246cfe9e274059c57e4dc1ea7989650`.
 
 ## Presentation exports
 
@@ -8,7 +8,7 @@ The bundled Artifact Tool exported 11 concept slides and 18 design-review slides
 
 Finalizer package-integrity, layout/heading-fit, Arial font policy, native-table requirements and first-party import checks passed with zero findings. All 29 rendered slides were inspected; revised slides were inspected again and unchanged renders compared byte-for-byte. These checks do not establish native PowerPoint behaviour on every recipient's computer.
 
-Final download SHA-256:
+Original export SHA-256 (before the branding update below):
 
 - Concept: `c5916da2df977af3ef8e2ab72bcefffa1ef5d58fff98b96c38593ff44c776cfe`
 - Design review: `ec9eedeab86c9772fa52ef6ec6246231fd75ea29b59c5d2780109b61f448ad8f`
@@ -41,3 +41,28 @@ This is a browser-driven synthetic rehearsal, not a newly enrolled human or real
 ## Editorial checks
 
 The complete texts, slide headings and notes were reviewed using tropes.fyi and the humanizer guidance. Findings are attributed, precedent is distinguished from legal equivalence, test counts retain their denominators, and the adoption/observation hypotheses remain proposed tests. Centralisation, standards and production ownership are discussion questions rather than approved architecture decisions.
+
+## Branding update, 10 October 2026 — issue #137
+
+Run `branding-20261010-137` renamed product copy to Delegate and made briefing audience headings neutral. Both decks were regenerated from the shared JSON with the existing exporter. Package integrity, heading fit, Arial font policy, native tables and first-party import checks passed with zero findings. All 29 rendered slides were inspected. Slide and speaker-note XML contains no obsolete product or audience branding.
+
+Current download SHA-256:
+
+- Concept: `0f76724e89ad6e56b43e31592077a55342a616798821d0bc71d9e1af288c21ad`
+- Design review: `8a5ad7277659595e600843360274e3a268242f53fa21400ae38ab15a48b219a0`
+
+`npm ci`, `npm run typecheck` and `npm run build -w apps/about` passed. The About build retains the existing multiple-lockfile workspace-root warning.
+
+A fresh isolated PostgreSQL/One Login stack used database port 55437, simulator port 5499 and application ports 5470–5474. The following regression passed both files and all 32 tests, covering authorised, undelegated, revoked, expired, unknown delegate, missing relationship and activity events:
+
+```sh
+DATABASE_URL=postgresql://delegate:delegate@localhost:55437/delegate \
+DELEGATE_URL=http://localhost:5470 HMRC_URL=http://localhost:5472 \
+AGENT_TOKEN_SECRET=dev-only-agent-token-secret-change-me-0123456789 \
+DEMO_AGENT_CLIENT_SECRET=dev-demo-agent-secret HMRC_SERVICE_KEY=dev-hmrc-service-key \
+node_modules/.bin/vitest run tests/delegation.test.ts tests/hmrc.test.ts
+```
+
+These are synthetic development credentials. The shared demonstration databases and recorded raw evidence were not reset or rewritten.
+
+The browser-driven rehearsal on the fresh isolated stack passed: sign-in, unchecked consent with two permissions selected, approval, tax-code read 200, claim submission 200, excluded employment action 403 `PERMISSION_MISSING`, account outcomes shown as “Done”, browser removal and subsequent tax-code refusal 403 `AUTHORISATION_REVOKED`. About home and both briefing levels showed updated branding; home at 1280 pixels and briefing pages at 320 pixels had no horizontal overflow. Both deck downloads returned HTTP 200 with bytes matching the validated exports. T3 preview snapshot capture failed repeatedly; DOM inspection and browser interactions worked, so no new website screenshot is claimed.

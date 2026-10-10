@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { writeFlow } from "@/lib/flow";
 
-// A relying party (GOV.UK Delegate or HMRC) sends the person here. Keep its
+// A relying party (Delegate or HMRC) sends the person here. Keep its
 // request, and ask the person to sign in.
 export async function GET(req: Request) {
   const url = new URL(req.url);

@@ -45,7 +45,7 @@ This means an `authority_origin` / `issuer` matters as much as `representative` 
 ```mermaid
 flowchart TB
     U["Citizen or lawful representative"]
-    D["GOV.UK Delegate\nCitizen view / authority interface"]
+    D["Delegate\nCitizen view / authority interface"]
     DG["Delegate-issued mandate\nDelegate is source of truth"]
     EX["External authority issuer\nHMRC / DWP / OPG-like example"]
     EA["Externally issued relationship\nIssuer is source of truth"]

@@ -2,7 +2,7 @@
   "name": "@prototype/about",
   "version": "0.2.0",
   "private": true,
-  "description": "About the GOV.UK Delegate prototype: the case, the systems, the demo script and a demo console.",
+  "description": "About the Delegate prototype: the case, the systems, the demo script and a demo console.",
   "scripts": {
     "sync-css": "node scripts/sync-css.mjs",
     "dev": "npm run sync-css && next dev -p 3304",

@@ -8,7 +8,7 @@ import { publicBriefingMode } from "@/lib/public-briefing";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: { default: "About the GOV.UK Delegate prototype", template: "%s – GOV.UK Delegate prototype" },
+  title: { default: "About the Delegate prototype", template: "%s – Delegate prototype" },
   description: "An independent prototype: delegating authority to agents through GOV.UK, and what that lets government do about automated traffic.",
 };
 

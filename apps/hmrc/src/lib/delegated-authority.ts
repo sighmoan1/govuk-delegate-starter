@@ -2,7 +2,7 @@
 //
 // Every API route is wrapped in requireDelegatedAuthority(capability, handler).
 // It works out who is on the other end (a person, an authorised agent, an
-// agent without permission, or nobody it can identify), asks GOV.UK Delegate
+// agent without permission, or nobody it can identify), asks Delegate
 // one question when an agent is acting for someone, admits the request
 // (throughput.ts: traffic limits), checks the transaction is permissible
 // (domain-policy.ts: the person's business rules, whoever is acting), logs the
@@ -39,7 +39,7 @@ export type Actor =
   | { kind: "AGENT"; name: string; id: string; chain: DelegateChain };
 /**
  * `async` is true when the caller asked for the claim to be received now and processed later (Prefer: respond-async)
- * on an operation that has that path; `checkId` is GOV.UK Delegate's check for this request (agents only).
+ * on an operation that has that path; `checkId` is Delegate's check for this request (agents only).
  */
 export type Handler = (ctx: { taxpayer: Taxpayer; actor: Actor; body: Record<string, unknown>; admitted: Admitted; db: Tx; req: Request; async: boolean; checkId: string | null }) => Promise<Record<string, unknown>>;
 
@@ -94,7 +94,7 @@ export function requireDelegatedAuthority(capability: string, handler: Handler, 
       return actAsAgent(agentSession.delegationToken, agentSession.principalId, capability, body, handler, log, idempotencyKey, rc);
     }
 
-    // An agent presenting its own GOV.UK Delegate token (or a sub-agent's delegation token).
+    // An agent presenting its own Delegate token (or a sub-agent's delegation token).
     const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
     const principalId = req.headers.get("x-principal-id");
     if (token && principalId) return actAsAgent(token, principalId, capability, body, handler, log, idempotencyKey, rc);
@@ -147,7 +147,7 @@ async function actAsAgent(token: string, principalId: string, capability: string
     // Delegate couldn't answer, or couldn't record the receipt. That is not a "no" and not a "yes": nothing was accepted.
     await log({ lane: "AUTHORISED_AGENT", outcome: "REFUSED", reason: "DELEGATE_UNAVAILABLE", retryAfterSeconds: 30 });
     return NextResponse.json(
-      { decision: "DENY", reason: "DELEGATE_UNAVAILABLE", kind: "UNAVAILABLE", lane: "AUTHORISED_AGENT", retryable: true, retry_after_seconds: 30, message: "GOV.UK Delegate is not available, so nothing was done. Try the same request again shortly; retries will not duplicate anything." },
+      { decision: "DENY", reason: "DELEGATE_UNAVAILABLE", kind: "UNAVAILABLE", lane: "AUTHORISED_AGENT", retryable: true, retry_after_seconds: 30, message: "Delegate is not available, so nothing was done. Try the same request again shortly; retries will not duplicate anything." },
       { status: 503, headers: { "retry-after": "30", "x-trusted-lane": "AUTHORISED_AGENT" } },
     );
   }

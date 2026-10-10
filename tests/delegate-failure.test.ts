@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach, afterAll, beforeEach, vi } from "vites
 import { askDelegate, recordReceipt, disputedReceipts, receiptKey, DelegateUnavailableError } from "../apps/hmrc/src/lib/delegate-client";
 import { prisma, newPrincipal, authorise, HMRC_SERVICE_KEY, DELEGATE, SERVICE } from "./helpers";
 
-// Failure injection for HMRC's calls to GOV.UK Delegate. fetch is stubbed, so
+// Failure injection for HMRC's calls to Delegate. fetch is stubbed, so
 // these need no running services: they check that an outage is never read as
 // success, or as "nobody disputed".
 

@@ -17,7 +17,7 @@ type DelegateInfo = { id: string; name: string; provider: string };
  * The state of the person's approval of the specific change HMRC asked about.
  * APPROVED: unspent, may be reserved. IN_PROGRESS: held by another operation.
  * REDEEMED: spent; only a stored result may be returned. The rest mean the
- * person has to act (or the request was malformed). See GOV.UK Delegate, Decision 24.
+ * person has to act (or the request was malformed). See Delegate, Decision 24.
  */
 export type StepUpState =
   | "AWAITING_APPROVAL" | "EXPIRED" | "DECLINED" | "PROPOSAL_REQUIRED" | "PROPOSAL_INVALID" | "KEY_USED_FOR_OTHER_TRANSACTION"
@@ -47,10 +47,10 @@ export type DelegateCheck =
       check_id: string;
     };
 
-/** GOV.UK Delegate could not be reached, or did not accept the request. Never swallowed: callers decide what to tell the person. */
+/** Delegate could not be reached, or did not accept the request. Never swallowed: callers decide what to tell the person. */
 export class DelegateUnavailableError extends Error {
   constructor(readonly operation: string, readonly retryable: boolean, detail: string) {
-    super(`GOV.UK Delegate ${operation} failed: ${detail}`);
+    super(`Delegate ${operation} failed: ${detail}`);
     this.name = "DelegateUnavailableError";
   }
 }
@@ -96,7 +96,7 @@ export function hmrcConstraintsPermit(constraints:Record<string,Record<string,st
 }
 
 /**
- * The one call HMRC makes to GOV.UK Delegate. HMRC presents its own service
+ * The one call HMRC makes to Delegate. HMRC presents its own service
  * key; Delegate verifies the agent, the mandate, the capability and
  * assurance (it spends none of the person's business limits, which HMRC applies itself), and tells HMRC who the person is only if the answer is yes.
  * Throws DelegateUnavailableError if Delegate can't answer: that is not a "no".
@@ -161,7 +161,7 @@ export async function giveBackStepUp(c: { proposal_id: string; reservation_id: s
 export const receiptKey = (queryId: string, version: number) => `${config.serviceSlug}:respond_to_query:${queryId}:v${version}`;
 
 /**
- * Tell GOV.UK Delegate what an agent did in the person's name, in the agent's own words, so the person can see it.
+ * Tell Delegate what an agent did in the person's name, in the agent's own words, so the person can see it.
  * Returns the receipt id, or throws: an action in the person's name must not be accepted unrecorded.
  * The idempotency key makes retries safe; repeating a write returns the same receipt.
  */
@@ -190,7 +190,7 @@ export async function disputedReceipts(ids: string[]): Promise<{ ok: true; dispu
 }
 
 /**
- * Tell GOV.UK Delegate what happened after it said yes to a check. Best effort:
+ * Tell Delegate what happened after it said yes to a check. Best effort:
  * a failure to report must never change what the person gets from HMRC.
  * Reporting twice is safe; Delegate keeps one row per idempotency key.
  */

@@ -2,7 +2,7 @@
 
 **Recorded:** 9 October 2026  
 **Backlog:** [DB-04 / issue #51](https://github.com/sighmoan1/govuk-delegate-starter/issues/51)  
-**Status:** **PRINCIPLE AGREED for the independent synthetic GOV.UK Delegate prototype**; detailed service policy and production/legal decisions remain open.  
+**Status:** **PRINCIPLE AGREED for the independent synthetic Delegate prototype**; detailed service policy and production/legal decisions remain open.
 **Authority:** Project-level product/design principle only. Not departmental policy, legal advice or an approved national service standard.  
 **Related implementation:** [Decision 23](../DECISIONS.md) (domain vs throughput vs authority); [#21](https://github.com/sighmoan1/govuk-delegate-starter/issues/21) (durable acceptance/queue); [#22](https://github.com/sighmoan1/govuk-delegate-starter/issues/22) (legitimate surge and duplicates).
 

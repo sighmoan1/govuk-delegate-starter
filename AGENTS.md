@@ -1,4 +1,4 @@
-# Coding-agent brief — GOV.UK Delegate
+# Coding-agent brief — Delegate
 
 Read these files before writing code:
 

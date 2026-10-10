@@ -1,4 +1,4 @@
-# GOV.UK Delegate and the possible GOV.UK Orchestrate
+# Delegate and the possible GOV.UK Orchestrate
 
 > **Status:** Target architecture and product boundary, agreed for this independent prototype. Orchestrate is a *hypothetical complementary service*, not a component we have committed to build. Distinguish **current prototype** from **target** and **hypothetical** below.
 >
@@ -24,7 +24,7 @@ We want a cross-government arrangement in which:
 | Component | Primary question | Owns | Explicitly does **not** own |
 |---|---|---|---|
 | **GOV.UK One Login** | Who is this person? | Citizen authentication and identity evidence | What representatives can do |
-| **GOV.UK Delegate** | Who may act for whom, where, within which limits, and until when? | Representative registration/identity evidence, service capability catalogue, consent/mandate record, narrowing/sub-delegation, check/revocation, approval evidence and authority audit | Tax/benefit eligibility, transaction execution, private task plans, agent reasoning, blanket fraud decisions |
+| **Delegate** | Who may act for whom, where, within which limits, and until when? | Representative registration/identity evidence, service capability catalogue, consent/mandate record, narrowing/sub-delegation, check/revocation, approval evidence and authority audit | Tax/benefit eligibility, transaction execution, private task plans, agent reasoning, blanket fraud decisions |
 | **Government service** (HMRC, DWP, DVLA, council) | Is this operation valid, authorised and executable? | Definitions and human-readable meaning of its delegable capabilities; service-specific constraints/assurance requirements; domain rules; transactional confirmation; idempotency; processing and outcomes | Agent planning or cross-government authority unrelated to its resources |
 | **Model provider / personal agent** | What does the person want done and how? | Conversation, goals, plans, tools, documents, execution, follow-up, within granted boundaries | Creating its own government authority or overruling service decisions |
 | **GOV.UK Orchestrate (hypothetical)** | How can a citizen's multi-step, cross-government task be carried through? | Potential user-facing task workspace, coordination across services and agents, durable task progress, handoffs, accessibility/assisted channels, provider portability | Acting without Delegate-granted authority; making substantive departmental decisions; replacing every AI provider |
@@ -40,7 +40,7 @@ flowchart TB
   I["GOV.UK One Login\nCitizen identity"]
   A["Agent / model provider\nConversation, planning, tools"]
   O["GOV.UK Orchestrate\nOPTIONAL / HYPOTHETICAL\nTask coordination and continuity"]
-  D["GOV.UK Delegate\nMandates, consent, authority check"]
+  D["Delegate\nMandates, consent, authority check"]
   C["Registered capability catalogues\nDefined by each service"]
   H["HMRC / tax"]
   B["DWP / benefits"]
