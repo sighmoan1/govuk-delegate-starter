@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "proxied-server",
+  "dolt_database": "gds",
+  "project_id": "6a95eff2-567d-485f-aab7-3e79a658a328"
+}
