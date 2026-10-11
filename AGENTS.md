@@ -41,6 +41,18 @@ Make your work visible in GitHub before editing files. An agent's private workin
    - If a decision, approval or acceptance test still needs a human owner, leave the issue open, state exactly what is needed, and request that owner's review or closure. Do not present a proposed decision as approved.
    - If work is abandoned or handed off, post the current state and remaining work, then release the claim so another agent can take it.
 
+
+## Agent continuity, collision prevention and recovery
+
+These rules apply to human and AI contributors, including multiple agents sharing one GitHub account.
+
+- **Identify each run.** Every issue claim must name a unique agent/run ID, issue number, scope, branch, expected files/components, status, and any active overlaps. A GitHub username alone is not sufficient.
+- **Publish checkpoints.** Comment on the issue or linked PR when work starts, pauses, becomes blocked, changes scope, is ready for review, or completes; for extended work, update at least once per working session. State completed work, remaining work, blockers/dependencies, test commands and results, and next action. Do not rely on private agent context as the status record.
+- **Coordinate before collisions.** Read recent issue comments and open PRs before changing files. If active work overlaps in files or behaviour, coordinate a split or sequence on GitHub *before* editing; disclosure in the PR alone is insufficient.
+- **Leave a resumable handoff.** Before stopping, exhausting a model budget, or switching models, record branch/commit/PR, changes made, remaining acceptance criteria, tests and failures, blockers, and exact next steps. Mark the issue blocked or release the claim explicitly; never imply unfinished work is complete.
+- **Recover stale claims carefully.** An old `in-progress` label or silent agent is not proof that its work is abandoned. Inspect issue comments, commits and PR activity, ask for confirmation when feasible, and record the proposed takeover. Do not overwrite an active branch or duplicate work. A replacement agent may take over only after the owner authorises it or the previous agent explicitly releases the claim; use a new unique run ID and document the handoff.
+- **Close with evidence.** Before review, map each acceptance criterion to evidence and list actual test commands/results and anything not verified. Keep code issues open until their linked PR merges (use `Closes #N`); close non-code issues only when criteria are met and a completion comment is posted. Leave owner decisions or approvals open until explicitly resolved. Never equate a draft PR with delivered work.
+
 ## Architectural rule
 
 **Copy HMRC's relationship-based agent-authorisation pattern before inventing new protocol machinery.**
