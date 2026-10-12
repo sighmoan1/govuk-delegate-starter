@@ -53,7 +53,7 @@ async function main() {
     return;
   }
   execFileSync("npm", ["install", "--save-exact", `@bathos/design-system@${update.url}`], { stdio: "inherit" });
-  if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `changed=true\nversion=${config.version}\npalette=${config.palette}\n`);
+  if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `changed=true\nversion=${update.version}\npalette=${update.palette}\n`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await main();
