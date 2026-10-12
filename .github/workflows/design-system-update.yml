@@ -1,7 +1,8 @@
 name: Prepare shared design-system update
 
-# Deliberate dispatch matches the repository's included-only CI policy.
 on:
+  schedule:
+    - cron: '30 6 * * *'
   workflow_dispatch:
 
 permissions:
@@ -57,7 +58,7 @@ jobs:
             git fetch origin "$branch:refs/remotes/origin/$branch"
           fi
           git switch -C "$branch"
-          git add package.json package-lock.json
+          git add package.json package-lock.json bathos-design-system.json
           git -c user.name='Bathos design update' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "Update Bathos foundation to $RELEASE_VERSION"
           git push --force-with-lease origin "$branch"
           cat > /tmp/design-update-pr.md <<'BODY'
