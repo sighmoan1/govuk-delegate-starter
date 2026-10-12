@@ -1,6 +1,7 @@
 # Delegate Delivery Handover
 
-Snapshot time: 2026-10-12T21:59:53Z.
+Snapshot time: 2026-10-12T23:11:56Z for the final inventory-only correction.
+Earlier source, test and runtime evidence retains its own timestamp where noted.
 
 This is the controlled handover record for a direct Codex receiver working in
 `sighmoan1/govuk-delegate-starter`. A fresh receiver should start from this
@@ -35,12 +36,15 @@ Revision correction:
   `00b7cbd0f6f92766fd5b3eacfde49f6feac05bb5`.
 - The pre-repair PR #159 head was
   `49ed794ce01c608e15176a538fc8ac840f79e4bf`.
+- The head reviewed in the first re-review was
+  `e53dd64a2a9541392574da6c75e8e173ec703e73`.
 - The earlier issue #158 comment that named
   `00b7cbd9c5c87f5a92d2b70c4e6fe30f3a3b5c55` is wrong and must be ignored.
 - The second issue #158 correction used the right `00b7...` document commit but
   mislabeled it as the PR head. It is not the PR head.
-- The repaired PR head after this pass is recorded on issue #158 and PR #159.
-  Treat that current GitHub head as the authoritative repaired revision.
+- The repaired PR head after this final inventory-only correction is recorded
+  on issue #158 and PR #159 after publication. Treat that current GitHub head
+  as the authoritative repaired revision.
 
 The intended receiver is direct Codex on this GitHub repository. This is not a
 request to restart Gas City orchestration, resume Delegate rig workers, dispatch
@@ -134,12 +138,48 @@ City access to continue.
 | `mc-bze` | Open epic | Shared Bathos design-system and automatic updates ownership stays with Gas City, not this receiver handover. |
 | `bt-r5w` | Open Bathos task | Bathos consumer migration depends on `mc-bze.2`; ownership stays with the Bathos/Gas City lane. |
 
-At the snapshot, the Delegate rig was suspended. A bounded native status probe at
-2026-10-12T21:59:53Z returned partial status: suspended yes, no agents listed,
-and `govuk-delegate-starter/core.control-dispatcher` unknown because the runtime
-liveness probe timed out. Therefore absence of active Delegate sessions is
-unknown from this probe. Do not retry-loop, resume the rig or spawn workers from
-this handover.
+At the final inventory snapshot, the Delegate rig was suspended. A bounded
+native status probe at 2026-10-12T23:11:56Z returned partial status: suspended
+yes, no agents listed, and
+`govuk-delegate-starter/core.control-dispatcher` unknown because the runtime
+liveness probe timed out. Therefore dispatcher liveness remains unknown from
+this probe. Do not retry-loop, resume the rig or spawn workers from this
+handover.
+
+### Native Nudge, Heartbeat And Claim Inventory
+
+The bounded native probe at 2026-10-12T23:11:56Z used supported `gc` surfaces
+only:
+
+- `gc session list --state all --json` showed three active city sessions: this
+  bounded handover worker `mc-wisp-gxbx7h`, `mayor` (`mc-wisp-a0r`) and
+  `autonomous-organisations/cultivate-worker` (`mc-wisp-w5rep`). It showed no
+  `govuk-delegate-starter` session.
+- `gc nudge status govuk-delegate-starter/core.control-dispatcher --json`
+  failed with `session not found`. This records that the dispatcher is not a
+  nudge-addressable chat session in the current native session inventory.
+- The Delegate-rig nudge wisp query with `gc bd list --rig
+  govuk-delegate-starter --include-ephemeral --wisp-type nudge --json` failed
+  because `nudge` is not a supported bead wisp type. The supported types
+  reported by the CLI are `heartbeat`, `ping`, `patrol`, `gc_report`,
+  `recovery`, `error` and `escalation`.
+- `gc nudge status mayor --json` and `gc nudge status mc-wisp-gxbx7h --json`
+  reported zero pending, in-flight or dead nudges.
+- `gc nudge status autonomous-organisations/cultivate-worker --json` reported
+  one pending nudge for `ao-wisp-263`. That belongs to the
+  `autonomous-organisations` Cultivate lane, not Delegate.
+- The Delegate-rig heartbeat query (`gc bd list --rig govuk-delegate-starter --include-ephemeral --wisp-type heartbeat --json --limit 0`) returned no rows. The same heartbeat query in the city store (`gc bd list --include-ephemeral --wisp-type heartbeat --json --limit 0`) also returned no rows.
+- The Delegate-rig in-progress claim query (`gc bd list --rig govuk-delegate-starter --status in_progress --include-ephemeral --json --limit 0`) returned no rows, so no active Delegate implementation claim was observed.
+- The Delegate-rig open/blocked query (`gc bd list --rig govuk-delegate-starter --status open,blocked --include-ephemeral --json --limit 0`) returned only `gds-54w`, open with label `hold:mayor`, owner `simon.james.stewart@gmail.com`, and no assignee.
+- The Delegate-rig historical claim query (`gc bd list --rig govuk-delegate-starter --all --has-metadata-key gc.claimed_at --include-ephemeral --json --limit 0`) returned closed workflow steps such as `gds-bsu`, `gds-eic`, `gds-gj2`, `gds-il9`, `gds-55m`, `gds-6sf`, `gds-8b1` and `gds-r6r`. These record prior claims by workflow sessions, not current active ownership.
+
+Operational implication: there is no observed active Delegate worker, heartbeat
+wisp, pending Delegate nudge or in-progress Delegate claim in the supported
+native inventory. The only open Delegate work item observed is the Mayor-held
+`gds-54w` independent review/deployment-block placeholder, which is not
+superseded by receiver ACK on #158. The dispatcher liveness timeout means the
+native control process health remains unknown; this handover does not repair,
+resume or replace it.
 
 ## Root Checkout And Local-Only State
 
@@ -198,7 +238,7 @@ commit; use the PR/issue owner column before deleting or rewriting anything.
 | `/Users/apple/.codex/worktrees/delegate-cleanup-140` | `codex/issue-140-demo-guide` | `e7f3be8faf8a9ebb498941e65a82fd5cf48e98bf` | 15 behind / 0 ahead | clean | Issue #140 closed, PR #143 merged. |
 | `/Users/apple/.codex/worktrees/delegate-cleanup-141` | `codex/issue-141-lean-ci` | `a7214536dd4f3bf0fa52207fe5dfdbe9d985c6e2` | 16 behind / 0 ahead | clean | Issue #141 closed, PR #145 merged. |
 | `/Users/apple/.codex/worktrees/delegate-cleanup-142` | `codex/issue-142-runtime-map` | `c8803fee040201d44288e2eb2c20365605600506` | 16 behind / 0 ahead | clean | Issue #142 closed, PR #146 merged. |
-| `/Users/apple/.codex/worktrees/delegate-handover-20261012/govuk-delegate-starter` | `docs/delegate-delivery-handover-20261012` | `49ed794ce01c608e15176a538fc8ac840f79e4bf` before this repair | 0 behind / 2 ahead before this repair | clean before this edit | PR #159 handover docs. |
+| `/Users/apple/.codex/worktrees/delegate-handover-20261012/govuk-delegate-starter` | `docs/delegate-delivery-handover-20261012` | `e53dd64a2a9541392574da6c75e8e173ec703e73` before this final inventory-only correction | 0 behind / 3 ahead before this correction | clean before this edit | PR #159 handover docs. |
 | `/Users/apple/.codex/worktrees/design-130/govuk-delegate-starter` | `codex/issue-130-design-font-face` | `1a32e81c0ef2f92fff5e4886073616e86d6f41d8` | 97 behind / 0 ahead | clean | Issue #130 closed, PR #131 merged. |
 | `/Users/apple/.codex/worktrees/docs-128/govuk-delegate-starter` | `codex/issue-128-current-docs` | `8cc6266ef480222c1f0b27c391ff1e50e2e0dc8f` | 99 behind / 0 ahead | clean | Issue #128 closed, PR #129 merged. |
 | `/Users/apple/.codex/worktrees/final-delivery-20261010/govuk-delegate-starter` | `codex/issue-90-final-20261010` | `859edcd267fb37ed4e9439f6544d71b39205fa54` | 107 behind / 7 ahead | clean | Issue #90 open delivery evidence lane. |
@@ -218,6 +258,28 @@ commit; use the PR/issue owner column before deleting or rewriting anything.
 No worktree should be deleted, reset or cleaned from this handover. Branch
 cleanup, pushing, archiving or deployment decisions belong to the repository
 owner or the named issue/PR owner.
+
+### Local Branches Without Worktrees
+
+`git branch -vv --no-color` and `git worktree list --porcelain` showed eight
+local branches with no checked-out worktree. The "origin/main delta" column is
+`origin/main...branch` as behind/ahead counts from local refs at the inventory
+snapshot. "Contained" means the branch head is an ancestor of local
+`origin/main`.
+
+| Local branch without worktree | Head | Origin/main delta | Contained | Owner/status | Preservation implication |
+| --- | --- | --- | --- | --- | --- |
+| `backup/local-import-2026-10-09` | `74bbdbd2c1426f2ef7bf71de4db0726455ead189` | 336 behind / 1 ahead | No | No upstream and no GitHub PR found by `gh pr list --head`; subject is "Import GOV.UK Delegate prototype from home repo". | Treat as local safety/import history. Do not delete until the owner decides whether the one ahead commit should be archived, pushed or retired. |
+| `codex/issue-107-participant-pilot` | `93e9805f2db3845fb983a2f35c79dca8ee3f3d97` | 136 behind / 0 ahead | Yes | Issue #107 closed; PR #108 merged at 2026-10-10T11:08:01Z. | No active worktree. Preserve until owner-approved branch cleanup; branch appears represented in `origin/main`. |
+| `codex/issue-111-public-digital-briefings` | `e895cf602a1f2b20b9ff3513889e4c01da6cf267` | 137 behind / 2 ahead | No | Issue #111 closed; PR #112 merged at 2026-10-10T00:08:54Z. | Merged PR exists, but this exact local branch head is not contained in `origin/main`. Preserve until owner verifies squash/merge equivalence or archives the two ahead commits. |
+| `codex/issue-137-delegate-branding` | `e6ed00e6154e850be14b08d5cd31054f93a54ea9` | 19 behind / 2 ahead | No | Issue #137 closed; PR #138 merged at 2026-10-10T15:25:38Z. | Merged PR exists, but this exact local branch head is not contained in `origin/main`. Preserve until owner verifies squash/merge equivalence or archives the two ahead commits. |
+| `codex/issue-139-swarm-coordination` | `645c70f373a33554e1549ce08ecc89991fcd5b72` | 17 behind / 0 ahead | Yes | Issue #139 closed; PR #144 merged at 2026-10-10T17:02:22Z. | No active worktree. Preserve until owner-approved branch cleanup; branch appears represented in `origin/main`. |
+| `codex/issue-147-deck-cache` | `ff9a5d4257023febb86b4cd688809d46135547d0` | 5 behind / 0 ahead | Yes | Issue #147 closed; PR #148 merged at 2026-10-10T17:05:45Z. | No active worktree. Preserve until owner-approved branch cleanup; branch appears represented in `origin/main`. |
+| `issue-29-hmrc-catalogue` | `3c7dff850bc06b02421ef28befe192a6b4fe593c` | 214 behind / 0 ahead | Yes | Issue #29 closed; PR #86 merged at 2026-10-09T18:37:12Z. | No active worktree. Preserve until owner-approved branch cleanup; branch appears represented in `origin/main`. |
+| `issue-87-docs-sync` | `2c0670cc783ede3dac2737eae7283289800abe36` | 221 behind / 0 ahead | Yes | Issue #87 closed; PR #88 merged at 2026-10-09T17:44:19Z. | No active worktree. Preserve until owner-approved branch cleanup; branch appears represented in `origin/main`. |
+
+These branches are inventory only. This handover did not delete branches,
+remove refs, prune remotes or infer that merged/closed work is disposable.
 
 ## Runtime, Deployed URLs And Access Boundaries
 
