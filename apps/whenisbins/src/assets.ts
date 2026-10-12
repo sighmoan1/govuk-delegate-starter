@@ -1,10 +1,10 @@
 import {readFile} from 'node:fs/promises';
-import {readFileSync} from 'node:fs';
+import {serviceCss} from '../../../styles/service-css.mjs';
 import {createHash} from 'node:crypto';
 import type {ServerResponse} from 'node:http';
 
 // The deployed process serves the same immutable bytes used to name each CSS version.
-const stylesheet=readFileSync(new URL('../../../styles/design.css',import.meta.url));
+const stylesheet=Buffer.from(serviceCss());
 export const designStylesheetVersion=createHash('sha256').update(stylesheet).digest('hex');
 export const designStylesheetHref='/design.css?v='+designStylesheetVersion;
 

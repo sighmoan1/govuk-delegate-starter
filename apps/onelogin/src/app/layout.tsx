@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en-GB">
-      <head><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
+      <head><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/design.css" /></head>
       <body>
         <a className="skip-link" href="#main-content">Skip to main content</a>
         <header className="ol-header">

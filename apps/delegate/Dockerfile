@@ -6,7 +6,7 @@ COPY package.json package-lock.json ./
 COPY apps/delegate/package.json apps/delegate/
 COPY packages/web-bot-auth/package.json packages/web-bot-auth/
 COPY packages/research-feed/package.json packages/research-feed/
-RUN npm ci --workspace apps/delegate --workspace packages/research-feed --workspace packages/web-bot-auth
+RUN npm ci --include-workspace-root --workspace apps/delegate --workspace packages/research-feed --workspace packages/web-bot-auth
 COPY packages/web-bot-auth ./packages/web-bot-auth
 COPY packages/research-feed ./packages/research-feed
 COPY styles ./styles

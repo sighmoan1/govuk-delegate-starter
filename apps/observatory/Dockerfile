@@ -5,7 +5,7 @@ WORKDIR /repo
 COPY package.json package-lock.json ./
 COPY apps/observatory/package.json apps/observatory/
 COPY packages/research-feed/package.json packages/research-feed/
-RUN npm ci --workspace apps/observatory --workspace packages/research-feed
+RUN npm ci --include-workspace-root --workspace apps/observatory --workspace packages/research-feed
 COPY packages/research-feed ./packages/research-feed
 COPY styles ./styles
 COPY apps/observatory ./apps/observatory

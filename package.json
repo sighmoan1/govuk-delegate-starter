@@ -21,7 +21,8 @@
     "council:register": "SERVICE_CATALOGUE_FILE=../council/service-catalogue.json DEMO_SERVICE_NAME=\"Example council\" HMRC_SERVICE_KEY=${COUNCIL_SERVICE_KEY:-dev-council-service-key} npm run catalogue:register -w apps/delegate",
     "whenisbins:demo": "node scripts/whenisbins/demo.mjs start",
     "whenisbins:stop": "node scripts/whenisbins/demo.mjs stop",
-    "whenisbins:test": "playwright test --config e2e/whenisbins.config.ts"
+    "whenisbins:test": "playwright test --config e2e/whenisbins.config.ts",
+    "test:styles": "vitest run tests/service-styles.test.ts tests/design-system-update.test.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.50.0",
@@ -30,5 +31,8 @@
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
     "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "@bathos/design-system": "https://github.com/sighmoan1/bathos-design-system/releases/download/v1.0.1/bathos-design-system-1.0.1.tgz"
   }
 }
