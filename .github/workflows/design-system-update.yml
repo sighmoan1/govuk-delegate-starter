@@ -28,6 +28,7 @@ jobs:
         run: test -n "$GH_TOKEN" || { echo 'Configure DESIGN_SYSTEM_UPDATE_TOKEN with contents/PR write access before dispatch.'; exit 1; }
       - uses: actions/checkout@v4
         with:
+          ref: main
           token: ${{ secrets.DESIGN_SYSTEM_UPDATE_TOKEN }}
       - uses: actions/setup-node@v4
         with:
@@ -41,7 +42,6 @@ jobs:
         run: |
           bash scripts/ci-prepare.sh
           bash scripts/ci-fast.sh
-          npm run test:styles
           npm test -w apps/whenisbins
       - name: Create or refresh one draft upgrade PR
         if: steps.release.outputs.changed == 'true'
@@ -49,6 +49,13 @@ jobs:
           RELEASE_VERSION: ${{ steps.release.outputs.version }}
         run: |
           branch=codex/bathos-foundation-update
+          existing=$(gh pr list --head "$branch" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ] && [ "$(gh pr view "$existing" --json isDraft --jq .isDraft)" = false ]; then
+            gh pr ready "$existing" --undo
+          fi
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
+            git fetch origin "$branch:refs/remotes/origin/$branch"
+          fi
           git switch -C "$branch"
           git add package.json package-lock.json
           git -c user.name='Bathos design update' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "Update Bathos foundation to $RELEASE_VERSION"
@@ -58,7 +65,6 @@ jobs:
 
           Validation: workspace types/builds, database-free fast checks, foundation/updater checks and connector fixture tests passed before this draft was opened. Before review/merge, run full isolated API/browser regression, service visual comparisons and the manual consent → action → revocation walkthrough. No public deployment or automatic merge is performed.
           BODY
-          existing=$(gh pr list --head "$branch" --state open --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
             gh pr edit "$existing" --title "Update Bathos foundation to $RELEASE_VERSION" --body-file /tmp/design-update-pr.md
           else

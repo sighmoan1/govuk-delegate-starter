@@ -6,7 +6,7 @@ Agents run focused local checks as they work. GitHub provides one independent ch
 
 `fast.yml` runs **Fast code checks / code** when a code PR is opened ready for review, reopened, updated or marked ready. Draft PR jobs are skipped. Documentation-only changes are excluded (including Markdown within apps, packages and scripts). Application, package, style, script, test, workflow, dependency, root configuration and container/database-init changes qualify. Copy in application source qualifies because it can affect compilation. A newer run cancels an obsolete check for the same PR. There is no duplicate push-to-main run.
 
-The check installs locked dependencies, generates Prisma clients, typechecks and builds every workspace, then tests the database-free research-feed schema, council authority handling, E2 comparator and Observatory import validation. It has a 15-minute timeout. It does not start Docker, migrate/reset fixtures, run browser journeys or call a vendor. It is a cheaper independent check, not the complete authorisation/regression assurance suite.
+The check installs locked dependencies, generates Prisma clients, typechecks and builds every workspace, then tests the shared foundation/updater, database-free research-feed schema, council authority handling, E2 comparator and Observatory import validation. It has a 15-minute timeout. It does not start Docker, migrate/reset fixtures, run browser journeys or call a vendor. It is a cheaper independent check, not the complete authorisation/regression assurance suite.
 
 For the same check locally in a clean isolated checkout:
 

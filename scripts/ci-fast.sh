@@ -8,6 +8,7 @@ for app in delegate hmrc observatory; do
 done
 npm run typecheck
 npm run build
+npm run test:styles
 npm test -w packages/research-feed
 npm test -w apps/council
 node --test scripts/e2/local-authority.test.mjs
