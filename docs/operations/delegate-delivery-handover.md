@@ -10,6 +10,7 @@ context to decide ownership.
 ## Authority
 
 - Receiver ACK issue: <https://github.com/sighmoan1/govuk-delegate-starter/issues/158>
+- Handover PR: <https://github.com/sighmoan1/govuk-delegate-starter/pull/159>
 - Handover branch: `docs/delegate-delivery-handover-20261012`
 - Handover worktree used to prepare this document:
   `/Users/apple/.codex/worktrees/delegate-handover-20261012/govuk-delegate-starter`
