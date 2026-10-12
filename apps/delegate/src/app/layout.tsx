@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import designSystem from "../../../bathos-design-system.json";
+import designSystem from "../../../../bathos-design-system.json";
 import "./delegate.css";
 
 export const metadata: Metadata = {
