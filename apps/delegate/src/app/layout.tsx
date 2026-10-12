@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import designSystem from "../../../../bathos-design-system.json";
 import "./delegate.css";
 
 export const metadata: Metadata = {
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
 // own layout.
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-GB">
+    <html lang="en-GB" data-bathos-palette={designSystem.palette}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         {/* eslint-disable-next-line @next/next/no-css-tags */}
