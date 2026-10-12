@@ -1,0 +1,6 @@
+/* One Login owns its GOV.UK palette, Arial type, focus and controls.
+   These sums retain its existing 40px / 60px vertical spacing. */
+@media screen {
+  .ol-main { padding: calc(var(--bathos-space-6) + var(--bathos-space-2)) 0 calc(var(--bathos-space-7) + var(--bathos-space-3)); }
+  .ol-header__inner { gap: var(--bathos-space-1) var(--bathos-space-4); }
+}

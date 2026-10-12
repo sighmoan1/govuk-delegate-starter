@@ -8,7 +8,7 @@ COPY apps/whenisbins/package.json apps/whenisbins/
 COPY packages/research-feed/package.json packages/research-feed/
 COPY packages/whenisbins-email/package.json packages/whenisbins-email/
 COPY packages/whenisbins-runner/package.json packages/whenisbins-runner/
-RUN npm ci --workspace apps/whenisbins --omit=dev
+RUN npm ci --include-workspace-root --workspace apps/whenisbins --omit=dev
 RUN node node_modules/playwright/cli.js install --with-deps chromium
 COPY styles styles
 COPY apps/about/public/assets/fonts/LexendDeca-400.woff2 apps/about/public/assets/fonts/LexendDeca-700.woff2 apps/about/public/assets/fonts/

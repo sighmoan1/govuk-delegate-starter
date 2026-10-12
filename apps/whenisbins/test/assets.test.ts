@@ -2,6 +2,7 @@ import {describe,it,expect} from 'vitest';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
+import {serviceCss} from '../../../styles/service-css.mjs';
 import {designStylesheetHref,designStylesheetVersion,publicAssetHandler,writeHttpResponse} from '../src/assets';
 
 describe('public design asset delivery',()=>{
@@ -23,7 +24,7 @@ describe('public design asset delivery',()=>{
   }finally{await new Promise<void>((resolve,reject)=>server.close(error=>error?reject(error):resolve()));}
  });
  it('names CSS by the delivered bytes and caches only the matching content version immutably',async()=>{
-  const expected=await readFile(new URL('../../../styles/design.css',import.meta.url));
+  const expected=Buffer.from(serviceCss());
   expect(designStylesheetVersion).toBe(createHash('sha256').update(expected).digest('hex'));
   const response=await publicAssetHandler(new Request('http://localhost'+designStylesheetHref));expect(response?.headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
   expect(Buffer.from(await response!.arrayBuffer()).equals(expected)).toBe(true);

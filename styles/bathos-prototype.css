@@ -1,0 +1,13 @@
+/* Preserve the supplied theme; adopt only equivalent spacing values.
+   Screen-only shell rules leave its print layout intact. */
+.form-group { margin-bottom: var(--bathos-space-6); }
+.footer-links { gap: var(--bathos-space-2) var(--bathos-space-6); }
+@media screen and (min-width: 621px) {
+  .width-container { width: min(100% - var(--bathos-space-7), 960px); }
+  .width-container--wide { width: min(100% - var(--bathos-space-7), 1400px); }
+  .main-wrapper { padding: calc(var(--bathos-space-6) + var(--bathos-space-2)) 0 var(--bathos-space-8); }
+}
+@media screen and (max-width: 620px) {
+  .width-container { width: min(100% - var(--bathos-space-5), 860px); }
+  .main-wrapper { padding: var(--bathos-space-6) 0 calc(var(--bathos-space-7) + var(--bathos-space-2)); }
+}

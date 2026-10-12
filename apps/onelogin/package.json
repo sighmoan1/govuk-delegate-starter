@@ -4,8 +4,9 @@
   "private": true,
   "description": "A GOV.UK One Login-style sign-in in front of the official One Login simulator.",
   "scripts": {
-    "dev": "next dev -p 3301",
-    "build": "next build",
+    "sync-css": "node scripts/sync-css.mjs",
+    "dev": "npm run sync-css && next dev -p 3301",
+    "build": "npm run sync-css && next build",
     "start": "next start -p 3301",
     "typecheck": "tsc --noEmit"
   },

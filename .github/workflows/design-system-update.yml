@@ -1,0 +1,66 @@
+name: Prepare shared design-system update
+
+# Deliberate dispatch matches the repository's included-only CI policy.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: design-system-update
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      GH_TOKEN: ${{ secrets.DESIGN_SYSTEM_UPDATE_TOKEN }}
+    steps:
+      - name: Require authorised PR token
+        run: test -n "$GH_TOKEN" || { echo 'Configure DESIGN_SYSTEM_UPDATE_TOKEN with contents/PR write access before dispatch.'; exit 1; }
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.DESIGN_SYSTEM_UPDATE_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - id: release
+        run: node scripts/design-system-update.mjs
+      - name: Verify candidate before opening a PR
+        if: steps.release.outputs.changed == 'true'
+        run: |
+          bash scripts/ci-prepare.sh
+          bash scripts/ci-fast.sh
+          npm run test:styles
+          npm test -w apps/whenisbins
+      - name: Create or refresh one draft upgrade PR
+        if: steps.release.outputs.changed == 'true'
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          branch=codex/bathos-foundation-update
+          git switch -C "$branch"
+          git add package.json package-lock.json
+          git -c user.name='Bathos design update' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "Update Bathos foundation to $RELEASE_VERSION"
+          git push --force-with-lease origin "$branch"
+          cat > /tmp/design-update-pr.md <<'BODY'
+          Updates the pinned Bathos foundation release. Service branding and interactions remain owned by the existing theme adapters.
+
+          Validation: workspace types/builds, database-free fast checks, foundation/updater checks and connector fixture tests passed before this draft was opened. Before review/merge, run full isolated API/browser regression, service visual comparisons and the manual consent → action → revocation walkthrough. No public deployment or automatic merge is performed.
+          BODY
+          existing=$(gh pr list --head "$branch" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh pr edit "$existing" --title "Update Bathos foundation to $RELEASE_VERSION" --body-file /tmp/design-update-pr.md
+          else
+            gh pr create --draft --base main --head "$branch" --title "Update Bathos foundation to $RELEASE_VERSION" --body-file /tmp/design-update-pr.md
+          fi

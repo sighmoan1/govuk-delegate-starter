@@ -3,7 +3,7 @@ FROM node:22-slim
 WORKDIR /repo
 COPY package.json package-lock.json ./
 COPY apps/about/package.json apps/about/
-RUN npm ci --workspace apps/about
+RUN npm ci --include-workspace-root --workspace apps/about
 COPY styles ./styles
 # The about site shows HMRC's integration code.
 COPY apps/hmrc/src/lib/delegated-authority.ts ./apps/hmrc/src/lib/delegated-authority.ts
