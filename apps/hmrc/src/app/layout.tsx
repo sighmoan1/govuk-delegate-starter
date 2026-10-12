@@ -14,6 +14,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         {/* eslint-disable-next-line @next/next/no-css-tags */}
         <link rel="stylesheet" href="/design.css" />
+        {/* eslint-disable-next-line @next/next/no-css-tags */}
+        <link rel="stylesheet" href="/connected-navigation.css" />
+        <script src="/connected-navigation.js" defer />
         {/* For AI agents acting for someone: how to do it properly. */}
         <link rel="agent-access" href="/.well-known/agent-access.json" type="application/json" />
       </head>

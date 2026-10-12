@@ -1,10 +1,13 @@
 import { config } from "@/lib/config";
+import { delegateNavigationFromEnv } from "@prototype/connected-navigation";
+import { ConnectedNavigation } from "@prototype/connected-navigation/react";
 import { currentTaxpayer } from "@/lib/session";
 import { currentAgentSession } from "@/lib/agent-session";
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const taxpayer = await currentTaxpayer();
   const agent = await currentAgentSession();
+  const links = delegateNavigationFromEnv(process.env, { mode: process.env.PUBLIC_MODE === "true" ? "public" : "private" });
   return (
     <>
       <header className="service-header hmrc-header">
@@ -18,6 +21,7 @@ export default async function PublicLayout({ children }: { children: React.React
               <button className="header-link" type="submit">Sign out</button>
             </form>
           )}
+          <ConnectedNavigation links={links} activeId="hmrc" id="hmrc-connected-navigation" />
         </div>
       </header>
       <div className="width-container">

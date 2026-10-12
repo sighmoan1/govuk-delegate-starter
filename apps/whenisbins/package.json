@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@prototype/connected-navigation": "*",
     "tsx": "^4.19.0",
     "@prototype/research-feed": "*",
     "@prototype/whenisbins-email": "*",

@@ -4,9 +4,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-cert
 WORKDIR /repo
 COPY package.json package-lock.json ./
 COPY apps/hmrc/package.json apps/hmrc/
+COPY packages/connected-navigation/package.json packages/connected-navigation/
 COPY packages/web-bot-auth/package.json packages/web-bot-auth/
 COPY packages/research-feed/package.json packages/research-feed/
-RUN npm ci --workspace apps/hmrc --workspace packages/research-feed --workspace packages/web-bot-auth
+RUN npm ci --workspace apps/hmrc --workspace packages/connected-navigation --workspace packages/research-feed --workspace packages/web-bot-auth
+COPY packages/connected-navigation ./packages/connected-navigation
 COPY packages/web-bot-auth ./packages/web-bot-auth
 COPY packages/research-feed ./packages/research-feed
 COPY styles ./styles

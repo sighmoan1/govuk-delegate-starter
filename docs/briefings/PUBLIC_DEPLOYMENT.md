@@ -2,7 +2,7 @@
 
 The public briefing instance is separate from the private About presenter console. Enable Compose profile `public-briefing`; `about-public` listens on loopback port 3306 and accepts only GET/HEAD for the four briefing pages, committed slides/image and their static assets. `/` redirects to `/briefing`. Other paths are 404 and write methods on allowed paths are 405, including Next server actions. It receives no presenter key or internal-service configuration. Observatory research workbench and source feeds stay outside the tunnel.
 
-The public instance resolves navigation and service links at request time. Its navigation contains only briefings, and the demo guide directs presenters to run the swarm privately. The existing About console on 3304 retains its local tools.
+The public instance resolves navigation and service links at request time. Its connected navigation uses the public menu documented in [connected navigation](../CONNECTED_NAVIGATION.md): briefings, the demo guide and verified public service entry points only. The demo guide directs presenters to run the swarm privately. The existing About console on 3304 retains its local tools.
 
 For a named Cloudflare tunnel, add `hosts.about` to the ignored `public.config.json`, create its DNS route using the existing tunnel credentials, and point its ingress to `http://localhost:3306`. Do not point it to the presenter console on 3304. `ABOUT_PUBLIC_URL` changes the explanatory link in One Login, Delegate and HMRC.
 

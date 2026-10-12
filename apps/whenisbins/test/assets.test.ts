@@ -2,7 +2,7 @@ import {describe,it,expect} from 'vitest';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
-import {designStylesheetHref,designStylesheetVersion,publicAssetHandler,writeHttpResponse} from '../src/assets';
+import {connectedNavigationScriptHref,connectedNavigationStylesheetHref,designStylesheetHref,designStylesheetVersion,publicAssetHandler,writeHttpResponse} from '../src/assets';
 
 describe('public design asset delivery',()=>{
  it('serves both exact WOFF2 files intact through the actual HTTP response writer',async()=>{
@@ -20,6 +20,8 @@ describe('public design asset delivery',()=>{
    }
    for(const path of ['/assets/fonts/unknown.woff2','/assets/fonts/README.txt','/assets/fonts/%2e%2e%2fprivate','/assets/fonts/LexendDeca-700.woff2/extra','/assets/private.json'])expect((await fetch(origin+path)).status).toBe(404);
    const css=await fetch(origin+'/design.css');expect(css.status).toBe(200);expect(await css.text()).toContain('/assets/fonts/LexendDeca-700.woff2');
+   const navCss=await fetch(origin+'/connected-navigation.css');expect(navCss.status).toBe(200);expect(await navCss.text()).toContain('.connected-nav');
+   const navJs=await fetch(origin+'/connected-navigation.js');expect(navJs.status).toBe(200);expect(await navJs.text()).toContain('data-connected-nav');
   }finally{await new Promise<void>((resolve,reject)=>server.close(error=>error?reject(error):resolve()));}
  });
  it('names CSS by the delivered bytes and caches only the matching content version immutably',async()=>{
@@ -27,6 +29,8 @@ describe('public design asset delivery',()=>{
   expect(designStylesheetVersion).toBe(createHash('sha256').update(expected).digest('hex'));
   const response=await publicAssetHandler(new Request('http://localhost'+designStylesheetHref));expect(response?.headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
   expect(Buffer.from(await response!.arrayBuffer()).equals(expected)).toBe(true);
+  expect((await publicAssetHandler(new Request('http://localhost'+connectedNavigationStylesheetHref)))?.headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
+  expect((await publicAssetHandler(new Request('http://localhost'+connectedNavigationScriptHref)))?.headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
   for(const query of ['', '?v=stale', '?revision=old', '?v='+designStylesheetVersion+'&v=stale']){
    const unversioned=await publicAssetHandler(new Request('http://localhost/design.css'+query));expect(unversioned?.headers.get('cache-control')).toBe('no-cache, max-age=0, must-revalidate');
   }

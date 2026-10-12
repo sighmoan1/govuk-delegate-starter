@@ -1,0 +1,13 @@
+{
+  "name": "@prototype/connected-navigation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Delegate-owned connected navigation config and accessible drawer adapter.",
+  "exports": {
+    ".": "./src/config.ts",
+    "./html": "./src/html.ts",
+    "./react": "./src/react.tsx"
+  },
+  "types": "./src/config.ts"
+}

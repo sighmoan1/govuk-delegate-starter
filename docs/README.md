@@ -23,6 +23,8 @@ The current prototype uses synthetic One Login, Delegate and mock HMRC, with an 
 
 The public About site at https://about-demo.bathos.org/briefing presents these ideas to visitors. The private presenter dashboard is http://localhost:3304; temporary protected research instances are documented in [local runtime inventory](LOCAL_RUNTIME.md). On the private dashboard, `/project-status` explains delivery status, `/how-it-works` describes the implementation, `/delegate-orchestrate` explains the architecture boundary, and `/evidence` distinguishes observations from proof. The root README documents setup, updates and test commands.
 
+[Connected navigation](CONNECTED_NAVIGATION.md) records the shared menu configuration, public/private exclusions and maintenance checks for the slide-out service menu.
+
 ## Delivery contracts
 
 - [Consent evidence](CONSENT_EVIDENCE.md): immutable original approval, later history and prototype retention/erasure.

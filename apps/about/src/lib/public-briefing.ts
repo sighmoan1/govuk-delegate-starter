@@ -1,7 +1,7 @@
 /** Boundary for the separate public About instance; the local console remains private. */
 const pages = new Set(["/", "/briefing", "/briefing/high-level", "/briefing/detailed", "/briefing/demo"]);
 const files = new Set([
-  "/briefings/high-level.pptx", "/briefings/detailed.pptx", "/briefings/assets/observatory.png", "/design.css",
+  "/briefings/high-level.pptx", "/briefings/detailed.pptx", "/briefings/assets/observatory.png", "/design.css", "/connected-navigation.css", "/connected-navigation.js",
   "/assets/fonts/LexendDeca-400.woff2", "/assets/fonts/LexendDeca-700.woff2",
 ]);
 export function publicBriefingDecision(pathname: string, method: string): "allow" | "redirect" | "not-found" | "method-not-allowed" {

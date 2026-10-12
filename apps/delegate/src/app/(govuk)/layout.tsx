@@ -1,9 +1,12 @@
 import Link from "next/link";
+import { delegateNavigationFromEnv } from "@prototype/connected-navigation";
+import { ConnectedNavigation } from "@prototype/connected-navigation/react";
 import { currentPrincipal } from "@/lib/session";
 import { config } from "@/lib/config";
 
 export default async function GovukLayout({ children }: { children: React.ReactNode }) {
   const principal = await currentPrincipal();
+  const links = delegateNavigationFromEnv(process.env, { mode: process.env.PUBLIC_MODE === "true" ? "public" : "private" });
   return (
     <>
       <header className="service-header">
@@ -17,6 +20,7 @@ export default async function GovukLayout({ children }: { children: React.ReactN
               <button className="header-link" type="submit">Sign out</button>
             </form>
           )}
+          <ConnectedNavigation links={links} activeId="delegate" id="delegate-connected-navigation" />
         </div>
       </header>
       <div className="width-container">

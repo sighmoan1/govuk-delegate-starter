@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { delegateNavigationFromEnv } from "@prototype/connected-navigation";
+import { ConnectedNavigation } from "@prototype/connected-navigation/react";
 import "./about.css";
 import { Nav } from "./nav";
 import { publicBriefingMode } from "@/lib/public-briefing";
@@ -36,12 +38,17 @@ const LINKS = [
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  const briefingMode = publicBriefingMode();
+  const connectedLinks = delegateNavigationFromEnv(process.env, { mode: briefingMode ? "public" : "private" });
   return (
     <html lang="en-GB">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         {/* eslint-disable-next-line @next/next/no-css-tags */}
         <link rel="stylesheet" href="/design.css" />
+        {/* eslint-disable-next-line @next/next/no-css-tags */}
+        <link rel="stylesheet" href="/connected-navigation.css" />
+        <script src="/connected-navigation.js" defer />
       </head>
       <body>
         <a className="skip-link" href="#main-content">Skip to main content</a>
@@ -50,10 +57,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Link className="brand-link" href="/">
               <span className="brand-name">Delegate<span className="brand-dot">.</span> <span className="about-sub">prototype notes</span></span>
             </Link>
+            <ConnectedNavigation links={connectedLinks} activeId="about" id="about-connected-navigation" />
           </div>
         </header>
         <div className="width-container">
-          <Nav links={publicBriefingMode() ? PUBLIC_LINKS : LINKS} />
+          <Nav links={briefingMode ? PUBLIC_LINKS : LINKS} />
         </div>
         <div className="width-container">
           <main id="main-content" className="main-wrapper">{children}</main>
