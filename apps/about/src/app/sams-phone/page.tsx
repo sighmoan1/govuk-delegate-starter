@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { demoConsoleKey, urls } from "@/lib/config";
+import { resetDemo } from "@/lib/reset";
 
 export const metadata: Metadata = { title: "Sam’s phone" };
 export const dynamic = "force-dynamic";
@@ -15,7 +16,8 @@ async function sam(): Promise<Sam | null> {
   }
 }
 
-export default async function SamsPhone() {
+export default async function SamsPhone({ searchParams }: { searchParams: Promise<{ reset?: string }> }) {
+  const { reset } = await searchParams;
   const s = await sam();
   return (
     <div className="two-thirds">
@@ -26,6 +28,16 @@ export default async function SamsPhone() {
         When the demo is on public URLs, signing in to GOV.UK One Login needs Sam’s password and a code texted to her phone. In real life,
         an assistant working for Sam doesn’t have either. Here they are, for you to play Sam.
       </p>
+      <section className="start-from" aria-labelledby="reset-h">
+        <h2 id="reset-h">Reset the demo</h2>
+        {reset && <p className="start-from__done" role="status">Reset. Everything is back to the start.</p>}
+        <p>Restore the synthetic Delegate and HMRC demo to its starting state.</p>
+        <form action={resetDemo}>
+          <input type="hidden" name="mode" value="clean" />
+          <input type="hidden" name="back" value="/sams-phone" />
+          <button className="button button--secondary" type="submit">Reset everything</button>
+        </form>
+      </section>
       {!s && <p>Can’t reach One Login’s demo details. Is it running?</p>}
       {s && !s.strict && (
         <p>
