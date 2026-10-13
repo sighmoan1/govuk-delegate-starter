@@ -1,5 +1,5 @@
 /** Boundary for the separate public About instance; the local console remains private. */
-const pages = new Set(["/", "/briefing", "/briefing/high-level", "/briefing/detailed", "/briefing/demo"]);
+const pages = new Set(["/", "/briefing", "/briefing/high-level", "/briefing/detailed", "/briefing/demo", "/agentic-flooding"]);
 const files = new Set([
   "/briefings/high-level.pptx", "/briefings/detailed.pptx", "/briefings/assets/observatory.png", "/design.css",
   "/assets/fonts/LexendDeca-400.woff2", "/assets/fonts/LexendDeca-700.woff2",
