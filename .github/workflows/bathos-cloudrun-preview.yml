@@ -67,6 +67,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Scale to zero and request-based CPU billing avoid idle compute costs.
+          # A single instance bounds spending during synthetic demonstrations.
           gcloud run deploy "$SERVICE_NAME" \
             --project "$PROJECT_ID" \
             --region "$REGION" \
@@ -76,7 +78,8 @@ jobs:
             --allow-unauthenticated \
             --port 3304 \
             --cpu 1 --memory 512Mi \
-            --min-instances 0 --max-instances 2 \
+            --min-instances 0 --max-instances 1 \
+            --cpu-throttling \
             --concurrency 20 \
             --set-env-vars "PUBLIC_BRIEFING_MODE=true,ABOUT_PUBLIC_URL=https://about-demo.bathos.org,DELEGATE_URL=https://delegate-demo.bathos.org,HMRC_URL=https://hmrc-demo.bathos.org,ONE_LOGIN_URL=https://login-demo.bathos.org" \
             --quiet
