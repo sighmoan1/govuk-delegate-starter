@@ -1,0 +1,89 @@
+name: Cloud Run preview - read-only briefing
+
+# Trial branch only until bootstrap/credential setup. Merging does not deploy
+# until the repository variable BATHOS_CLOUDRUN_PREVIEW_ENABLED is true.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/about/**'
+      - 'apps/hmrc/src/lib/delegated-authority.ts'
+      - 'styles/**'
+      - 'package*.json'
+      - '.github/workflows/bathos-cloudrun-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: delegate-cloudrun-briefing-preview
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: vars.BATHOS_CLOUDRUN_PREVIEW_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PROJECT_ID: ${{ vars.BATHOS_GCP_PROJECT }}
+      REGION: ${{ vars.BATHOS_GCP_REGION }}
+      ARTIFACT_REPOSITORY: bathos-preview
+      SERVICE_NAME: delegate-briefing-preview
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Validate About app
+        run: |
+          npm run typecheck -w apps/about
+          npm run build -w apps/about
+      - name: Authenticate using short-lived GitHub OIDC
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ vars.BATHOS_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.BATHOS_GCP_DEPLOYER_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Build and publish commit-pinned image
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$PROJECT_ID"
+          test -n "$REGION"
+          REGISTRY="$REGION-docker.pkg.dev"
+          IMAGE="$REGISTRY/$PROJECT_ID/$ARTIFACT_REPOSITORY/delegate-briefing:$GITHUB_SHA"
+          gcloud auth configure-docker "$REGISTRY" --quiet
+          docker build --file apps/about/Dockerfile --tag "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+      - name: Deploy isolated read-only briefing
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcloud run deploy "$SERVICE_NAME" \
+            --project "$PROJECT_ID" \
+            --region "$REGION" \
+            --image "$IMAGE" \
+            --service-account "${{ vars.BATHOS_GCP_RUNTIME_SERVICE_ACCOUNT }}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 3304 \
+            --cpu 1 --memory 512Mi \
+            --min-instances 0 --max-instances 2 \
+            --concurrency 20 \
+            --set-env-vars "PUBLIC_BRIEFING_MODE=true,ABOUT_PUBLIC_URL=https://about-demo.bathos.org,DELEGATE_URL=https://delegate-demo.bathos.org,HMRC_URL=https://hmrc-demo.bathos.org,ONE_LOGIN_URL=https://login-demo.bathos.org" \
+            --quiet
+          url="$(gcloud run services describe "$SERVICE_NAME" --project "$PROJECT_ID" --region "$REGION" --format='value(status.url)')"
+          test -n "$url"
+          echo "Cloud Run preview: $url" >> "$GITHUB_STEP_SUMMARY"
+          curl --fail --silent --show-error --retry 8 --retry-delay 4 "$url/briefing" >/dev/null
+          # This preview must not expose the presenter console or a write API.
+          status="$(curl -sS -o /dev/null -w '%{http_code}' "$url/sams-phone")"
+          test "$status" = 404
