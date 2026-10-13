@@ -12,6 +12,7 @@ The current prototype uses synthetic One Login, Delegate and mock HMRC, with an 
 | [Repository status](REPOSITORY_STATUS.md) | Dated local/remote and branch audit, validation and runtime status |
 | [Architecture](ARCHITECTURE.md) | Responsibility boundaries and current versus target features |
 | [Service catalogues](SERVICE_CATALOGUES.md) | Implemented publication schema, authentication and version rules |
+| [Agentic flooding diagrams](AGENTIC_FLOODING.md) | Mermaid flows showing mixed traffic, agent-discovered delegation and trusted versus untrusted lanes |
 | [Product case](PRODUCT_CASE.md) | Hypothesis, precedents and inclusion principles |
 | [Decisions](DECISIONS.md) | Historical engineering decisions and superseding changes |
 | [Decision backlog](DECISION_BACKLOG.md) / [dispositions](DECISION_DISPOSITIONS.md) | Unresolved national questions, owners and reopening triggers |
