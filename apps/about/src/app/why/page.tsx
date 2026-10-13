@@ -17,6 +17,8 @@ export default function Why() {
         ordinary-looking transactions are automated, and more effort controlling activity that stays outside the trusted route.
       </p>
 
+      <p><a href="/agentic-flooding">See the before-and-after agentic flooding explanation and agent journey</a>.</p>
+
       <h2>Make the trusted route the easy one</h2>
       <p>Authenticated people and authorised agents get a trusted lane: better machine interfaces, clearer errors and appropriate throughput.</p>
       <p>Traffic whose identity or authority cannot be established can be subject to more checks and tighter limits.</p>
