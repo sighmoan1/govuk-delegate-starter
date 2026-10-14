@@ -1,0 +1,28 @@
+# Hosting observatory.bathos.org
+
+Status: deployment preparation, not a live deployment. Owner requested completion/hosting on 14 October 2026 (#167). No existing Delegate runtime, tunnel or research database has been changed.
+
+## Standalone architecture
+
+Deploy only `apps/observatory/Dockerfile`: Next.js, Python batch research tools and its generated Prisma client. Use a dedicated PostgreSQL database/login with TLS. There is no direct source-service database access, no One Login dependency and no authorisation decision hook. The proposed zero-compute-charge prototype uses Render's free web service with Neon free PostgreSQL, both in a European region. Neither account is connected in the delivery session yet, and no resource or subscription has been provisioned.
+
+`render-observatory.yaml` declares the standalone free service, generated separate research keys, custom hostname, readiness path and manual deployment. Do not substitute a paid plan or enable paid usage without the owner reviewing actual recurring cost. Render free services sleep after 15 minutes without requests and can take about a minute to wake. Account bandwidth/build quotas still apply. Use Neon rather than an expiring free Render database. Verify the actual account plan/quotas before provisioning and keep the database on its free plan. This is a prototype availability tradeoff, not always-on hosting.
+
+## Provision and deploy
+
+1. Confirm the owner-controlled hosting and database accounts. Create a dedicated Neon free project/database in a European region; use a direct PostgreSQL connection with `sslmode=require` for migrations. Keep the connection string in the provider's secret settings, never GitHub or this document. Preserve any existing research evidence through a separately reviewed export/import; a new database is not an automatic migration of local studies.
+2. Create the isolated Render Docker service from the merged, tested Observatory source. The blueprint uses `main`; record the exact deployed commit and image. Supply `DATABASE_URL`. Keep separate random collection/evaluation keys (at least 32 characters); treat key possession as access to the corresponding research role. Store access details privately for the owner. Never expose secrets to page props or build logs.
+3. Startup checks TLS/key separation/port and imports the pinned Python research dependencies, then applies additive Prisma migrations. No reseeding or reset is performed. Readiness checks both workspace and analysis tables. Paid adapters and external ingestion remain disabled unless separately configured.
+4. Add `observatory.bathos.org` as the service's custom domain. Set the Cloudflare DNS CNAME to the **actual hostname returned by Render**. Do not guess the target. Verify managed TLS and use Full (strict) if Cloudflare proxying is enabled. An optional Cloudflare Access policy can restrict the whole research site; keyed APIs remain mandatory even behind Access.
+5. Verify unauthenticated evaluation/collection requests return 401, collector keys cannot read evaluation data, wrong/equal/missing keys fail closed, responses have private/no-store caching, and public pages contain no stored research rows. Run one generated synthetic comparison, confirm six configurations/results, restart/redeploy without resetting, then confirm its ID/report persists. Test SQL mutation refusal and native PostgreSQL concurrent-computation exclusion. Execute the browser tests, including 320px keyboard/reflow and discarding outstanding protected responses.
+6. Record hostname/DNS/TLS/readiness, exact commit, database ownership, evidence location and results on #167. Only then describe the site as deployed. Actual Fingerprint vendor acceptance and participant collection remain distinct evidence milestones.
+
+After setting the hostname and both keys in the operator environment, run `npm run verify:hosted -w apps/observatory`. It records one generated synthetic comparison and checks readiness, unauthenticated/wrong-role refusal, private/no-store and compute/save/read. Keys never appear in its output. This bounded check does not replace the restart, SQL/concurrency or browser acceptance above.
+
+## Run and rollback
+
+Set `PORT` to the platform port and run `npm run start:hosted -w apps/observatory`. The Render blueprint overrides the image command with the hosted startup script; the image's default retains existing local Compose behavior. Python runs offline as a subprocess for each explicitly requested comparison, not as an additional service. A database transaction lock permits one active computation; bounded input/timeouts and temporary-file cleanup protect the host. Source ingestion is manual opt-in using the documented keyed HTTP feeds; no scheduled job has been installed.
+
+Keep immutable tagged images/commit pins and a reviewed database snapshot before upgrades. Restore the prior application revision only if compatible with the additive migrated schema; never drop tables or run `db:reset` as rollback. Retain old evidence and its provenance. Free-host local files are ephemeral, so the database holds saved synthetic datasets/results and restricted real-study evidence remains in the separate approved evidence store. Hosted real-participant dataset upload remains disabled pending consent/withdrawal/retention handling. Removing a hosting resource is a separate deliberate owner action.
+
+Primary references checked 14 October 2026: [Render Blueprint specification](https://render.com/docs/blueprint-spec), [free service limitations](https://render.com/docs/free), [Neon free storage update](https://neon.com/blog/neon-free-plan-1-gb-per-project). Provider plans can change; validate the account's returned configuration before provisioning.

@@ -1,0 +1,29 @@
+# Separate Observatory service. This does not deploy or modify Delegate.
+services:
+  - type: web
+    name: bathos-observatory
+    runtime: docker
+    plan: free
+    region: frankfurt
+    repo: https://github.com/sighmoan1/govuk-delegate-starter
+    branch: main
+    dockerfilePath: ./apps/observatory/Dockerfile
+    dockerContext: .
+    dockerCommand: node scripts/start-hosted.mjs
+    autoDeployTrigger: off
+    healthCheckPath: /api/health
+    domains:
+      - observatory.bathos.org
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: OBSERVATORY_COLLECTION_KEY
+        generateValue: true
+      - key: OBSERVATORY_EVALUATION_KEY
+        generateValue: true
+      - key: PUBLIC_MODE
+        value: "false"
+      - key: RESEARCH_INGEST_ENABLED
+        value: "false"
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
