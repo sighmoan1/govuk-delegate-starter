@@ -77,7 +77,7 @@ jobs:
       - name: Run root API and swarm regression
         run: npx vitest run --reporter=default --reporter=junit --outputFile=ci-artifacts/api-junit.xml 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/api-tests.log
       - name: Run browser regression from clean fixtures
-        run: npx playwright test --reporter=list,html 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/browser-tests.log
+        run: npx playwright test --grep-invert "foundation preserves service branding" --reporter=list,html 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/browser-tests.log
       - name: Verify the read-only public briefing instance
         run: |
           DELEGATE_PUBLIC_URL=https://delegate.example.test HMRC_PUBLIC_URL=https://hmrc.example.test ONELOGIN_PUBLIC_URL=https://login.example.test docker compose --profile public-briefing up -d --build --no-deps about-public
@@ -91,6 +91,8 @@ jobs:
           bash scripts/ci-observatory-wait.sh
           npm run verify:feeds -w apps/observatory
           npm run verify:classifications -w apps/observatory
+          # Foundation comparisons visit Observatory; run only when it is restarted.
+          npx playwright test e2e/design-foundation.spec.ts 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/foundation-browser.log
           npx playwright test --config apps/observatory/playwright.config.ts 2>&1 | node scripts/ci-redact.mjs | tee ci-artifacts/observatory-browser.log
       - name: Collect redacted stack diagnostics
         if: always()
