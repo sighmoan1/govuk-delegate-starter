@@ -237,6 +237,6 @@ Generic consent, bounded enforceable restrictions and the independent council pr
 
 ## Observatory research boundary
 
-`apps/observatory` is independently built and served on local port 3303. It owns database `observatory`, a separate database login and generated Prisma client. It is a research workbench with explicitly enabled, minimised read-only source feeds and append-only research collection. There are no classifiers or operational decision hooks. No HMRC or Delegate startup dependency points to it. Stopping Observatory leaves their authority, queue and service journeys running.
+`apps/observatory` is independently built and served on local port 3303. It owns database `observatory`, a separate database login and generated Prisma client. It is a research workbench with explicitly enabled, minimised read-only source feeds and append-only research collection. Protected experimental classifier adapters and a synthetic comparison workbench are implemented. They have no operational decision hooks and no validated detector-accuracy result. Owner-requested standalone hosting is prepared, with account/DNS access and deployment acceptance still pending. No HMRC or Delegate startup dependency points to it. Stopping Observatory leaves their authority, queue and service journeys running.
 
 See [research protocol](observatory/RESEARCH_PROTOCOL.md) and [setup and verification](observatory/SETUP.md). It is not GOV.UK Orchestrate or the unimplemented historical Example AI app.

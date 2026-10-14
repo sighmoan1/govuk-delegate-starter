@@ -2,6 +2,16 @@
 
 The audit sections below preserve their original dates and revisions. The latest delivery snapshot appears first; the 9 October records remain below for provenance.
 
+## Observatory delivery — 14 October 2026
+
+PRs #168–175 are merged into main `7c6ae27d80fa1358b0b759ac2212cab1e02a0108`. They add offline grouped logistic training/inference, frozen holdout metrics and uncertainty, persisted synthetic comparison/ablation UI, optional blinded Jev/OpenAI adapters with durable request/cost reservations, enrolled local BotD/study HTTP observations, protected hosting preparation and native acceptance checks. Source services still own authority and business outcomes. Dataset labels never enter classifier inputs.
+
+[Native Observatory acceptance](https://github.com/sighmoan1/govuk-delegate-starter/actions/runs/38624266434) passes at delivery revision `ff5b8056a5b4fa64ffc3513655c78672c90c9080`: 10 Python tests, 55 TypeScript tests, the isolated image build, PostgreSQL migrations/compute/save/read, SQL immutability, independent-connection advisory-lock exclusion, parallel quota reservation caps, restart retention and all six browser tests. Full prototype regression discovered existing Docker/config and unresolved-spacing defects, tracked separately in #176/#178 and PRs #177/#179. The corrected [full prototype run](https://github.com/sighmoan1/govuk-delegate-starter/actions/runs/38624266133) is still in progress; no full-regression pass is claimed at this checkpoint. It tests existing services with Observatory stopped before restarting it.
+
+**No live Observatory deployment is claimed.** The owner requested observatory.bathos.org. The standalone container/Render blueprint, TLS/key checks and verification command are prepared; Render/Neon accounts and DNS access are not connected in the delivery session. No service/database/DNS provisioning, paid spend or migration of retained local research records occurred. Public hostname publication must preserve keyed evaluator/collector isolation; a source merge is not a deployment.
+
+**Research acceptance remains open.** #68 needs real Fingerprint event validation; #69 needs paid-entitlement/schema and normal/automated-browser evidence plus a separately versioned auxiliary-feature fusion experiment; #71 needs genuine consented human/agent operation and the planned 500-transaction corpus. #74/#75/#77 still need actual same-holdout comparative/transportability evidence and full population-inference prerequisites. BotD flags/device IDs/signatures do not establish AI-directed execution. Generated human-labelled fixture rows are simulations, not human participation. The earlier audited scripted traces and zero-human-participant evidence retain their original provenance. Epic #64 and completion/hosting #167 remain open.
+
 ## Current presentation refresh — 10 October 2026
 
 The [current demo guide](DEMO_GUIDE.md) is the starting point for public URLs, private presenter tools and temporary protected research instances. The current website/decks now describe Observatory PRs #109–110 as merged. The original briefing source baseline `6b4f3895f246cfe9e274059c57e4dc1ea7989650` and dated rehearsal/screenshots remain preserved provenance; they do not establish a new vendor, participant or research result.
