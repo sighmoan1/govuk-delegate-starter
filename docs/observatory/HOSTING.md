@@ -2,6 +2,8 @@
 
 Status: deployment preparation, not a live deployment. Owner requested completion/hosting on 14 October 2026 (#167). No existing Delegate runtime, tunnel or research database has been changed.
 
+The manual GitHub Actions workflow `Observatory completion acceptance` builds the standalone image, uses native PostgreSQL, exercises synthetic compute/save/read and restart retention, verifies database mutation refusal/concurrency/quota caps, and runs the dashboard/workbench browser tests. It does not call vendors or source services. A workflow definition is not a passing run; record its actual exact-head result before deployment acceptance. Existing full prototype regression must separately verify the HMRC/Delegate authority journeys and their independence from a stopped Observatory.
+
 ## Standalone architecture
 
 Deploy only `apps/observatory/Dockerfile`: Next.js, Python batch research tools and its generated Prisma client. Use a dedicated PostgreSQL database/login with TLS. There is no direct source-service database access, no One Login dependency and no authorisation decision hook. The proposed zero-compute-charge prototype uses Render's free web service with Neon free PostgreSQL, both in a European region. Neither account is connected in the delivery session yet, and no resource or subscription has been provisioned.
