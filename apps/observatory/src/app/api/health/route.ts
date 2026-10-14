@@ -6,5 +6,8 @@ export const runtime = "nodejs";
 
 export function GET() {
   // Access the migrated table: database connectivity alone is not readiness.
-  return healthResponse(() => prisma.researchWorkspace.count());
+  return healthResponse(async () => {
+    await prisma.researchWorkspace.count();
+    await prisma.experimentAnalysis.count();
+  });
 }
