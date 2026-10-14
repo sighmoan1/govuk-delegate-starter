@@ -9,6 +9,8 @@ describe("locally bundled service themes", () => {
     expect(css).toContain(supplied);
     const foundation = css.slice(0, css.indexOf(supplied));
     expect(foundation).toContain("--bathos-space-6: var(--space-6)");
+    expect(foundation).toContain("--bathos-space-6: 2rem;");
+    expect(foundation).toContain("--bathos-space-7: 3rem;");
     expect([...foundation.matchAll(/(--[\w-]+)\s*:/g)].every(match => match[1].startsWith("--bathos-"))).toBe(true);
     expect(foundation.replace(/:root\s*\{[^}]*\}/g, "").trim()).toBe("");
     expect(css).not.toMatch(/@import|https?:\/\//);
@@ -16,7 +18,7 @@ describe("locally bundled service themes", () => {
 
   it("keeps the One Login theme separate from the prototype's branding", () => {
     const css = serviceCss("onelogin");
-    expect(css).toContain("--bathos-space-6: var(--space-6)");
+    expect(css).toContain("--bathos-space-6: 2rem;");
     expect(css).not.toContain(".brand-link");
     expect(css).not.toContain("@font-face");
     expect(css).not.toMatch(/--(?:ink|focus|link)\s*:/);
