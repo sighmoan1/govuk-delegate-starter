@@ -6,7 +6,7 @@ export async function POST(req: Request) {
   if (!sameResearchOrigin(req)) return NextResponse.json({ error: "ORIGIN_REQUIRED" }, { status: 403 });
   const body = await req.json().catch(() => null);
   if (body?.consent !== true) return NextResponse.json({ error: "OPT_IN_REQUIRED" }, { status: 400 });
-  if (!process.env.NEXT_PUBLIC_FINGERPRINT_API_KEY?.trim()) return NextResponse.json({ state: "missing" }, { status: 503 });
+  if (!process.env.NEXT_PUBLIC_FINGERPRINT_API_KEY?.trim() && process.env.BOTD_RESEARCH_ENABLED !== 'true') return NextResponse.json({ state: "missing" }, { status: 503 });
   if (typeof body.enrollment_token !== "string" || !/^[A-Za-z0-9_-]{20,256}$/.test(body.enrollment_token)) return NextResponse.json({ error: "ENROLMENT_REQUIRED" }, { status: 400 });
   try {
     const binding = await enrolResearch(body.enrollment_token);

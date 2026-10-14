@@ -4,6 +4,8 @@ import { SignJWT, jwtVerify } from "jose";
 import { config } from "./config";
 import { cookieFromHeader } from "./session";
 import type { SensorSample } from "./fingerprint-coverage";
+import type { z } from 'zod';
+import type { AuxiliarySensorEvent } from '@prototype/research-feed';
 
 export const RESEARCH_COOKIE = "hmrc_fingerprint_research";
 export type ResearchBinding = { session_id: string; run_id: string; attempt_id: string; expires_at: string; nonce: string; issued_at: number };
@@ -80,7 +82,7 @@ export async function verifyVendor(sample: SensorSample, binding: ResearchBindin
   } catch { return "verification_unavailable"; }
 }
 
-export async function appendSensor(sample: SensorSample, binding: ResearchBinding, verification: string) {
+export async function appendSensor(sample: SensorSample, binding: ResearchBinding, verification: string, auxiliary?: z.infer<typeof AuxiliarySensorEvent>['auxiliary_sensor']) {
   const key = process.env.RESEARCH_PSEUDONYM_KEY;
   if (!key || key.length < 32) throw new Error("PSEUDONYM_KEY_REQUIRED");
   const known = <T>(value: T) => ({ value, status: "known", provenance: "source_record" });
@@ -89,7 +91,7 @@ export async function appendSensor(sample: SensorSample, binding: ResearchBindin
   // A separate immutable observation, not an update to the service event. No
   // taxpayer identifier, raw visitor ID, client-selected run ID or truth label.
   const event = {
-    schema_version: 1, source_service: "hmrc", source_event_id: `sensor:${randomUUID()}`, event_kind: "browser_sensor",
+    schema_version: auxiliary ? 3 : 1, source_service: "hmrc", source_event_id: `sensor:${randomUUID()}`, event_kind: "browser_sensor",
     occurred_at: { value: new Date().toISOString(), status: "known", provenance: "source_clock" }, run_id: known(binding.run_id),
     correlation: { request_id: known(randomUUID()), transaction_id: missing(), session_id: pseudo("session", binding.session_id), delegate_check_id: missing() },
     observed: { lane: "UNKNOWN", signature_verified: missing(), latency_ms: missing() },
@@ -97,6 +99,7 @@ export async function appendSensor(sample: SensorSample, binding: ResearchBindin
     browser_sensor: { status: sample.state, provenance: verification === "vendor_verified" ? "vendor_verified" : sample.state === "not_run" ? "not_collected" : "unverified_client_claim",
       ...(sample.event_id ? { event_id: pseudo("fingerprint-event", sample.event_id) } : {}),
       ...(sample.visitor_id ? { visitor_id: pseudo("fingerprint-visitor", sample.visitor_id) } : {}) },
+    ...(auxiliary ? { auxiliary_sensor: auxiliary } : {}),
   };
   const response = await observatory("/api/research/observations", "POST", event);
   if (!response.ok) throw new Error("COLLECTION_UNAVAILABLE");

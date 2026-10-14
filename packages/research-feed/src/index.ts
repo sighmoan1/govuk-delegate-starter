@@ -59,7 +59,15 @@ export const WhenIsBinsEvent = LegacyEvent.extend({
   if (event.whenisbins.stage === "refused" && !["DENY", "REFUSED", "THROTTLED", "CHALLENGED"].includes(event.outcome.decision))
     ctx.addIssue({ code: "custom", message: "Refusal stage requires refused decision" });
 });
-export const Event = z.union([LegacyEvent, WhenIsBinsEvent]);
+export const AuxiliarySensorEvent = LegacyEvent.extend({
+  schema_version: z.literal(3), source_service: z.literal('hmrc'), event_kind: z.literal('browser_sensor'),
+  auxiliary_sensor: z.object({
+    botd: z.object({ status: z.enum(['observed', 'not_run', 'blocked', 'error']), value: z.boolean().nullable(), provenance: z.literal('client_claim'), version: z.literal('2.0.0') }).strict().refine(s => s.status === 'observed' ? s.value !== null : s.value === null),
+    http: z.object({ sample_requests_in_window: z.number().int().min(1).max(100000), window_seconds: z.literal(60), counter_scope: z.literal('process_local_study_sample_posts'), sec_fetch_same_origin: z.boolean().nullable(), provenance: z.literal('server_observed_headers_and_counter') }).strict(),
+    smart_signals: z.object({ status: z.literal('not_requested'), reason: z.literal('PAID_ENTITLEMENT_NOT_VALIDATED') }).strict(),
+  }).strict(),
+}).strict();
+export const Event = z.union([LegacyEvent, WhenIsBinsEvent, AuxiliarySensorEvent]);
 export type ResearchEvent = z.infer<typeof Event>;
 export type WhenIsBinsResearchEvent = z.infer<typeof WhenIsBinsEvent>;
 export const Page = z.union([
