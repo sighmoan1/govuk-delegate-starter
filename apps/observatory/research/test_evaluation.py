@@ -13,6 +13,8 @@ class Evaluation(unittest.TestCase):
         self.assertEqual(m["selective_sensitivity"], .5)
         self.assertEqual(m["precision"], .5)
         self.assertEqual(m["classified"], 5)
+        self.assertEqual(m["flagged_count"], 3)
+        self.assertEqual(m["raw_flagged_fraction"], .6)
         self.assertEqual(m["probability_n"], 4)
         self.assertEqual(sum(b["n"] for b in m["reliability"]), 4)
         self.assertAlmostEqual(m["brier"], (.04 + .64 + .49 + .01) / 4)

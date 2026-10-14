@@ -40,6 +40,7 @@ def metrics(records):
         reliability.append({"lower": i / 10, "upper": (i + 1) / 10, "n": len(members), "mean_probability": ratio(sum(r["probability"] for r in members), len(members)), "positive_fraction": ratio(sum(r["truth"] for r in members), len(members))})
     return {"n": len(records), "known_labels": len(known), "label_coverage": ratio(len(known), len(records)),
             "classified": sum(r["prediction"] is not None for r in records), "abstained": sum(r["prediction"] is None for r in records),
+            "flagged_count": sum(r["prediction"] == 1 for r in records), "raw_flagged_fraction": ratio(sum(r["prediction"] == 1 for r in records), sum(r["prediction"] is not None for r in records)),
             "prediction_coverage": ratio(sum(r["prediction"] is not None for r in records), len(records)),
             "confusion": {"tp": tp, "fp": fp, "tn": tn, "fn": fn, "positive_abstentions": pos - tp - fn, "negative_abstentions": neg - tn - fp, "unknown_labels": len(records) - len(known)},
             "precision": ratio(tp, tp + fp), "selective_sensitivity": sensitivity, "selective_specificity": specificity,
@@ -130,7 +131,7 @@ def evaluate(data, bundle, seed=75):
         comparisons.append({"model": model, "metrics": m, "uncertainty": uncertainty(records, seed),
                             "cohorts": {c: metrics([r for r in records if r["cohort"] == c]) for c in sorted({r["cohort"] for r in records})},
                             "prevalence_shift": prevalence_shift(m["selective_sensitivity"], m["selective_specificity"]),
-                            "population_prevalence": validated_prevalence(m["confusion"]["tp"] + m["confusion"]["fp"], m["classified"], m["selective_sensitivity"], m["selective_specificity"])})
+                            "population_prevalence": validated_prevalence(m["flagged_count"], m["classified"], m["selective_sensitivity"], m["selective_specificity"])})
     return {"schema": "observatory-evaluation/1", "mode": data["mode"], "target": bundle["artifact"]["target"], "protocol_version": data["protocol_version"], "source_commit": data["source_commit"],
             "corpus_digest": digest(data), "model_digest": digest(bundle["artifact"]), "total_corpus_rows": len(rows), "holdout_n": len(holdout), "holdout_groups": len(group_sets["holdout"]),
             "excluded_target_rows": len(bundle["excluded_ids"]), "comparisons": comparisons,
