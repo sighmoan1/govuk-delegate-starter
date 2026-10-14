@@ -1,0 +1,82 @@
+name: Observatory completion acceptance
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: observatory-completion-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  acceptance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:63474/postgres?connection_limit=5
+      OBSERVATORY_COLLECTION_KEY: collection-synthetic-fixture-0123456789
+      OBSERVATORY_EVALUATION_KEY: evaluation-synthetic-fixture-0123456789
+      OBSERVATORY_URL: http://127.0.0.1:63303
+      OBSERVATORY_UI_URL: http://127.0.0.1:63303
+      OBSERVATORY_TEST_FIXTURE: "true"
+      PUBLIC_MODE: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: apps/observatory/research/requirements.txt
+      - run: npm ci --include-workspace-root --workspace apps/observatory --workspace packages/research-feed
+      - run: pip install -r apps/observatory/research/requirements.txt
+      - run: npm run test:research -w apps/observatory
+      - run: npm run typecheck -w apps/observatory && npm test -w apps/observatory
+      - name: Build standalone research image and native Postgres fixture
+        run: |
+          docker network create observatory-test
+          docker run -d --name observatory-test-db --network observatory-test -p 127.0.0.1:63474:5432 -e POSTGRES_PASSWORD=postgres postgres:17
+          for i in $(seq 1 30); do
+            if docker exec observatory-test-db pg_isready -U postgres; then break; fi
+            sleep 1
+          done
+          docker build -f apps/observatory/Dockerfile -t observatory-test-image .
+          docker run -d --name observatory-test-app --network observatory-test -p 127.0.0.1:63303:3303 -e DATABASE_URL='postgresql://postgres:postgres@observatory-test-db:5432/postgres?connection_limit=5' -e OBSERVATORY_COLLECTION_KEY -e OBSERVATORY_EVALUATION_KEY -e PUBLIC_MODE observatory-test-image
+      - name: Wait for migrated readiness
+        run: |
+          for i in $(seq 1 60); do
+            if curl --fail --silent "$OBSERVATORY_URL/api/health"; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+      - name: Compute and persist synthetic comparison
+        run: npm run verify:hosted -w apps/observatory
+      - name: Native database immutability, locks and budget race checks
+        run: cd apps/observatory && node --import tsx scripts/verify-database.ts
+      - name: Restart retains reports and readiness
+        run: |
+          docker restart observatory-test-app
+          for i in $(seq 1 60); do
+            if curl --fail --silent "$OBSERVATORY_URL/api/health"; then break; fi
+            sleep 1
+          done
+          node -e 'fetch(process.env.OBSERVATORY_URL+"/api/evaluation/comparisons",{headers:{"x-evaluation-key":process.env.OBSERVATORY_EVALUATION_KEY}}).then(async r=>{const rows=await r.json();if(!r.ok||!rows.length)process.exit(1);console.log("Retained synthetic report after restart");}).catch(()=>process.exit(1));'
+      - run: npx playwright install --with-deps chromium
+      - name: Private dashboard and comparison browser acceptance
+        run: npx playwright test --config apps/observatory/playwright.config.ts
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: observatory-browser-failure
+          path: |
+            test-results/observatory
+            ci-artifacts/observatory-320.png
+      - name: Fixture logs and cleanup
+        if: always()
+        run: |
+          docker logs observatory-test-app || true
+          docker rm -f observatory-test-app observatory-test-db || true
+          docker network rm observatory-test || true
