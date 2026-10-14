@@ -24,6 +24,7 @@ jobs:
       OBSERVATORY_UI_URL: http://127.0.0.1:63303
       OBSERVATORY_TEST_FIXTURE: "true"
       PUBLIC_MODE: "false"
+      RESEARCH_INGEST_ENABLED: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -48,7 +49,7 @@ jobs:
             sleep 1
           done
           docker build -f apps/observatory/Dockerfile -t observatory-test-image .
-          docker run -d --name observatory-test-app --network observatory-test -p 127.0.0.1:63303:3303 -e DATABASE_URL='postgresql://postgres:postgres@observatory-test-db:5432/postgres?connection_limit=5' -e OBSERVATORY_COLLECTION_KEY -e OBSERVATORY_EVALUATION_KEY -e PUBLIC_MODE observatory-test-image
+          docker run -d --name observatory-test-app --network observatory-test -p 127.0.0.1:63303:3303 -e DATABASE_URL='postgresql://postgres:postgres@observatory-test-db:5432/postgres?connection_limit=5' -e OBSERVATORY_COLLECTION_KEY -e OBSERVATORY_EVALUATION_KEY -e PUBLIC_MODE -e RESEARCH_INGEST_ENABLED observatory-test-image
       - name: Wait for migrated readiness
         run: |
           for i in $(seq 1 60); do
