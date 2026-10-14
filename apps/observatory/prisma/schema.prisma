@@ -139,3 +139,15 @@ model ClassificationRun {
   @@index([snapshotId, createdAt])
   @@map("classification_run")
 }
+
+// Evaluator-only frozen synthetic corpus/configuration/report. Never fed to inference.
+model ExperimentAnalysis {
+  id String @id @default(uuid())
+  corpusDigest String @map("corpus_digest")
+  configDigest String @map("config_digest")
+  corpus Json
+  report Json
+  createdAt DateTime @default(now()) @map("created_at")
+  @@index([createdAt])
+  @@map("experiment_analysis")
+}

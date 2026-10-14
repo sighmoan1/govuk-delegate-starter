@@ -4,7 +4,7 @@ import "./observatory.css";
 
 export const metadata: Metadata = {
   title: "Observatory – independent research prototype",
-  description: "Read-only synthetic research workbench. No operational authority or automation classification.",
+  description: "Independent research into agent activity, sensor coverage and experimental classification. No operational authority.",
   robots: { index: false, follow: false },
 };
 

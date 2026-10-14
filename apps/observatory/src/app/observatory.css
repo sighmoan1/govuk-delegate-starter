@@ -13,3 +13,4 @@
 .observatory-timeline li { padding:.75rem 0;border-bottom:1px solid var(--border-soft); }
 .observatory-link { padding:0;border:0;background:none;color:var(--link);text-align:left;text-decoration:underline;font:inherit;cursor:pointer;overflow-wrap:anywhere; }
 pre { max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.875rem; }
+.research-digest { overflow-wrap: anywhere; font-family: monospace; font-size: .9rem; }
