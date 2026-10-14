@@ -1,0 +1,13 @@
+# Opt-in local automation and study HTTP evidence
+
+In an isolated HMRC research instance, set `FINGERPRINT_RESEARCH_ENABLED=true` and `BOTD_RESEARCH_ENABLED=true`. Observatory collection must be explicitly enabled and separately keyed. The optional device study dynamically reads runtime configuration and can enroll a synthetic browser without a Fingerprint public key when local BotD is enabled. Enrollment still requires the researcher-issued one-use token, explicit opt-in, same origin and signed server binding. No sensor runs on normal tax pages or in public mode.
+
+After enrollment, **Collect one local BotD sample** loads the pinned bundled BotD 2.0.0 package and calls `load({monitoring:false})`. No CDN or vendor usage-monitoring request is used. Only a boolean automation flag or explicit error/absence is sent to the HMRC backend; device components and raw user agent strings are not exported. BotD output remains an unverified client claim and can be false or spoofed. It does not prove AI direction, a human, identity, legitimacy or authority.
+
+The server adds a bounded process-local count of study **sample POSTs** in its 60-second window and observed `sec-fetch-site` same-origin/missing status. These are not all service requests, citizen intents, population traffic or unique people. Counters may reset on process restart/eviction and differ across replicas; no distributed rate or volume claim follows. Origin/headers are still spoofable outside a browser.
+
+These observations use strict event schema version 3, appended through the existing separately gated collection endpoint. Version-1 HMRC/Delegate and version-2 connector feeds remain unchanged. Raw components and execution labels are rejected. The protected event explorer shows the new fields in the source observation; the current version-1 frozen classifier does not automatically fuse BotD or study-post counters into its four-feature model. A new inference-feature contract and separately validated experiment is required before using them as classifier inputs.
+
+Paid Fingerprint Smart Signals are explicitly `not_requested / PAID_ENTITLEMENT_NOT_VALIDATED`; client IDs or a valid server-event binding are not fabricated as commercial bot/AI-detection evidence. Actual paid entitlement/schema acceptance and normal-versus-automated browser runs remain open under #69. Unit tests are synthetic parser/counter/schema checks, not vendor or participant results.
+
+Primary API reference: [BotD documentation](https://github.com/fingerprintjs/BotD/blob/main/docs/api.md), checked 14 October 2026. The SDK's automation-detection target differs from AI-directed execution; keep both separate from protected evaluator truth.

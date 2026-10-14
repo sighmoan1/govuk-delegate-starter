@@ -6,7 +6,8 @@ import type { CoverageState } from "@/lib/fingerprint-coverage";
 // The SDK/provider is mounted only after a successful explicit enrolment. It
 // never runs on ordinary HMRC pages, disabled studies, or missing configuration.
 const Sensor = dynamic(() => import("./sensor"), { ssr: false });
-export default function Study({ publicKey, initialState, enabled }: { publicKey: string; initialState: CoverageState; enabled: boolean }) {
+const BotDSensor = dynamic(() => import('./botd'), { ssr: false });
+export default function Study({ publicKey, initialState, enabled, botdEnabled = false }: { publicKey: string; initialState: CoverageState; enabled: boolean; botdEnabled?: boolean }) {
   const [state, setState] = useState<CoverageState>(initialState);
   const [token, setToken] = useState("");
   const [consent, setConsent] = useState(false);
@@ -25,12 +26,13 @@ export default function Study({ publicKey, initialState, enabled }: { publicKey:
     <p role="status">Browser sensor: <strong>{state}</strong>. Missing coverage is not evidence of no bot.</p>
     {!enabled && <p>The study is switched off. No Fingerprint request has been made.</p>}
     {state === "missing" && <p>The public vendor key is missing. No Fingerprint request has been made.</p>}
-    {enabled && publicKey && !binding && <>
+    {enabled && (publicKey || botdEnabled) && !binding && <>
       <label htmlFor="enrolment">Researcher-issued enrolment token</label>
       <input id="enrolment" className="input" value={token} onChange={e => setToken(e.target.value)} autoComplete="off" />
-      <label><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /> I consent to this synthetic device study and the disclosed vendor calls.</label>
+      <label><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /> I consent to this synthetic browser study and the disclosed optional sensor processing.</label>
       <button className="button" disabled={!consent || !token || busy} onClick={enrol}>Join device study</button>
     </>}
-    {binding && <Sensor publicKey={publicKey} binding={binding} onState={setState} />}
+    {binding && publicKey && <Sensor publicKey={publicKey} binding={binding} onState={setState} />}
+    {binding && botdEnabled && <BotDSensor binding={binding} />}
   </section>;
 }
