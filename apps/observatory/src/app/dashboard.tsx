@@ -22,6 +22,7 @@ export default function Dashboard() {
  const filtered=rows.filter(r=>(!source||r.event.source_service===source)&&(!channel||r.event.observed.lane===channel)&&(!run||[r.binding?.runId,r.event.run_id.value].some(x=>x?.includes(run)))&&(!cohort||r.truth?.executionClass===cohort)&&(!after||Date.parse(r.event.occurred_at.value)>=Date.parse(after+'Z'))&&(!before||Date.parse(r.event.occurred_at.value)<=Date.parse(before+'Z')));
  const totals=summarise(filtered);
  return <>
+ <p><a href="/workbench">Compare detector evidence</a></p>
  <p className="caption">Read-only research workbench</p><h1>Understand automated service activity</h1>
  <div className="research-notice" role="note"><strong>Research prototype — no human study results yet.</strong><p>Unidentified activity can include people and accessibility tools. Predictions cannot change service authority, eligibility or throughput.</p></div>
  <h2>Access and view</h2><form onSubmit={refresh}>
