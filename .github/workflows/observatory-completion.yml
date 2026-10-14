@@ -1,6 +1,10 @@
 name: Observatory completion acceptance
 on:
   workflow_dispatch:
+  # One explicitly named delivery branch permits this session's acceptance run
+  # without requiring a signed-in UI. Ordinary branches/main remain manual-only.
+  push:
+    branches: [codex/78-observatory-ci-20261014]
 permissions:
   contents: read
 concurrency:
