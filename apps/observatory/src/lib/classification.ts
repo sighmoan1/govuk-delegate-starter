@@ -55,7 +55,7 @@ export const unavailablePaid: ClassifierAdapter = {
 };
 export function experiment(adapter: ClassifierAdapter, threshold = 0.5): ExperimentConfig {
   if (!Number.isFinite(threshold) || threshold < 0 || threshold > 1) throw new Error("INVALID_THRESHOLD");
-  const statistical = adapter.identifier === "logistic";
+  const statistical = ["logistic", "jev", "openai-decisions"].includes(adapter.identifier);
   return { schema: adapter.schema, adapter: adapter.identifier, version: adapter.version, model: adapter.model, question: statistical ? "Was this transaction directed by an AI agent under target ai-directed-execution/1?" : "Is a verified agent signature recorded in the selected source observation?", prompt: null, threshold, feature_set: [...adapter.feature_set], parameters: { interpretation: statistical ? "experimental_prediction_not_authority_or_verified_truth" : "identity_observation_only_not_execution_truth" } };
 }
 function validSignals(record: EvidenceRecord) {

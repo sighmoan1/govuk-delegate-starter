@@ -151,3 +151,12 @@ model ExperimentAnalysis {
   @@index([createdAt])
   @@map("experiment_analysis")
 }
+
+// Durable accounting only; no labels, prompts, credentials or vendor payloads.
+model DetectorQuota {
+  id String @id
+  calls Int
+  reservedMicroUsd BigInt @map("reserved_micro_usd")
+  nextAllowedAt DateTime @map("next_allowed_at")
+  @@map("detector_quota")
+}

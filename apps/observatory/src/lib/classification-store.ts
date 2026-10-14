@@ -3,10 +3,13 @@ import type { Prisma } from "../generated/prisma";
 import { fields, object, ResearchError, uuid } from "./ground-truth";
 import { classifyFrozen, digest, experiment, mockSensor, stubRule, unavailablePaid, type EvidenceRecord, type ExperimentConfig } from "./classification";
 import { configuredLogistic } from "./statistical-model";
+import { vendorAdapter, vendorSettings, VENDOR_PROMPT } from "./vendor-adapters";
+import { reserveVendor } from "./vendor-quota";
 const json = (v: unknown) => v as Prisma.InputJsonValue;
 const adapterFor = (name: unknown) => {
   if (name === "stub-rule" || name === undefined) return stubRule;
   if (name === "unavailable-paid") return unavailablePaid;
+  if (name === "jev" || name === "openai-decisions") return vendorAdapter(name, vendorSettings(name), reserveVendor);
   if (name === "logistic") {
     try { return configuredLogistic().adapter; }
     catch { throw new ResearchError("STATISTICAL_MODEL_NOT_CONFIGURED", 503); }
@@ -31,6 +34,7 @@ export async function runClassification(input: unknown) {
     const evidence = await mockSensor.collect(source.snapshot as never);
     const threshold = v.threshold ?? (adapter.identifier === "logistic" ? configuredLogistic().threshold : .5);
     const frozenConfig = experiment(adapter, threshold as number);
+    if (adapter.identifier === "jev" || adapter.identifier === "openai-decisions") frozenConfig.prompt = VENDOR_PROMPT;
     // createMany(skipDuplicates) avoids UPDATEs, including Prisma upsert empty-update behaviour.
     await prisma.evidenceSnapshot.createMany({ data: [{ sourceService: evidence.source, sourceEventId: evidence.source_event_id, schemaVersion: evidence.schema, digest: digest(evidence), record: json(evidence) }], skipDuplicates: true });
     snapshot = await prisma.evidenceSnapshot.findUniqueOrThrow({ where: { sourceService_sourceEventId_schemaVersion: { sourceService: evidence.source, sourceEventId: evidence.source_event_id, schemaVersion: evidence.schema } } });
