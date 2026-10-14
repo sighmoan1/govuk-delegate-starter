@@ -10,6 +10,7 @@ RUN npm ci --include-workspace-root --workspace apps/delegate --workspace packag
 COPY packages/web-bot-auth ./packages/web-bot-auth
 COPY packages/research-feed ./packages/research-feed
 COPY styles ./styles
+COPY bathos-design-system.json ./bathos-design-system.json
 COPY dev ./dev
 COPY apps/delegate ./apps/delegate
 # Local demo bootstrap configuration is owned by HMRC; Delegate imports no HMRC code.
