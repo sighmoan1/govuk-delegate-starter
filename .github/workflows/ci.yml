@@ -1,6 +1,8 @@
 name: Prototype regression
 
 on:
+  push:
+    branches: [codex/78-observatory-ci-20261014]
   workflow_dispatch:
 
 permissions:
