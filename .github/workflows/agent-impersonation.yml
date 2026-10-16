@@ -44,8 +44,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Host synthetic prototype on the isolated runner
         run: |
-          docker compose up -d --build db simulator onelogin delegate hmrc
-          for url in http://localhost:3301/.well-known/openid-configuration http://localhost:3300/api/catalogues/hmrc-personal-tax http://localhost:3302/; do
+          docker compose up -d --build db simulator onelogin delegate hmrc about
+          for url in http://localhost:3301/.well-known/openid-configuration http://localhost:3300/api/catalogues/hmrc-personal-tax http://localhost:3302/ http://localhost:3304/; do
             ready=0
             for attempt in $(seq 1 90); do
               if curl --fail --silent --output /dev/null --connect-timeout 2 --max-time 4 "$url"; then ready=1; break; fi
