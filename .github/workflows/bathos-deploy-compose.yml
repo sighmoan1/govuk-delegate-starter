@@ -1,0 +1,188 @@
+name: Bathos reusable Compose deploy
+
+on:
+  workflow_call:
+    inputs:
+      app:
+        description: Distinct Docker Compose project/installation name
+        required: true
+        type: string
+      compose-file:
+        required: true
+        type: string
+      overlay-file:
+        required: false
+        type: string
+        default: ''
+      health-url:
+        description: Loopback URL to probe from inside the droplet
+        required: false
+        type: string
+        default: ''
+    secrets:
+      BATHOS_SSH_HOST:
+        required: true
+      BATHOS_SSH_USER:
+        required: true
+      BATHOS_SSH_PRIVATE_KEY:
+        required: true
+      BATHOS_SSH_KNOWN_HOSTS:
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bathos-deploy-${{ github.repository }}-${{ inputs.app }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Fetch exactly the triggering commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate inputs and prepare immutable archive
+        env:
+          APP: ${{ inputs.app }}
+          BASE: ${{ inputs.compose-file }}
+          OVERLAY: ${{ inputs.overlay-file }}
+          HEALTH: ${{ inputs.health-url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$APP" =~ ^[a-z][a-z0-9-]{1,48}$ ]]
+          for item in "$BASE" "$OVERLAY"; do
+            [[ -z "$item" || "$item" =~ ^[A-Za-z0-9_./-]+$ ]]
+            [[ "$item" != /* && "$item" != *..* ]]
+          done
+          [[ -f "$BASE" ]]
+          [[ -z "$OVERLAY" || -f "$OVERLAY" ]]
+          pattern="^http://127\.0\.0\.1:[0-9]{2,5}/[A-Za-z0-9_/?=&.%:-]*$"
+          [[ -z "$HEALTH" || "$HEALTH" =~ $pattern ]]
+          git archive --format=tar HEAD | gzip -1 > "$RUNNER_TEMP/release.tar.gz"
+      - name: Configure pinned SSH host identity
+        env:
+          PRIVATE_KEY: ${{ secrets.BATHOS_SSH_PRIVATE_KEY }}
+          HOST_KEYS: ${{ secrets.BATHOS_SSH_KNOWN_HOSTS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$HOME/.ssh"
+          printf '%s\n' "$PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$HOST_KEYS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"
+      - name: Upload and deploy (rollback application on failure)
+        env:
+          SSH_HOST: ${{ secrets.BATHOS_SSH_HOST }}
+          SSH_USER: ${{ secrets.BATHOS_SSH_USER }}
+          APP: ${{ inputs.app }}
+          BASE: ${{ inputs.compose-file }}
+          OVERLAY: ${{ inputs.overlay-file }}
+          HEALTH: ${{ inputs.health-url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          options=(-i "$HOME/.ssh/id_ed25519" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes)
+          target="${SSH_USER}@${SSH_HOST}"
+          ssh "${options[@]}" "$target" "mkdir -p '/srv/bathos/apps/$APP/incoming'"
+          scp "${options[@]}" "$RUNNER_TEMP/release.tar.gz" "$target:/srv/bathos/apps/$APP/incoming/$GITHUB_SHA.tar.gz"
+          # The deployment script is owned by the shared workflow and shipped alongside it.
+          cat > "$RUNNER_TEMP/deploy.sh" <<'REMOTE'
+          #!/usr/bin/env bash
+          # Runs on a DigitalOcean Droplet as the dedicated deploy user.
+          set -Eeuo pipefail
+          umask 077
+          
+          app="${1:?app required}"
+          revision="${2:?revision required}"
+          compose_file="${3:?compose file required}"
+          overlay_file="${4:-}"
+          health_url="${5:-}"
+          
+          [[ "$app" =~ ^[a-z][a-z0-9-]{1,48}$ ]] || { echo 'Invalid app slug' >&2; exit 2; }
+          [[ "$revision" =~ ^[a-f0-9]{40}$ ]] || { echo 'Invalid commit SHA' >&2; exit 2; }
+          for item in "$compose_file" "$overlay_file"; do
+            [[ -z "$item" || "$item" =~ ^[A-Za-z0-9_./-]+$ ]] || { echo 'Invalid compose path' >&2; exit 2; }
+            [[ "$item" != /* && "$item" != *..* ]] || { echo 'Unsafe compose path' >&2; exit 2; }
+          done
+          health_pattern="^http://127\.0\.0\.1:[0-9]{2,5}/[A-Za-z0-9_/?=&.%:-]*$"
+          [[ -z "$health_url" || "$health_url" =~ $health_pattern ]] || { echo 'Health URL must be loopback HTTP' >&2; exit 2; }
+          
+          root="/srv/bathos/apps/$app"
+          release="$root/releases/$revision"
+          archive="$root/incoming/$revision.tar.gz"
+          secrets="/srv/bathos/secrets/$app.env"
+          [[ -r "$secrets" ]] || { echo "Missing server-side app secrets: $secrets" >&2; exit 3; }
+          [[ -f "$archive" ]] || { echo "Missing release archive: $archive" >&2; exit 3; }
+          
+          mkdir -p "$release" "$root/backups"
+          tar -xzf "$archive" -C "$release" --no-same-owner
+          [[ -f "$release/$compose_file" ]] || { echo 'Compose file missing from release' >&2; exit 3; }
+          args=(--project-name "$app" --env-file "$secrets" -f "$release/$compose_file")
+          if [[ -n "$overlay_file" ]]; then
+            [[ -f "$release/$overlay_file" ]] || { echo 'Compose overlay missing from release' >&2; exit 3; }
+            args+=(-f "$release/$overlay_file")
+          fi
+          
+          old=""
+          if [[ -L "$root/current" ]]; then
+            old="$(readlink -f "$root/current")"
+          fi
+          
+          restore_previous() {
+            local code=$?
+            trap - ERR
+            echo "Deployment failed for $app at $revision (exit $code)." >&2
+            if [[ -n "$old" && -f "$old/$compose_file" ]]; then
+              local previous=(--project-name "$app" --env-file "$secrets" -f "$old/$compose_file")
+              if [[ -n "$overlay_file" && -f "$old/$overlay_file" ]]; then
+                previous+=(-f "$old/$overlay_file")
+              fi
+              echo 'Restoring previous application containers; database migrations are not reversed.' >&2
+              docker compose "${previous[@]}" --profile public-briefing up -d --build --wait --wait-timeout 180 || true
+            fi
+            exit "$code"
+          }
+          trap restore_previous ERR
+          
+          docker compose "${args[@]}" --profile public-briefing config --quiet
+          
+          # Preserve a SQL snapshot before any release that can migrate persistent data.
+          # This is an on-host recovery point, not a substitute for off-site backups.
+          if [[ -n "$old" && -f "$old/$compose_file" ]]; then
+            previous=(--project-name "$app" --env-file "$secrets" -f "$old/$compose_file")
+            if [[ -n "$overlay_file" && -f "$old/$overlay_file" ]]; then previous+=(-f "$old/$overlay_file"); fi
+            if docker compose "${previous[@]}" config --services | grep -qx 'db'; then
+              db_container="$(docker compose "${previous[@]}" ps -q db)"
+              [[ -n "$db_container" ]] || { echo 'Existing database not running; refusing deployment' >&2; exit 4; }
+              backup="$root/backups/$(date -u +%Y%m%dT%H%M%SZ)-$revision.sql.gz"
+              echo 'Writing pre-release PostgreSQL recovery point.'
+              docker exec "$db_container" pg_dumpall -U delegate | gzip -c > "$backup"
+              [[ -s "$backup" ]] || { echo 'Database backup was empty' >&2; exit 4; }
+            fi
+          fi
+          
+          # Compose project name remains stable across immutable source directories; named volumes survive.
+          docker compose "${args[@]}" --profile public-briefing up -d --build --wait --wait-timeout 240
+          if [[ -n "$health_url" ]]; then
+            ok=false
+            for attempt in $(seq 1 20); do
+              if curl --fail --silent --show-error --max-time 5 "$health_url" >/dev/null 2>&1; then ok=true; break; fi
+              sleep 3
+            done
+            [[ "$ok" == true ]] || { echo "Health check failed: $health_url" >&2; exit 5; }
+          fi
+          
+          ln -sfn "$release" "$root/current.new"
+          mv -Tf "$root/current.new" "$root/current"
+          echo "Deployed $app at $revision; previous releases and persistent volumes retained."
+          REMOTE
+          chmod 600 "$RUNNER_TEMP/deploy.sh"
+          printf -v quoted '%q ' "$APP" "$GITHUB_SHA" "$BASE" "$OVERLAY" "$HEALTH"
+          ssh "${options[@]}" "$target" "bash -se -- $quoted" < "$RUNNER_TEMP/deploy.sh"

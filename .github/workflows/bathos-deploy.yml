@@ -1,0 +1,37 @@
+name: Deploy Delegate on main
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: bash scripts/ci-prepare.sh
+      - run: npm ci
+      - run: bash scripts/ci-fast.sh
+  deploy:
+    needs: verify
+    if: vars.BATHOS_DEPLOY_ENABLED == 'true'
+    uses: ./.github/workflows/bathos-deploy-compose.yml
+    with:
+      app: delegate-demo
+      compose-file: docker-compose.yml
+      overlay-file: deploy/compose.production.yml
+      health-url: http://127.0.0.1:3300/api/catalogues/hmrc-personal-tax
+    secrets:
+      BATHOS_SSH_HOST: ${{ secrets.BATHOS_SSH_HOST }}
+      BATHOS_SSH_USER: ${{ secrets.BATHOS_SSH_USER }}
+      BATHOS_SSH_PRIVATE_KEY: ${{ secrets.BATHOS_SSH_PRIVATE_KEY }}
+      BATHOS_SSH_KNOWN_HOSTS: ${{ secrets.BATHOS_SSH_KNOWN_HOSTS }}

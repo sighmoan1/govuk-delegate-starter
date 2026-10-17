@@ -1,0 +1,103 @@
+# Docker Compose v2.24.4+ required for !override.
+# Keep base compose for local development; use this override only on DigitalOcean.
+# Set secrets in /srv/bathos/secrets/delegate-demo.env on the host (not Git).
+services:
+  db:
+    ports: !override []
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+  simulator:
+    ports: !override []
+  onelogin:
+    ports: !override ["127.0.0.1:3301:3301"]
+    environment:
+      PUBLIC_MODE: "true"
+      ONELOGIN_DEMO_PASSWORD: ${ONELOGIN_DEMO_PASSWORD:?required}
+      DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:?required}
+      ABOUT_URL: https://about-demo.bathos.org/briefing
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=bathos-edge
+      - traefik.http.routers.delegate-login.rule=Host(`login-demo.bathos.org`)
+      - traefik.http.services.delegate-login.loadbalancer.server.port=3301
+    networks: [default, edge]
+  delegate:
+    ports: !override ["127.0.0.1:3300:3300"]
+    environment:
+      DATABASE_URL: ${DELEGATE_DATABASE_URL:?required}
+      APP_URL: https://delegate-demo.bathos.org
+      OIDC_ISSUER: https://login-demo.bathos.org
+      OIDC_INTERNAL_URL: http://simulator:3000
+      ABOUT_URL: https://about-demo.bathos.org/briefing
+      PUBLIC_MODE: "true"
+      SESSION_SECRET: ${DELEGATE_SESSION_SECRET:?required}
+      AGENT_TOKEN_SECRET: ${AGENT_TOKEN_SECRET:?required}
+      DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:?required}
+      AGENT_CLIENT_SECRET: ${AGENT_CLIENT_SECRET:?required}
+      HMRC_SERVICE_KEY: ${HMRC_SERVICE_KEY:?required}
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=bathos-edge
+      - traefik.http.routers.delegate.rule=Host(`delegate-demo.bathos.org`)
+      - traefik.http.services.delegate.loadbalancer.server.port=3300
+    networks: [default, edge]
+  hmrc:
+    ports: !override ["127.0.0.1:3302:3302"]
+    environment:
+      DATABASE_URL: ${HMRC_DATABASE_URL:?required}
+      APP_URL: https://hmrc-demo.bathos.org
+      OIDC_ISSUER: https://login-demo.bathos.org
+      OIDC_INTERNAL_URL: http://simulator:3000
+      DELEGATE_URL: https://delegate-demo.bathos.org
+      ABOUT_URL: https://about-demo.bathos.org/briefing
+      PUBLIC_MODE: "true"
+      SESSION_SECRET: ${HMRC_SESSION_SECRET:?required}
+      DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:?required}
+      HMRC_SERVICE_KEY: ${HMRC_SERVICE_KEY:?required}
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=bathos-edge
+      - traefik.http.routers.delegate-hmrc.rule=Host(`hmrc-demo.bathos.org`)
+      - traefik.http.services.delegate-hmrc.loadbalancer.server.port=3302
+    networks: [default, edge]
+  hmrc-worker:
+    environment:
+      DATABASE_URL: ${HMRC_DATABASE_URL:?required}
+      HMRC_SERVICE_KEY: ${HMRC_SERVICE_KEY:?required}
+  about:
+    ports: !override []
+    environment:
+      DEMO_CONSOLE_KEY: ${DEMO_CONSOLE_KEY:?required}
+  about-public:
+    ports: !override ["127.0.0.1:3306:3304"]
+    environment:
+      ABOUT_PUBLIC_URL: https://about-demo.bathos.org
+      DELEGATE_URL: https://delegate-demo.bathos.org
+      HMRC_URL: https://hmrc-demo.bathos.org
+      ONE_LOGIN_URL: https://login-demo.bathos.org
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=bathos-edge
+      - traefik.http.routers.delegate-about.rule=Host(`about-demo.bathos.org`)
+      - traefik.http.services.delegate-about.loadbalancer.server.port=3304
+    networks: [default, edge]
+  observatory:
+    profiles: [internal-research]
+    ports: !override []
+    environment:
+      DATABASE_URL: ${OBSERVATORY_DATABASE_URL:?required}
+  council-register:
+    environment:
+      DATABASE_URL: ${DELEGATE_DATABASE_URL:?required}
+      HMRC_SERVICE_KEY: ${COUNCIL_SERVICE_KEY:?required}
+  council:
+    ports: !override []
+    environment:
+      COUNCIL_SERVICE_KEY: ${COUNCIL_SERVICE_KEY:?required}
+  whenisbins-public:
+    profiles: [whenisbins-public]
+    ports: !override []
+networks:
+  edge:
+    external: true
+    name: bathos-edge
